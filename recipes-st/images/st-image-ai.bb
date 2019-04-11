@@ -4,6 +4,8 @@ SUMMARY = "OpenSTLinux Artificial Inteligence image based on weston image"
 
 IMAGE_AI_PART = "   \
     opencv \
+    python3-runpy \
+    tensorflow-lite-python3 \
 "
 
 #
