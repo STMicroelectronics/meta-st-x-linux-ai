@@ -7,6 +7,7 @@ IMAGE_AI_PART = "   \
     python3-pip \
     python3-runpy \
     tensorflow-lite-python3 \
+    tensorflow-lite-examples \
 "
 
 #
