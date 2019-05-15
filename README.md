@@ -1,12 +1,13 @@
-# meta-st-stm32mpu-app-ai-character-recognition-gui
+# meta-st-stm32mpu-ai
 
-OpenEmbedded meta layer to install ai character recognition UI based on Crank software solution.
+OpenEmbedded meta layer to install ai frameworks for the STM32MP1 (NN,
+Computer Vision, ...)
 
 ## Installation of the meta layer
 
 * Clone following git repositories into [your STM32MP1 Distribution path]/layers/meta-st
    > cd [your STM32MP1 Distribution path]/layers/meta-st <br>
-   > git clone ssh://${USER}@gerrit.st.com:29418/stm32mpuapp/meta/meta-st-stm32mpu-ai.git -b thud <br>
+   > git clone https://gerrit.st.com/stm32mpuapp//meta/meta-st-stm32mpu-ai.git -b thud <br>
 
 * Setup the build environement
    > source layers/meta-st/scripts/envsetup.sh
@@ -16,5 +17,8 @@ OpenEmbedded meta layer to install ai character recognition UI based on Crank so
 * Add the new layers
    > bitbake-layers add-layer ../layers/meta-st/meta-st-stm32mpu-ai<br>
 
-* Build your image
+* Build the AI image
    > bitbake st-image-ai
+
+## Further information
+https://wiki.st.com/stm32mpu/wiki/AI\_extension\_package
