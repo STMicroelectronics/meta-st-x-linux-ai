@@ -324,11 +324,6 @@ class MainUIWindow(Gtk.Window):
         self.label.set_line_wrap_mode(Gtk.WrapMode.WORD)
         self.hbox.pack_start(self.label, False, False, 15)
 
-        if not self.enable_camera_preview:
-            self.button = Gtk.Button.new_with_label("Next inference")
-            self.vbox.pack_start(self.button, True, True, 15)
-            self.button.connect("clicked", self.still_picture)
-
         self.timeout_id = GLib.timeout_add(50, self.on_timeout)
 
     def on_timeout(self):
@@ -452,7 +447,6 @@ class MainUIWindow(Gtk.Window):
 
         # display the picture in the screen
         prev_frame = cv2.resize(np.array(img), (self.picture_width, self.picture_height))
-        prev_frame_BGR = cv2.cvtColor(prev_frame,cv2.COLOR_RGB2BGR)
 
         # update the preview frame
         self.update_frame(prev_frame)
@@ -560,6 +554,12 @@ class MainUIWindow(Gtk.Window):
             # hidde the progress bar
             GLib.source_remove(self.timeout_id)
             self.progressbar.hide()
+
+            if not self.enable_camera_preview:
+                self.button = Gtk.Button.new_with_label("Next inference")
+                self.vbox.pack_start(self.button, False, False, 15)
+                self.button.connect("clicked", self.still_picture)
+                self.button.show_all()
 
 def destroy_window(gtkobject):
     gtkobject.terminate()
