@@ -1,7 +1,12 @@
 # meta-st-stm32mpu-ai
 
-OpenEmbedded meta layer to install ai frameworks for the STM32MP1 (NN,
+OpenEmbedded meta layer to install AI frameworks and tools for the STM32MP1 (NN,
 Computer Vision, ...)
+
+## Suppored frameworks and tools
+* OpenCV 3.4.x
+* TensorFlow Lite 2.0.0-alpha0
+* Python 3.5.x (enabling Pillow module)
 
 ## Installation of the meta layer
 
