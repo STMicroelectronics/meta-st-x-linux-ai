@@ -147,6 +147,12 @@ def tfl_mobilenet_start():
     result = proc.stdout.read().decode('utf-8')
     return result
 
+def tfl_objdetect_start():
+    cmd = ["%s/python/launch_python_objdetect_tfl_coco_ssd_mobilenet.sh" % DEMO_PATH]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = proc.stdout.read().decode('utf-8')
+    return result
+
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 class MainUIWindow(Gtk.Window):
@@ -235,6 +241,18 @@ class MainUIWindow(Gtk.Window):
         widget.override_background_color(0,rgba)
         self.button_exit.show()
 
+    def tfl_objdetect_event(self, widget, event):
+        print("[tfl_objdetect_event start]")
+        if os.path.exists("/dev/video0"):
+            tfl_objdetect_start()
+        else:
+            print("[WARNING] camera not detected\n")
+            self.display_message("<span font='15' color='#FFFFFFFF'>Webcam is not connected:\n/dev/video0 doesn't exist\n</span>")
+        print("[tfl_objdetect_event stop]\n")
+        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
+        widget.override_background_color(0,rgba)
+        self.button_exit.show()
+
     def create_page_icon(self):
         page_main = Gtk.HBox(False, 0)
         page_main.set_border_width(0)
@@ -254,14 +272,18 @@ class MainUIWindow(Gtk.Window):
         eventBox_tfl_mobilenet.connect("button_release_event", self.tfl_mobilenet_event)
         eventBox_tfl_mobilenet.connect("button_press_event", self.highlight_eventBox)
 
+        # Button: tfl_ icon
+        eventBox_tfl_objdetect = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "TensorFlow Lite", "Object detection (quant)", -1, self.icon_size)
+        eventBox_tfl_objdetect.connect("button_release_event", self.tfl_objdetect_event)
+        eventBox_tfl_objdetect.connect("button_press_event", self.highlight_eventBox)
+
         empty_box1 = Gtk.VBox(False, 0)
-        empty_box2 = Gtk.VBox(False, 0)
 
         icon_grid.attach(logo_info_area, 3, 0, 1, 3)
 
-        icon_grid.attach(empty_box1, 0, 1, 1, 1)
-        icon_grid.attach(eventBox_tfl_mobilenet, 1, 1, 1, 1)
-        icon_grid.attach(empty_box2, 2, 1, 1, 1)
+        icon_grid.attach(eventBox_tfl_mobilenet, 0, 1, 1, 1)
+        icon_grid.attach(empty_box1, 1, 1, 1, 1)
+        icon_grid.attach(eventBox_tfl_objdetect, 2, 1, 1, 1)
 
         page_main.add(icon_grid)
 
