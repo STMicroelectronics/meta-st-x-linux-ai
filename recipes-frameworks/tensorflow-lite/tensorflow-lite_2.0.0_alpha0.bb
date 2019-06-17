@@ -22,6 +22,7 @@ inherit setuptools3
 PACKAGES += "${PN}-examples ${PN}-python3"
 
 DEPENDS = " \
+	coreutils-native \
 	curl-native \
 	gzip-native \
 	unzip-native \
