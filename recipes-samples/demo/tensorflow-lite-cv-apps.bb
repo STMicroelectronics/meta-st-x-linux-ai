@@ -1,6 +1,6 @@
 # Copyright (C) 2019, STMicroelectronics - All Rights Reserved
 
-SUMMARY = "TensorFlowLite application examples"
+SUMMARY = "TensorFlowLite Computer Vision application examples"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
@@ -27,20 +27,21 @@ do_compile[noexec] = "1"
 
 do_install() {
     install -d ${D}${prefix}/local/demo-ai/
-    install -d ${D}${prefix}/local/demo-ai/python
-    install -d ${D}${prefix}/local/demo-ai/models
-    install -d ${D}${prefix}/local/demo-ai/models/mobilenet
-    install -d ${D}${prefix}/local/demo-ai/models/mobilenet/testdata
-    install -d ${D}${prefix}/local/demo-ai/models/coco_ssd_mobilenet/
-    install -d ${D}${prefix}/local/demo-ai/models/coco_ssd_mobilenet/testdata
+    install -d ${D}${prefix}/local/demo-ai/ai-cv
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/python
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/models
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet/testdata
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/testdata
 
-    # install python scripts
-    install -m 0755 ${S}/python/*					${D}${prefix}/local/demo-ai/python
+    # install python and launcher scripts
+    install -m 0755 ${S}/python/*					${D}${prefix}/local/demo-ai/ai-cv/python
 
     # install mobilenet models
-    install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/label*.txt		${D}${prefix}/local/demo-ai/models/mobilenet/labels.txt
-    install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/*.tflite		${D}${prefix}/local/demo-ai/models/mobilenet/
-    install -m 0644 ${S}/mobilenet_v1_0.5_128_quant/*.tflite		${D}${prefix}/local/demo-ai/models/mobilenet/
+    install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/label*.txt		${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet/labels.txt
+    install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/*.tflite		${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet/
+    install -m 0644 ${S}/mobilenet_v1_0.5_128_quant/*.tflite		${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet/
 
     # install coco ssd mobilenet model
     # label file of the coco ssd mobilenet may be wrong, patch it before installation
@@ -48,10 +49,10 @@ do_install() {
         # if the first line match '???' string, remove it
         sed -i '1d' ${S}/coco_ssd_mobilenet_v1_1.0_quant/label*.txt
     fi;
-    install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/label*.txt	${D}${prefix}/local/demo-ai/models/coco_ssd_mobilenet/labels.txt
-    install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/*.tflite	${D}${prefix}/local/demo-ai/models/coco_ssd_mobilenet/
+    install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/label*.txt	${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/labels.txt
+    install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/*.tflite	${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/
 }
 
-FILES_${PN} += "${prefix}/local/demo-ai/"
+FILES_${PN} += "${prefix}/local/demo-ai/ai-cv"
 
 RDEPENDS_${PN} += "python3 python3-pygobject gtk+3"

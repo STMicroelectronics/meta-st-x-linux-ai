@@ -26,4 +26,4 @@ do_install() {
 
 FILES_${PN} += "${prefix}/local/demo-ai/ ${prefix}/local/weston-start-at-startup/"
 
-RDEPENDS_${PN} += "python3 python3-pygobject gtk+3 tensorflow-lite-applications"
+RDEPENDS_${PN} += "python3 python3-pygobject gtk+3"

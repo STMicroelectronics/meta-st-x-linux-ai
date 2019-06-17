@@ -4,5 +4,5 @@ PACKAGE_INSTALL_remove += "\
 
 PACKAGE_INSTALL += "\
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'ai-demo-launcher', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'tensorflow-lite-applications', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'tensorflow-lite-cv-apps', '', d)} \
     "

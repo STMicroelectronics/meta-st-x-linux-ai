@@ -47,7 +47,7 @@ ICON_SIZE_SMALL = 60
 
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
-def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, scale_h):
+def _load_image_eventBox(parent, filename, label_text0, label_text1, label_text2, scale_w, scale_h):
     # Create box for xpm and label
     box = Gtk.VBox(False, 0)
     # Create an eventBox
@@ -62,7 +62,8 @@ def _load_image_eventBox(parent, filename, label_text1, label_text2, scale_w, sc
 
     label = Gtk.Label()
     label.set_markup("<span font='12' color='#39A9DCFF'>%s\n</span>"
-                     "<span font='12' color='#002052FF'>%s</span>" % (label_text1, label_text2))
+                     "<span font='12' color='#002052FF'>%s\n</span>"
+                     "<span font='12' color='#D4007AFF'>%s</span>" % (label_text0, label_text1, label_text2))
     label.set_justify(Gtk.Justification.CENTER)
     label.set_line_wrap(True)
 
@@ -142,13 +143,13 @@ def _load_image_on_button(parent, filename, label_text, scale_w, scale_h):
     return box
 
 def tfl_mobilenet_start():
-    cmd = ["%s/python/launch_python_label_tfl_mobilenet.sh" % DEMO_PATH]
+    cmd = ["%s/ai-cv/python/launch_python_label_tfl_mobilenet.sh" % DEMO_PATH]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     result = proc.stdout.read().decode('utf-8')
     return result
 
 def tfl_objdetect_start():
-    cmd = ["%s/python/launch_python_objdetect_tfl_coco_ssd_mobilenet.sh" % DEMO_PATH]
+    cmd = ["%s/ai-cv/python/launch_python_objdetect_tfl_coco_ssd_mobilenet.sh" % DEMO_PATH]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     result = proc.stdout.read().decode('utf-8')
     return result
@@ -253,39 +254,46 @@ class MainUIWindow(Gtk.Window):
         widget.override_background_color(0,rgba)
         self.button_exit.show()
 
+    def attach_icon_to_grid(self, eventBox):
+        if self.row <= 2:
+            self.icon_grid.attach(eventBox, self.col, self.row, 1, 1)
+            self.col = self.col + 1
+            if self.col > 2:
+                self.row = self.row + 1
+                self.col = 0
+
     def create_page_icon(self):
         page_main = Gtk.HBox(False, 0)
         page_main.set_border_width(0)
 
         # create a grid of icon
-        icon_grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
-        icon_grid.set_column_spacing(20)
-        icon_grid.set_row_spacing(20)
+        self.icon_grid = Gtk.Grid(column_homogeneous=True, row_homogeneous=True)
+        self.icon_grid.set_column_spacing(20)
+        self.icon_grid.set_row_spacing(20)
 
         # STM32MP1 Logo and info area
         logo_info_area = _load_image_Box(self, "%s/media/ST11249_Module_STM32MP1_alpha.png" % DEMO_PATH, "%s/media/ST7079_AI_neural_white.png" % DEMO_PATH, self.board_name, -1, 160)
         rgba = Gdk.RGBA(0.31, 0.32, 0.31, 1.0)
         logo_info_area.override_background_color(0,rgba)
 
-        # Button: tfl_mobilenet icon
-        eventBox_tfl_mobilenet = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "TensorFlow Lite", "Mobilenet v1 (quant)", -1, self.icon_size)
-        eventBox_tfl_mobilenet.connect("button_release_event", self.tfl_mobilenet_event)
-        eventBox_tfl_mobilenet.connect("button_press_event", self.highlight_eventBox)
+        self.icon_grid.attach(logo_info_area, 3, 0, 1, 3)
 
-        # Button: tfl_ icon
-        eventBox_tfl_objdetect = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "TensorFlow Lite", "Object detection (quant)", -1, self.icon_size)
-        eventBox_tfl_objdetect.connect("button_release_event", self.tfl_objdetect_event)
-        eventBox_tfl_objdetect.connect("button_press_event", self.highlight_eventBox)
+        self.row = 0
+        self.col = 0
+        if os.path.isdir(DEMO_PATH+"/ai-cv"):
+            # Button: tfl_mobilenet icon
+            eventBox_tfl_mobilenet = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Mobilenet v1 (quant)", -1, self.icon_size)
+            eventBox_tfl_mobilenet.connect("button_release_event", self.tfl_mobilenet_event)
+            eventBox_tfl_mobilenet.connect("button_press_event", self.highlight_eventBox)
+            self.attach_icon_to_grid(eventBox_tfl_mobilenet)
 
-        empty_box1 = Gtk.VBox(False, 0)
+            # Button: tfl_ icon
+            eventBox_tfl_objdetect = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Object detection (quant)", -1, self.icon_size)
+            eventBox_tfl_objdetect.connect("button_release_event", self.tfl_objdetect_event)
+            eventBox_tfl_objdetect.connect("button_press_event", self.highlight_eventBox)
+            self.attach_icon_to_grid(eventBox_tfl_objdetect)
 
-        icon_grid.attach(logo_info_area, 3, 0, 1, 3)
-
-        icon_grid.attach(eventBox_tfl_mobilenet, 0, 1, 1, 1)
-        icon_grid.attach(empty_box1, 1, 1, 1, 1)
-        icon_grid.attach(eventBox_tfl_objdetect, 2, 1, 1, 1)
-
-        page_main.add(icon_grid)
+        page_main.add(self.icon_grid)
 
         overlay = Gtk.Overlay()
         overlay.add(page_main)

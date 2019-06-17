@@ -1,6 +1,6 @@
 require ../../../meta-st-openstlinux/recipes-st/images/st-image-weston.bb
 
-SUMMARY = "OpenSTLinux Artificial Inteligence image based on weston image"
+SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on weston image"
 
 IMAGE_AI_PART = "   \
     opencv \
