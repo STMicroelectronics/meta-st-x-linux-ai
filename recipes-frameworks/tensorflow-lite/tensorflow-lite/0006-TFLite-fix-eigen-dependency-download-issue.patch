@@ -1,0 +1,28 @@
+From 0461ff781de017d674e50af38a8a4fb606b0831a Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Fri, 5 Jul 2019 15:58:06 +0200
+Subject: [PATCH 1/1] TFLite: fix eigen dependency download issue
+
+The http url seems not good. Use the https url instead.
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/make/download_dependencies.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/make/download_dependencies.sh b/tensorflow/lite/tools/make/download_dependencies.sh
+index eb002eb..688ab39 100755
+--- a/tensorflow/lite/tools/make/download_dependencies.sh
++++ b/tensorflow/lite/tools/make/download_dependencies.sh
+@@ -29,7 +29,7 @@ if [ ! -f $BZL_FILE_PATH ]; then
+   exit 1;
+ fi
+ 
+-EIGEN_URL="$(grep -o 'http.*bitbucket.org/eigen/eigen/get/.*tar\.gz' "${BZL_FILE_PATH}" | grep -v mirror.bazel | head -n1)"
++EIGEN_URL="$(grep -o 'https.*bitbucket.org/eigen/eigen/get/.*tar\.gz' "${BZL_FILE_PATH}" | grep -v mirror.bazel | head -n1)"
+ GEMMLOWP_URL="$(grep -o 'http://mirror.tensorflow.org/github.com/google/gemmlowp/.*zip' "${BZL_FILE_PATH}" | head -n1)"
+ GOOGLETEST_URL="https://github.com/google/googletest/archive/release-1.8.0.tar.gz"
+ ABSL_URL="$(grep -o 'https://github.com/abseil/abseil-cpp/.*tar.gz' "${BZL_FILE_PATH}" | head -n1)"
+-- 
+2.7.4
+

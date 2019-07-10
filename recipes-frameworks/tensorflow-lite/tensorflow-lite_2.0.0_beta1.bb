@@ -1,11 +1,11 @@
 DESCRIPTION = "TensorFlow Lite C++ Library"
 LICENSE = "Apache-2.0"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=01e86893010a1b87e69a213faa753ebd"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=98c6df387846c9077433242544c8f127"
 
 SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}-${PR}.tar.gz "
-SRC_URI[md5sum] = "a26886611105d3399c2a5985fe14d904"
-SRC_URI[sha256sum] = "01eea2cc36439ee2f69e3f843673f0bbe6c5e30d6ee7729aa7041f1e1c2a8331"
+SRC_URI[md5sum] = "da3a2f68151839a815738e73734278ff"
+SRC_URI[sha256sum] = "3f00d45cb3c437a78937da33d0ab40f6bd524855b6eb5b5d7c56b5b37ef8164e"
 
 # Patch to be applied
 SRC_URI += " file://0001-TFLite-allow-BUILD_WITH_NNAPI-Makefile-variable-to-d.patch "
@@ -13,6 +13,9 @@ SRC_URI += " file://0002-TFLite-pip-package-use-local-BUILD_ROOT-directory.patch
 SRC_URI += " file://0003-TFLite-pip-package-support-cross-compiling-environme.patch "
 SRC_URI += " file://0004-TFLite-pip-package-fix-python-execution-issue.patch "
 SRC_URI += " file://0005-TFLite-pip-package-fix-_interpreter_wrapper.so-undef.patch "
+SRC_URI += " file://0006-TFLite-fix-eigen-dependency-download-issue.patch "
+SRC_URI += " file://0007-TFLite-fix-CFLAGS-for-cross-compiling.patch "
+SRC_URI += " file://0008-TFLite-add-flatbuffers-sources-file-to-the-build.patch "
 
 S = "${WORKDIR}/tensorflow-${PV}-${PR}"
 

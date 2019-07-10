@@ -7,7 +7,7 @@ Available images:
 ## Available frameworks and tools within the meta-layer
 [X-LINUX-AI-CV expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI-CV_OpenSTLinux_expansion_package):
 * OpenCV 3.4.x
-* TensorFlow Lite 2.0.0-alpha0
+* TensorFlow Lite 2.0.0-beta1
 * Python 3.5.x (enabling Pillow module)
 
 ## Further information (how to install, how to use, ...)
