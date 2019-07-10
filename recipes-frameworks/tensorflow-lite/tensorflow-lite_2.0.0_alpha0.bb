@@ -46,11 +46,14 @@ COMPATIBLE_HOST_armv6  = 'null'
 COMPATIBLE_HOST_aarch64_class-target = 'null'
 
 do_configure(){
-	export HTTP_PROXY=${http_proxy}
-	export HTTPS_PROXY=${https_proxy}
-	export http_proxy=${http_proxy}
-	export https_proxy=${https_proxy}
-
+	if [ -n "${http_proxy}" ]; then
+		export HTTP_PROXY=${http_proxy}
+		export http_proxy=${http_proxy}
+	fi
+	if [ -n "${https_proxy}" ]; then
+		export HTTPS_PROXY=${https_proxy}
+		export https_proxy=${https_proxy}
+	fi
 	# fix CURL certificates path
 	export CURL_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
 
