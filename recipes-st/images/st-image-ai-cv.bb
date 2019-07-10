@@ -1,4 +1,4 @@
-require ../../../meta-st-openstlinux/recipes-st/images/st-image-weston.bb
+require recipes-st/images/st-image-weston.bb
 
 SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on weston image"
 
