@@ -43,7 +43,6 @@ COMPATIBLE_HOST = "(arm.*).*-linux"
 COMPATIBLE_HOST_armv4  = 'null'
 COMPATIBLE_HOST_armv5  = 'null'
 COMPATIBLE_HOST_armv6  = 'null'
-COMPATIBLE_HOST_armv7a = 'null'
 COMPATIBLE_HOST_aarch64_class-target = 'null'
 
 do_configure(){
