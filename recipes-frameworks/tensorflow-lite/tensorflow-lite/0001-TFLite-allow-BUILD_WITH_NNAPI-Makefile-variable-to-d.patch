@@ -1,0 +1,31 @@
+From 6dfb0a848ee89802b7c29be3307316385bc62466 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Mon, 8 Apr 2019 11:51:58 +0200
+Subject: [PATCH 1/4] TFLite: allow BUILD_WITH_NNAPI Makefile variable to
+ disable NNAPI support
+
+In cross compiling environment, calling the Makefile with
+BUILD_WITH_NNAPI=flase will disable the support of NNAPI.
+This is requiered to support other Linux target than Rpi.
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/make/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/make/Makefile b/tensorflow/lite/tools/make/Makefile
+index 8428e0d..4f7027c 100644
+--- a/tensorflow/lite/tools/make/Makefile
++++ b/tensorflow/lite/tools/make/Makefile
+@@ -124,7 +124,7 @@ else
+ 	CORE_CC_EXCLUDE_SRCS += tensorflow/lite/mmap_allocation_disabled.cc
+ endif
+ 
+-BUILD_WITH_NNAPI=true
++BUILD_WITH_NNAPI:=true
+ ifeq ($(BUILD_TYPE),micro)
+ 	BUILD_WITH_NNAPI=false
+ endif
+-- 
+2.7.4
+

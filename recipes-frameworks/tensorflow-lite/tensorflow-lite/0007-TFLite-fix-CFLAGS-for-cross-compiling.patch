@@ -1,0 +1,25 @@
+From 64dce3048b09de0e1890810157e2cb359cc86cb6 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Mon, 8 Jul 2019 11:39:53 +0200
+Subject: [PATCH 1/1] TFLite: fix CFLAGS for cross compiling
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/make/Makefile | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/make/Makefile b/tensorflow/lite/tools/make/Makefile
+index 0e407bb..de7556f 100644
+--- a/tensorflow/lite/tools/make/Makefile
++++ b/tensorflow/lite/tools/make/Makefile
+@@ -59,7 +59,6 @@ CXXFLAGS := -O3 -DNDEBUG -fPIC
+ CXXFLAGS += $(EXTRA_CXXFLAGS)
+ CFLAGS := ${CXXFLAGS}
+ CXXFLAGS += --std=c++11
+-CFLAGS :=
+ LDOPTS := -L/usr/local/lib
+ ARFLAGS := -r
+ TARGET_TOOLCHAIN_PREFIX :=
+-- 
+2.7.4
+
