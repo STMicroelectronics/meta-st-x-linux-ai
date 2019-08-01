@@ -4,8 +4,12 @@ OpenEmbedded meta layer to install AI frameworks and tools for the STM32MP1.
 Available images:
 * st-image-ai-cv for Computer Vision
 
+## Compatibility
+Compatible with the following OpenSTLinux Distribution release:
+* openstlinux-4.19-thud-mp1-19-02-20
+
 ## Available frameworks and tools within the meta-layer
-[X-LINUX-AI-CV expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI-CV_OpenSTLinux_expansion_package):
+[X-LINUX-AI-CV v1.0.0 expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI-CV_OpenSTLinux_expansion_package):
 * TensorFlow Lite 2.0.0-beta1
 * OpenCV 3.4.x
 * Python 3.5.x (enabling Pillow module)
