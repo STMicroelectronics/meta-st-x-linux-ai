@@ -377,6 +377,8 @@ class MainUIWindow(Gtk.Window):
     def terminate(self):
         print("Main: termination")
         if self.enable_camera_preview:
+            if self.camera_not_started:
+                return
             self.preview_process_stop.value = True
         self.nn_process_stop.value = True
 
@@ -477,9 +479,11 @@ class MainUIWindow(Gtk.Window):
             self.total_time = 0
             self.preview_fps = 0
 
+            self.camera_not_started = True
             # initialize VideoFrameCapture object
             cap = VideoFrameCapture(int(args.video_device), float(args.frame_width), float(args.frame_height), float(args.framerate))
             shape = cap.get_frame_size()
+            self.camera_not_started = False
 
             # define shared variables
             self.shared_array_base = Array(ctypes.c_uint8, shape[0] * shape[1] * shape[2])
@@ -497,6 +501,7 @@ class MainUIWindow(Gtk.Window):
                                                  self.grabbing_fps,
                                                  self.preview_process_stop))
             # launch capture process
+            self.preview_process.daemon = True
             self.preview_process.start()
 
         # initialize NeuralNetwork object
@@ -527,6 +532,7 @@ class MainUIWindow(Gtk.Window):
                                         self.nn_synchro_event,
                                         self.nn_process_stop))
         # launch nn process
+        self.nn_process.daemon = True
         self.nn_process.start()
 
         # wait the nn process to start
@@ -590,9 +596,9 @@ if __name__ == '__main__':
         win.connect("destroy", destroy_window)
         win.show_all()
         thread = Thread(target =  win.main, args = (args,))
+        thread.daemon = True
         thread.start()
     except Exception as exc:
         print("Main Exception: ", exc )
 
     Gtk.main()
-    thread.join()
