@@ -61,9 +61,15 @@ def _load_image_eventBox(parent, filename, label_text0, label_text1, label_text2
     image = Gtk.Image.new_from_pixbuf(pixbuf)
 
     label = Gtk.Label()
-    label.set_markup("<span font='12' color='#39A9DCFF'>%s\n</span>"
-                     "<span font='12' color='#002052FF'>%s\n</span>"
-                     "<span font='12' color='#D4007AFF'>%s</span>" % (label_text0, label_text1, label_text2))
+    if scale_h == ICON_SIZE_SMALL:
+        label.set_markup("<span font='10' color='#39A9DCFF'>%s\n</span>"
+                         "<span font='10' color='#002052FF'>%s\n</span>"
+                         "<span font='8' color='#D4007AFF'>%s</span>" % (label_text0, label_text1, label_text2))
+    else:
+        label.set_markup("<span font='12' color='#39A9DCFF'>%s\n</span>"
+                         "<span font='12' color='#002052FF'>%s\n</span>"
+                         "<span font='10' color='#D4007AFF'>%s</span>" % (label_text0, label_text1, label_text2))
+
     label.set_justify(Gtk.Justification.CENTER)
     label.set_line_wrap(True)
 
@@ -142,14 +148,26 @@ def _load_image_on_button(parent, filename, label_text, scale_w, scale_h):
     label.show()
     return box
 
-def tfl_mobilenet_start():
+def tfl_mobilenet_python_start():
     cmd = ["%s/ai-cv/python/launch_python_label_tfl_mobilenet.sh" % DEMO_PATH]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     result = proc.stdout.read().decode('utf-8')
     return result
 
-def tfl_objdetect_start():
+def tfl_mobilenet_cpp_start():
+    cmd = ["%s/ai-cv/bin/launch_bin_label_tfl_mobilenet.sh" % DEMO_PATH]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = proc.stdout.read().decode('utf-8')
+    return result
+
+def tfl_objdetect_python_start():
     cmd = ["%s/ai-cv/python/launch_python_objdetect_tfl_coco_ssd_mobilenet.sh" % DEMO_PATH]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = proc.stdout.read().decode('utf-8')
+    return result
+
+def tfl_objdetect_cpp_start():
+    cmd = ["%s/ai-cv/bin/launch_bin_objdetect_tfl_coco_ssd_mobilenet.sh" % DEMO_PATH]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     result = proc.stdout.read().decode('utf-8')
     return result
@@ -239,35 +257,60 @@ class MainUIWindow(Gtk.Window):
         self.button_exit.hide()
         print("[highlight_eventBox stop]\n")
 
-    def tfl_mobilenet_event(self, widget, event):
-        print("[tfl_mobilenet_event start]")
+    def tfl_mobilenet_python_event(self, widget, event):
+        print("[tfl_mobilenet_python_event start]")
         if os.path.exists("/dev/video0"):
-            tfl_mobilenet_start()
+            tfl_mobilenet_python_start()
         else:
             print("[WARNING] camera not detected\n")
-            self.display_message("<span font='15' color='#FFFFFFFF'>Webcam is not connected:\n/dev/video0 doesn't exist\n</span>")
-        print("[tfl_mobilenet_event stop]\n")
+            self.display_message("<span font='15' color='#FFFFFFFF'>Camera is not connected:\n/dev/video0 doesn't exist\n</span>")
+        print("[tfl_mobilenet_python_event stop]\n")
         rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
         widget.override_background_color(0,rgba)
         self.button_exit.show()
 
-    def tfl_objdetect_event(self, widget, event):
-        print("[tfl_objdetect_event start]")
+    def tfl_mobilenet_cpp_event(self, widget, event):
+        print("[tfl_mobilenet_cpp_event start]")
         if os.path.exists("/dev/video0"):
-            tfl_objdetect_start()
+            tfl_mobilenet_cpp_start()
         else:
             print("[WARNING] camera not detected\n")
-            self.display_message("<span font='15' color='#FFFFFFFF'>Webcam is not connected:\n/dev/video0 doesn't exist\n</span>")
-        print("[tfl_objdetect_event stop]\n")
+            self.display_message("<span font='15' color='#FFFFFFFF'>Camera is not connected:\n/dev/video0 doesn't exist\n</span>")
+        print("[tfl_mobilenet_cpp_event stop]\n")
+        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
+        widget.override_background_color(0,rgba)
+        self.button_exit.show()
+
+    def tfl_objdetect_python_event(self, widget, event):
+        print("[tfl_objdetect_python_event start]")
+        if os.path.exists("/dev/video0"):
+            tfl_objdetect_python_start()
+        else:
+            print("[WARNING] camera not detected\n")
+            self.display_message("<span font='15' color='#FFFFFFFF'>Camera is not connected:\n/dev/video0 doesn't exist\n</span>")
+        print("[tfl_objdetect_python_event stop]\n")
+        rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
+        widget.override_background_color(0,rgba)
+        self.button_exit.show()
+
+    def tfl_objdetect_cpp_event(self, widget, event):
+        print("[tfl_objdetect_cpp_event start]")
+        if os.path.exists("/dev/video0"):
+            tfl_objdetect_cpp_start()
+        else:
+            print("[WARNING] camera not detected\n")
+            self.display_message("<span font='15' color='#FFFFFFFF'>Camera is not connected:\n/dev/video0 doesn't exist\n</span>")
+        print("[tfl_objdetect_cpp_event stop]\n")
         rgba = Gdk.RGBA(0.0, 0.0, 0.0, 0.0)
         widget.override_background_color(0,rgba)
         self.button_exit.show()
 
     def attach_icon_to_grid(self, eventBox):
+        #Considering a grid of 2x3
         if self.row <= 2:
             self.icon_grid.attach(eventBox, self.col, self.row, 1, 1)
             self.col = self.col + 1
-            if self.col > 2:
+            if self.col > 1: #if self.col > 2 for a 3x3 grid
                 self.row = self.row + 1
                 self.col = 0
 
@@ -291,16 +334,28 @@ class MainUIWindow(Gtk.Window):
         self.col = 0
         if os.path.isdir(DEMO_PATH+"/ai-cv"):
             # Button: tfl_mobilenet icon
-            eventBox_tfl_mobilenet = _load_image_eventBox(self, "%s/resources/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Mobilenet v1 (quant)", -1, self.icon_size)
-            eventBox_tfl_mobilenet.connect("button_release_event", self.tfl_mobilenet_event)
-            eventBox_tfl_mobilenet.connect("button_press_event", self.highlight_eventBox)
-            self.attach_icon_to_grid(eventBox_tfl_mobilenet)
+            eventBox_tfl_mobilenet_python = _load_image_eventBox(self, "%s/resources/TensorFlowLite_Python.png" % DEMO_PATH, "Computer Vision", "Image classification", "Mobilenet v1 (quant)", -1, self.icon_size)
+            eventBox_tfl_mobilenet_python.connect("button_release_event", self.tfl_mobilenet_python_event)
+            eventBox_tfl_mobilenet_python.connect("button_press_event", self.highlight_eventBox)
+            self.attach_icon_to_grid(eventBox_tfl_mobilenet_python)
 
-            # Button: tfl_ icon
-            eventBox_tfl_objdetect = _load_image_eventBox(self, "%s/resources/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Object detection (quant)", -1, self.icon_size)
-            eventBox_tfl_objdetect.connect("button_release_event", self.tfl_objdetect_event)
-            eventBox_tfl_objdetect.connect("button_press_event", self.highlight_eventBox)
-            self.attach_icon_to_grid(eventBox_tfl_objdetect)
+            # Button: tfl_mobilenet icon
+            eventBox_tfl_mobilenet_cpp = _load_image_eventBox(self, "%s/resources/TensorFlowLite_C++.png" % DEMO_PATH, "Computer Vision", "Image classification", "Mobilenet v1 (quant)", -1, self.icon_size)
+            eventBox_tfl_mobilenet_cpp.connect("button_release_event", self.tfl_mobilenet_cpp_event)
+            eventBox_tfl_mobilenet_cpp.connect("button_press_event", self.highlight_eventBox)
+            self.attach_icon_to_grid(eventBox_tfl_mobilenet_cpp)
+
+            # Button: tfl_objdetect icon
+            eventBox_tfl_objdetect_python = _load_image_eventBox(self, "%s/resources/TensorFlowLite_Python.png" % DEMO_PATH, "Computer Vision", "Object detection", "COCO SSD Mobilenet v1 (quant)", -1, self.icon_size)
+            eventBox_tfl_objdetect_python.connect("button_release_event", self.tfl_objdetect_python_event)
+            eventBox_tfl_objdetect_python.connect("button_press_event", self.highlight_eventBox)
+            self.attach_icon_to_grid(eventBox_tfl_objdetect_python)
+
+            # Button: tfl_objdetect icon
+            eventBox_tfl_objdetect_cpp = _load_image_eventBox(self, "%s/resources/TensorFlowLite_C++.png" % DEMO_PATH, "Computer Vision", "Object detection", "COCO SSD Mobilenet v1 (quant)", -1, self.icon_size)
+            eventBox_tfl_objdetect_cpp.connect("button_release_event", self.tfl_objdetect_cpp_event)
+            eventBox_tfl_objdetect_cpp.connect("button_press_event", self.highlight_eventBox)
+            self.attach_icon_to_grid(eventBox_tfl_objdetect_cpp)
 
         page_main.add(self.icon_grid)
 
