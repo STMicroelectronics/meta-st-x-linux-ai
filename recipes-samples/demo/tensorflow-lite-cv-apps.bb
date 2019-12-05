@@ -4,9 +4,14 @@ SUMMARY = "TensorFlowLite Computer Vision application examples"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
-DEPENDS += "tensorflow-lite"
+#inherit python3native
+inherit pkgconfig
 
-SRC_URI  = " file://python;subdir=${PN}-${PV} "
+DEPENDS += "tensorflow-lite-staticdev gtk+3 opencv gstreamer1.0 virtual/libgles2"
+
+SRC_URI  = " file://bin;subdir=${PN}-${PV} "
+SRC_URI += " file://python;subdir=${PN}-${PV} "
+SRC_URI += " file://resources;subdir=${PN}-${PV} "
 
 SRC_URI += " https://storage.googleapis.com/download.tensorflow.org/models/tflite/mobilenet_v1_1.0_224_quant_and_labels.zip;subdir=${PN}-${PV}/mobilenet_v1_1.0_224_quant;name=mobilenet_v1_1.0_224_quant "
 SRC_URI[mobilenet_v1_1.0_224_quant.md5sum] = "38ac0c626947875bd311ef96c8baab62"
@@ -23,20 +28,34 @@ SRC_URI[coco_ssd_mobilenet_v1_1.0_quant.sha256sum] = "a809cd290b4d6a2e8a9d5dad07
 S = "${WORKDIR}/${PN}-${PV}"
 
 do_configure[noexec] = "1"
-do_compile[noexec] = "1"
+
+EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
+
+do_compile() {
+    oe_runmake -C ${S}/bin
+}
 
 do_install() {
     install -d ${D}${prefix}/local/demo-ai/
     install -d ${D}${prefix}/local/demo-ai/ai-cv
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/bin
     install -d ${D}${prefix}/local/demo-ai/ai-cv/python
+    install -d ${D}${prefix}/local/demo-ai/ai-cv/resources
     install -d ${D}${prefix}/local/demo-ai/ai-cv/models
     install -d ${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet
     install -d ${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet/testdata
     install -d ${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/
     install -d ${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/testdata
 
-    # install python and launcher scripts
+    # install python scripts and launcher scripts
     install -m 0755 ${S}/python/*					${D}${prefix}/local/demo-ai/ai-cv/python
+
+    # install application binaries and launcher scripts
+    install -m 0755 ${S}/bin/*_gtk					${D}${prefix}/local/demo-ai/ai-cv/bin
+    install -m 0755 ${S}/bin/*.sh					${D}${prefix}/local/demo-ai/ai-cv/bin
+
+    # install the resources
+    install -m 0755 ${S}/resources/*					${D}${prefix}/local/demo-ai/ai-cv/resources
 
     # install mobilenet models
     install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/label*.txt		${D}${prefix}/local/demo-ai/ai-cv/models/mobilenet/labels.txt
@@ -54,5 +73,6 @@ do_install() {
 }
 
 FILES_${PN} += "${prefix}/local/demo-ai/ai-cv"
+INSANE_SKIP_${PN} = "ldflags"
 
 RDEPENDS_${PN} += "python3 python3-pygobject gtk+3"
