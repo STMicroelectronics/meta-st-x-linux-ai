@@ -80,13 +80,14 @@ do_compile () {
 do_install(){
 	# tensorflow-lite static lib for dev and examples
 	install -d ${D}${libdir}
-	install -d ${D}${includedir}/tensorflow_lite
+	install -d ${D}${includedir}/tensorflow
+	install -d ${D}${includedir}/tensorflow/lite
 	install -d ${D}${bindir}/${PN}-${PV}/examples
 
 	install -m install -m 0644 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/lib/* ${D}${libdir}
 
 	cd ${S}/tensorflow/lite
-	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow_lite
+	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/lite
 
 	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/minimal         ${D}${bindir}/${PN}-${PV}/examples
 	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/benchmark_model ${D}${bindir}/${PN}-${PV}/examples
@@ -120,3 +121,5 @@ FILES_${PN}-examples = " \
 FILES_${PN}-python3 = " \
 	${PYTHON_SITEPACKAGES_DIR}/tflite_runtime \
 "
+
+PROVIDES += "tensorflow-lite-staticdev"
