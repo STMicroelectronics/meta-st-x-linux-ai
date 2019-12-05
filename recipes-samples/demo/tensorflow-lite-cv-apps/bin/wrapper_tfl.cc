@@ -216,7 +216,7 @@ void TfLiteRunInference(TfL_Config* conf, TfL_Interpreter* interpreter, uint8_t*
 	}
 }
 
-void TfLiteGetResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Results* results)
+void TfLiteGetLabelResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Label_Results* results)
 {
 
 	const float threshold = 0.001f;
@@ -245,6 +245,34 @@ void TfLiteGetResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Result
 	}
 	results->inference_time = interpreter->inference_time;
 }
+
+void TfLiteGetObjDetectResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_ObjDetect_Results* results)
+{
+	// location
+	float *locations = interpreter->impl->typed_output_tensor<float>(0);
+	// classes
+	float *classes = interpreter->impl->typed_output_tensor<float>(1);
+	// score
+	float *scores = interpreter->impl->typed_output_tensor<float>(2);
+
+	// get the output size
+	int output = interpreter->impl->outputs()[2];
+	TfLiteIntArray* output_dims = interpreter->impl->tensor(output)->dims;
+	// assume output dims to be something like (1, 1, ... ,size)
+	auto output_size = output_dims->data[output_dims->size - 1];
+
+	// the outputs are already sort by descending order
+	for (int i = 0; i < output_size; i++) {
+		results->score[i]       = scores[i];
+		results->index[i]       = (int)classes[i];
+		results->location[i].y0 = locations[(i * 4) + 0];
+		results->location[i].x0 = locations[(i * 4) + 1];
+		results->location[i].y1 = locations[(i * 4) + 2];
+		results->location[i].x1 = locations[(i * 4) + 3];
+	}
+	results->inference_time = interpreter->inference_time;
+}
+
 
 // Takes a file name, and loads a list of labels from it, one per line, and
 // returns a vector of the strings. It pads with empty strings so the length
