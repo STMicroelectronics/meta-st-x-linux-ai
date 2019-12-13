@@ -225,6 +225,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 {
 	GdkWindow *window = gtk_widget_get_window(widget);
 	int window_width  = gdk_window_get_width(window);
+	int offset = 0;
 
 	if (data->preview_enabled) {
 		/* Camera preview use case */
@@ -321,8 +322,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	accuracy_sstr       << std::right  << std::setw(1) << "%";
 
 	std::stringstream label_sstr;
-	label_sstr          << std::left << std::setw(11) << "label:";
-	label_sstr          << std::left << std::setw(64) << labels[results.index[0]];
+	label_sstr          <<  labels[results.index[0]];
 
 	/* Draw the brain icon at the top left corner */
 	cairo_set_source_surface(cr, data->brain_icon, 5, 5);
@@ -345,8 +345,6 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 					std::max(data->frame_fullscreen_pos.x,
 						 BRAIN_AREA_WIDTH),
 					0);
-	} else {
-		cairo_translate(cr, BRAIN_AREA_WIDTH, 0);
 	}
 
 	/* Display inference result */
@@ -366,17 +364,35 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		cairo_show_text(cr, inference_time_sstr.str().c_str());
 		cairo_move_to(cr, 2, 80);
 		cairo_show_text(cr, accuracy_sstr.str().c_str());
-		cairo_move_to(cr, 2, 100);
-		cairo_show_text(cr, label_sstr.str().c_str());
+
+		/* Set the font size to display the label */
+		cairo_set_font_size (cr, 55);
+		offset = WESTON_PANEL_THICKNESS;
 	} else {
 		/* Still picture use case */
-		cairo_move_to(cr, 2, 20);
+		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 20);
 		cairo_show_text(cr, inference_time_sstr.str().c_str());
-		cairo_move_to(cr, 2, 40);
+		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 40);
 		cairo_show_text(cr, accuracy_sstr.str().c_str());
-		cairo_move_to(cr, 2, 60);
-		cairo_show_text(cr, label_sstr.str().c_str());
+
+		/* Translate coordinate to the preview area */
+		cairo_translate(cr,
+				data->frame_fullscreen_pos.x,
+				data->frame_fullscreen_pos.y);
+		/* Set the font size to display the label */
+		cairo_set_font_size (cr, 40);
+		offset = 0;
 	}
+
+	/* Display the label centered in the preview area */
+	cairo_text_extents_t extents;
+	double x, y;
+
+	cairo_text_extents(cr, label_sstr.str().c_str(), &extents);
+	x = (data->frame_fullscreen_pos.width / 2) - ((extents.width / 2) + extents.x_bearing);
+	y = data->frame_fullscreen_pos.height + (extents.y_bearing / 2) - offset;
+	cairo_move_to(cr, x, y);
+	cairo_show_text(cr, label_sstr.str().c_str());
 
 	return FALSE;
 }
