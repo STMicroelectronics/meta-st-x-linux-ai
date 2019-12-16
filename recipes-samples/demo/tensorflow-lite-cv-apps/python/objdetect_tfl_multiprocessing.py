@@ -25,7 +25,7 @@ from multiprocessing import Process, Event, Array, Value
 import cv2
 
 from PIL import Image, ImageDraw
-import tflite_runtime as tflr
+import tflite_runtime.interpreter as tflr
 
 from timeit import default_timer as timer
 
@@ -112,7 +112,7 @@ class NeuralNetwork:
         self._input_std = input_std
         self._floating_model = False
 
-        self._interpreter = tflr.lite.Interpreter(self._model_file)
+        self._interpreter = tflr.Interpreter(self._model_file)
 
         self._input_details = self._interpreter.get_input_details()
         self._output_details = self._interpreter.get_output_details()
@@ -134,7 +134,7 @@ class NeuralNetwork:
                 self._input_std, self._floating_model, \
                 self._input_details, self._output_details, self._labels = state
 
-        self._interpreter = tflr.lite.Interpreter(self._model_file)
+        self._interpreter = tflr.Interpreter(self._model_file)
         self._interpreter.allocate_tensors()
 
     def get_labels(self):

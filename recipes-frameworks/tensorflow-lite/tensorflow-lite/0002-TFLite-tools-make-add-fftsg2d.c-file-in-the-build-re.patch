@@ -1,0 +1,31 @@
+From f0bb8e8abdd7d42e2c3d4bdd86c00554d4150ea0 Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Mon, 16 Dec 2019 11:05:32 +0100
+Subject: [PATCH 1/1] TFLite: tools: make: add fftsg2d.c file in the build
+ resources for libtensorflow-lite.a
+
+Without add of fftsg2d.c in libtensorflow-lite.a, a C/C++ application
+that use the libtensorflow-lite.a static library is not able to link
+with the following error:
+rfft2d.cc:(.text+0x594): undefined reference to `rdft2d'
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/make/Makefile | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tensorflow/lite/tools/make/Makefile b/tensorflow/lite/tools/make/Makefile
+index 73c50d3..91cc5c9 100644
+--- a/tensorflow/lite/tools/make/Makefile
++++ b/tensorflow/lite/tools/make/Makefile
+@@ -122,6 +122,7 @@ $(wildcard tensorflow/lite/kernels/internal/reference/*.cc) \
+ $(PROFILER_SRCS) \
+ tensorflow/lite/tools/make/downloads/farmhash/src/farmhash.cc \
+ tensorflow/lite/tools/make/downloads/fft2d/fftsg.c \
++tensorflow/lite/tools/make/downloads/fft2d/fftsg2d.c \
+ tensorflow/lite/tools/make/downloads/flatbuffers/src/util.cpp
+ endif
+ # Remove any duplicates.
+-- 
+2.7.4
+
