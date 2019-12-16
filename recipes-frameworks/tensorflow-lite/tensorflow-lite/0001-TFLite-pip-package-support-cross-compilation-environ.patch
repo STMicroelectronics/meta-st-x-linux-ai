@@ -1,0 +1,70 @@
+From 78a30b0c4073afe411f928e5f8da71e769d925ff Mon Sep 17 00:00:00 2001
+From: Vincent Abriou <vincent.abriou@st.com>
+Date: Mon, 16 Dec 2019 09:44:07 +0100
+Subject: [PATCH 1/1] TFLite: pip package: support cross compilation
+ environment variables
+
+Add build environment variable to allow to cross compile TensorFlow Lite
+pip package for other platform than Rpi or X86.
+
+Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/pip_package/build_pip_package.sh |  8 +++++++-
+ tensorflow/lite/tools/pip_package/setup.py             | 15 +++++++++++++++
+ 2 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/pip_package/build_pip_package.sh b/tensorflow/lite/tools/pip_package/build_pip_package.sh
+index 1cb3866..500e7c0 100755
+--- a/tensorflow/lite/tools/pip_package/build_pip_package.sh
++++ b/tensorflow/lite/tools/pip_package/build_pip_package.sh
+@@ -27,7 +27,11 @@ export TENSORFLOW_VERSION=`grep "_VERSION = " "${TENSORFLOW_SRC_ROOT}/tensorflow
+ TFLITE_ROOT="${TENSORFLOW_SRC_ROOT}/tensorflow/lite"
+ 
+ # Build a pip build tree.
+-BUILD_ROOT="/tmp/tflite_pip/${PYTHON}"
++if [[ "${TENSORFLOW_CROSS_COMPILATION}" == "true" ]]; then
++  BUILD_ROOT="`dirname $0`/gen/tflite_pip"
++else
++  BUILD_ROOT="/tmp/tflite_pip/${PYTHON}"
++fi
+ rm -rf "${BUILD_ROOT}"
+ mkdir -p "${BUILD_ROOT}/tflite_runtime/"
+ 
+@@ -45,6 +49,8 @@ if [[ "${TENSORFLOW_TARGET}" == "rpi" ]]; then
+   ${PYTHON} setup.py bdist_wheel --plat-name=linux-armv7l
+ elif [[ "${TENSORFLOW_TARGET}" == "aarch64" ]]; then
+   ${PYTHON} setup.py bdist_wheel --plat-name=linux-aarch64
++elif [ -n "${TENSORFLOW_TARGET}" ] && [ -n "${TENSORFLOW_TARGET_ARCH}" ]; then
++  ${PYTHON} setup.py bdist_wheel --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH}
+ else
+   ${PYTHON} setup.py bdist_wheel
+ fi
+diff --git a/tensorflow/lite/tools/pip_package/setup.py b/tensorflow/lite/tools/pip_package/setup.py
+index 632506b..b94cb5a 100644
+--- a/tensorflow/lite/tools/pip_package/setup.py
++++ b/tensorflow/lite/tools/pip_package/setup.py
+@@ -50,6 +50,21 @@ elif TARGET == 'aarch64':
+   os.environ['CC'] = 'aarch64-linux-gnu-gcc'
+ MAKE_CROSS_OPTIONS = ['TARGET=%s' % TARGET]  if TARGET else []
+ 
++TARGET_ARCH = (
++    os.environ['TENSORFLOW_TARGET_ARCH'] if 'TENSORFLOW_TARGET_ARCH' in os.environ
++    else None)
++MAKE_CROSS_OPTIONS += ['TARGET_ARCH=%s' % TARGET_ARCH]  if TARGET_ARCH else []
++
++CC_PREFIX = (
++    os.environ['TENSORFLOW_CC_PREFIX'] if 'TENSORFLOW_CC_PREFIX' in os.environ
++    else None)
++MAKE_CROSS_OPTIONS += ['CC_PREFIX=%s' % CC_PREFIX]  if CC_PREFIX else []
++
++EXTRA_CXXFLAGS = (
++    os.environ['TENSORFLOW_EXTRA_CXXFLAGS'] if 'TENSORFLOW_EXTRA_CXXFLAGS' in os.environ
++    else None)
++MAKE_CROSS_OPTIONS += ['EXTRA_CXXFLAGS=%s' % EXTRA_CXXFLAGS]  if EXTRA_CXXFLAGS else []
++
+ RELATIVE_MAKE_DIR = os.path.join('tensorflow', 'lite', 'tools', 'make')
+ MAKE_DIR = os.path.join(TENSORFLOW_DIR, RELATIVE_MAKE_DIR)
+ DOWNLOADS_DIR = os.path.join(MAKE_DIR, 'downloads')
+-- 
+2.7.4
+
