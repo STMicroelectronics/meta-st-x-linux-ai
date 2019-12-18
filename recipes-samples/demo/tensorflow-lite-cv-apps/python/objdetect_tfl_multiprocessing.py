@@ -622,7 +622,7 @@ if __name__ == '__main__':
     parser.add_argument("-v", "--video_device", default=0, help="video device (default /dev/video0)")
     parser.add_argument("--frame_width", default=320, help="width of the camera frame (default is 320)")
     parser.add_argument("--frame_height", default=240, help="height of the camera frame (default is 240)")
-    parser.add_argument("--framerate", default=30, help="framerate of the camera (default is 30fps)")
+    parser.add_argument("--framerate", default=15, help="framerate of the camera (default is 15fps)")
     parser.add_argument("-m", "--model_file", default="", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="", help="name of file containing labels")
     parser.add_argument("--input_mean", default=127.5, help="input mean")
