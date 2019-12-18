@@ -172,13 +172,11 @@ class NeuralNetwork:
 def camera_streaming(cap,
                      preview_frame,
                      synchro_event,
-                     grabbing_fps,
-                     finished):
+                     grabbing_fps):
     """
-    Function keeps capturing frames until finished = 1
+    Function keeps capturing frames until process is killed (terminated)
     :param preview_frame: shared numpy array for multiprocessing
     :param synchro_event: used to synchronize parent and child process
-    :param finished: synchronized wrapper for int
     :return: nothing
     """
 
@@ -202,8 +200,8 @@ def camera_streaming(cap,
     print("camera_streaming process started")
     synchro_event.set()
 
-    # capture frame until we get finished flag set to True
-    while not finished.value:
+    # capture frame in a infinite loop
+    while True:
         #compute preview FPS
         loop_stop = timer();
         loop_time = loop_stop - loop_start
@@ -229,15 +227,13 @@ def nn_processing(nn,
                   locations,
                   classes,
                   scores,
-                  synchro_event,
-                  finished):
+                  synchro_event):
     """
-    Function execute nn processing as fast as it can until finished = 1
+    Function keeps capturing frames until process is killed (terminated)
     :param nn_image: shared numpy array for multiprocessing
     :param nn_processing_start: variable to warn that NN processing can start
     :param nn_processing_finished: varialbe to warn NN processing is finished
     :param synchro_event: used to synchronize parent and child process
-    :param finished: synchronized wrapper for int
     :return: nothing
     """
 
@@ -257,8 +253,8 @@ def nn_processing(nn,
     print("nn_processing process started")
     synchro_event.set()
 
-    # enter the while loop until we get finished flag set to True
-    while not finished.value:
+    # enter the infinite while loop
+    while True:
         if nn_processing_start.value == True:
             nn_processing_start.value = False
 
@@ -404,13 +400,8 @@ class MainUIWindow(Gtk.Window):
         if self.enable_camera_preview:
             if self.camera_not_started:
                 return
-            self.preview_process_stop.value = True
-        self.nn_process_stop.value = True
-
-        # Terminate working processes
-        if self.enable_camera_preview:
-            self.preview_process.join()
-        self.nn_process.join()
+            self.preview_process.terminate()
+        self.nn_process.terminate()
 
     # get random file in a directory
     def getRandomFile(self, path):
@@ -510,7 +501,6 @@ class MainUIWindow(Gtk.Window):
             self.shared_array_base = Array(ctypes.c_uint8, shape[0] * shape[1] * shape[2])
             self.frame = np.ctypeslib.as_array(self.shared_array_base.get_obj())
             self.frame = self.frame.reshape(shape[0], shape[1], shape[2])
-            self.preview_process_stop = Value('i', 0)
             self.grabbing_fps = Value('f', 0.0)
 
             # start processes which run in parallel
@@ -519,8 +509,7 @@ class MainUIWindow(Gtk.Window):
                                            args=(cap,
                                                  self.shared_array_base,
                                                  self.preview_synchro_event,
-                                                 self.grabbing_fps,
-                                                 self.preview_process_stop))
+                                                 self.grabbing_fps))
             # launch capture process
             self.preview_process.daemon = True
             self.preview_process.start()
@@ -535,7 +524,6 @@ class MainUIWindow(Gtk.Window):
         self.nn_img_shared_array = Array(ctypes.c_uint8, shape[0] * shape[1] * shape[2])
         self.nn_img = np.ctypeslib.as_array(self.nn_img_shared_array.get_obj())
         self.nn_img = self.nn_img.reshape(shape[0], shape[1], shape[2])
-        self.nn_process_stop = Value('i', 0)
         self.nn_inference_time = Value('f', 0)
 
         self.nn_result_locations_shared_array = Array(ctypes.c_float, 1 * 10 * 4)
@@ -561,8 +549,7 @@ class MainUIWindow(Gtk.Window):
                                         self.nn_result_locations_shared_array,
                                         self.nn_result_classes_shared_array,
                                         self.nn_result_scores_shared_array,
-                                        self.nn_synchro_event,
-                                        self.nn_process_stop))
+                                        self.nn_synchro_event))
         # launch nn process
         self.nn_process.daemon = True
         self.nn_process.start()
