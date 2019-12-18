@@ -309,7 +309,7 @@ class MainUIWindow(Gtk.Window):
         else:
             self.enable_camera_preview = False
 
-        #self.maximize()
+        self.maximize()
         self.screen_width = self.get_screen().get_width()
         self.screen_height = self.get_screen().get_height()
 
