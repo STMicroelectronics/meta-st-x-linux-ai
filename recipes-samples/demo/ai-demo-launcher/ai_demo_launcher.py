@@ -170,12 +170,21 @@ class MainUIWindow(Gtk.Window):
             self.screen_width = self.get_screen().get_width()
             self.screen_height = self.get_screen().get_height()
 
-        if self.screen_width == 720:
-            self.icon_size = ICON_SIZE_BIG
-            self.board_name = "Evaluation board"
-        else:
-            self.icon_size = ICON_SIZE_SMALL
+        # initialize small icon (it will be updated according to the board used
+        # and the display resolution if HDMI is connected.
+        self.icon_size = ICON_SIZE_SMALL
+
+        model = open("/proc/device-tree/model", "r").read()
+        if "Discovery" in model:
             self.board_name = "Discovery kit"
+        elif "Avenger" in model:
+            self.board_name = "Avenger96 board"
+        else:
+            self.board_name = "Evaluation board"
+            self.icon_size = ICON_SIZE_BIG
+
+        if self.screen_width >= 1280:
+            self.icon_size = ICON_SIZE_BIG
 
         self.set_default_size(self.screen_width, self.screen_height)
         print("[DEBUG] screen size: %dx%d" % (self.screen_width, self.screen_height))
