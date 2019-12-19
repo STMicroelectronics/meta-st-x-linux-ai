@@ -9,6 +9,7 @@ SRC_URI[sha256sum] = "49b5f0495cd681cbcb5296a4476853d4aea19a43bdd9f179c928a97730
 
 # Patch to be applied
 SRC_URI += " file://0001-TFLite-pip-package-support-cross-compilation-environ.patch "
+SRC_URI += " file://0002-TFLite-tools-make-add-fftsg2d.c-file-in-the-build-re.patch "
 
 S = "${WORKDIR}/tensorflow-${PV}"
 
