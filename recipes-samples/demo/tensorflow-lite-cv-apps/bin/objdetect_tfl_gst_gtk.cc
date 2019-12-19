@@ -1,8 +1,8 @@
 /*
- * label_tfl_gst_gtk.cc
+ * objdetect_tfl_gst_gtk.cc
  *
- * This application demonstrate a computer vision use case for image
- * classification where frames are grabbed from a camera input (/dev/videox) and
+ * This application demonstrate a computer vision use case for object
+ * detection where frames are grabbed from a camera input (/dev/videox) and
  * analyzed by a neural network model interpreted by TensorFlow Lite framework.
  *
  * Gstreamer pipeline is used to stream camera frames (using v4l2src), to
@@ -66,7 +66,7 @@ float input_std = 127.5f;
 /* TensorFlow Lite variables */
 struct tflite::wrapper_tfl::TfL_Config config;
 struct tflite::wrapper_tfl::TfL_Interpreter* interpreter;
-struct tflite::wrapper_tfl::TfL_Label_Results results;
+struct tflite::wrapper_tfl::TfL_ObjDetect_Results results;
 std::vector<std::string> labels;
 
 /* Synchronization variables */
@@ -117,7 +117,7 @@ static void nn_inference(uint8_t *img)
 {
 	tflite::wrapper_tfl::TfLiteRunInference(&config, interpreter, img);
 
-	tflite::wrapper_tfl::TfLiteGetLabelResults(&config, interpreter, &results);
+	tflite::wrapper_tfl::TfLiteGetObjDetectResults(&config, interpreter, &results);
 }
 
 /**
@@ -315,15 +315,6 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << results.inference_time;
 	inference_time_sstr << std::right << std::setw(2) << "ms";
 
-	std::stringstream accuracy_sstr;
-	accuracy_sstr       << std::left  << std::setw(11) << "accuracy:";
-	accuracy_sstr       << std::right << std::setw(5) << std::fixed << std::setprecision(1) << results.accuracy[0] * 100;
-	accuracy_sstr       << std::right  << std::setw(1) << "%";
-
-	std::stringstream label_sstr;
-	label_sstr          << std::left << std::setw(11) << "label:";
-	label_sstr          << std::left << std::setw(64) << labels[results.index[0]];
-
 	/* Draw the brain icon at the top left corner */
 	cairo_set_source_surface(cr, data->brain_icon, 5, 5);
 	cairo_paint(cr);
@@ -364,18 +355,53 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		cairo_show_text(cr, inference_fps_sstr.str().c_str());
 		cairo_move_to(cr, 2, 60);
 		cairo_show_text(cr, inference_time_sstr.str().c_str());
-		cairo_move_to(cr, 2, 80);
-		cairo_show_text(cr, accuracy_sstr.str().c_str());
-		cairo_move_to(cr, 2, 100);
-		cairo_show_text(cr, label_sstr.str().c_str());
 	} else {
 		/* Still picture use case */
-		cairo_move_to(cr, 2, 20);
+		cairo_move_to(cr, 2, 30);
 		cairo_show_text(cr, inference_time_sstr.str().c_str());
-		cairo_move_to(cr, 2, 40);
-		cairo_show_text(cr, accuracy_sstr.str().c_str());
-		cairo_move_to(cr, 2, 60);
-		cairo_show_text(cr, label_sstr.str().c_str());
+	}
+
+	/* Draw bounding box of the 5 first detected object if the score is
+	 * above 50% */
+	if (!data->preview_enabled) {
+		/* Translate to the frame position */
+		cairo_translate(cr,
+				data->frame_fullscreen_pos.x - BRAIN_AREA_WIDTH,
+				data->frame_fullscreen_pos.y);
+	}
+
+	for (int i = 0; i < 5 ; i++) {
+		switch (i) {
+		case 0:
+			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+			break;
+		case 1:
+			cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
+			break;
+		case 2:
+			cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+			break;
+		case 3:
+			cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
+			break;
+		case 4:
+			cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
+			break;
+		default:
+			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+		}
+		if (results.score[i] > 0.5) {
+			std::stringstream info_sstr;
+			info_sstr << labels[results.index[i]] << " " << std::fixed << std::setprecision(1) << results.score[0] * 100 << "%";
+			float x      = data->frame_fullscreen_pos.width  * results.location[i].x0;
+			float y      = data->frame_fullscreen_pos.height * results.location[i].y0;
+			float width  = data->frame_fullscreen_pos.width  * (results.location[i].x1 - results.location[i].x0);
+			float height = data->frame_fullscreen_pos.height * (results.location[i].y1 - results.location[i].y0);
+			cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+			cairo_stroke(cr);
+			cairo_move_to(cr, int(x) + 2, int(y) + 22);
+			cairo_show_text(cr, info_sstr.str().c_str());
+		}
 	}
 
 	return FALSE;

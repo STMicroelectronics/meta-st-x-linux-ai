@@ -55,12 +55,22 @@ struct TfL_Interpreter {
 	float inference_time;
 };
 
-struct TfL_Results {
+struct TfL_Label_Results {
 	float accuracy[10];
 	int index[10];
 	float inference_time;
 };
 
+struct Tfl_ObjDetect_Location {
+	float y0, x0, y1, x1;
+};
+
+struct TfL_ObjDetect_Results {
+	float score[10];
+	int index[10];
+	struct Tfl_ObjDetect_Location location[10];
+	float inference_time;
+};
 
 int TfLiteGetInputWidth(TfL_Interpreter* interpreter);
 int TfLiteGetInputHeight(TfL_Interpreter* interpreter);
@@ -68,7 +78,8 @@ int TfLiteGetInputChannels(TfL_Interpreter* interpreter);
 void TfLiteDisplayModelInformation(TfL_Interpreter* interpreter);
 TfL_Interpreter* TfLiteInitInterpreter(TfL_Config* conf);
 void TfLiteRunInference(TfL_Config* conf, TfL_Interpreter* interpreter, uint8_t* img);
-void TfLiteGetResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Results* results);
+void TfLiteGetLabelResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Label_Results* results);
+void TfLiteGetObjDetectResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_ObjDetect_Results* results);
 TfLiteStatus ReadLabelsFile(const string& file_name,
 			    std::vector<std::string>* result,
 			    size_t* found_label_count);
