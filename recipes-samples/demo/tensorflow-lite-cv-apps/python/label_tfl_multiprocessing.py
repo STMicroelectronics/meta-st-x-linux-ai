@@ -214,7 +214,7 @@ def camera_streaming(cap,
         loop_time = loop_stop - loop_start
         loop_start = loop_stop
         total_time = total_time + loop_time
-        if loop_count==50:
+        if loop_count==15:
             grabbing_fps.value = loop_count / total_time
             loop_count = 0
             total_time = 0
@@ -233,7 +233,8 @@ def nn_processing(nn,
                   inference_time,
                   accuracy,
                   label,
-                  synchro_event):
+                  synchro_event,
+                  inference_fps):
     """
     Function keeps capturing frames until process is killed (terminated)
     :param nn_image: shared numpy array for multiprocessing
@@ -242,6 +243,12 @@ def nn_processing(nn,
     :param synchro_event: used to synchronize parent and child process
     :return: nothing
     """
+
+    #variable to compute inference framerate
+    loop_count = 1
+    loop_time = 0
+    loop_start = 0
+    total_time = 0
 
     shape = nn.get_img_size()
 
@@ -253,6 +260,17 @@ def nn_processing(nn,
     while True:
         if nn_processing_start.value == True:
             nn_processing_start.value = False
+
+            #compute inference FPS
+            loop_stop = timer();
+            loop_time = loop_stop - loop_start
+            loop_start = loop_stop
+            total_time = total_time + loop_time
+            if loop_count==5:
+                inference_fps.value = loop_count / total_time
+                loop_count = 0
+                total_time = 0
+            loop_count = loop_count + 1
 
             # define shared variables
             nn_img = np.ctypeslib.as_array(nn_image.get_obj())
@@ -326,22 +344,23 @@ class MainUIWindow(Gtk.Window):
         self.progressbar.pulse()
         return True
 
-    def update_label_preview(self, label, accuracy, inference_time, display_fps, grab_fps):
+    def update_label_preview(self, label, accuracy, inference_time, display_fps, grab_fps, inference_fps):
         str_accuracy = str("{0:.0f}".format(accuracy))
         str_inference_time = str("{0:0.1f}".format(inference_time))
         str_display_fps = str("{0:.1f}".format(display_fps))
         str_grab_fps = str("{0:.1f}".format(grab_fps))
+        str_inference_fps = str("{0:.1f}".format(inference_fps))
 
         self.progressbar.show()
         self.progressbar.set_show_text(True)
         self.progressbar.set_fraction(accuracy / 100)
 
-        self.label.set_markup("<span font='10' color='#002052FF'><b>display  @%sfps\n</b></span>"
-                              "<span font='10' color='#002052FF'><b>grabbing @%sfps\n\n\n</b></span>"
+        self.label.set_markup("<span font='10' color='#002052FF'><b>display   @%sfps\n</b></span>"
+                              "<span font='10' color='#002052FF'><b>inference @%sfps\n\n\n</b></span>"
                               "<span font='15' color='#002052FF'><b>inference time: %sms\n</b></span>"
                               "<span font='15' color='#002052FF'><b>accuracy:       %s&#37;\n\n</b></span>"
                               "<span font='15' color='#002052FF'><b>%s</b></span>"
-                              % (str_display_fps, str_grab_fps, str_inference_time, str_accuracy, label))
+                              % (str_grab_fps, str_inference_fps, str_inference_time, str_accuracy, label))
 
     def update_label_still(self, label, accuracy, inference_time):
         str_accuracy = str("{0:.2f}".format(accuracy))
@@ -408,7 +427,7 @@ class MainUIWindow(Gtk.Window):
         self.loop_time = loop_stop - self.loop_start
         self.loop_start = loop_stop
         self.total_time = self.total_time + self.loop_time
-        if self.loop_count==50:
+        if self.loop_count==15:
             self.preview_fps = self.loop_count / self.total_time
             self.loop_count = 0
             self.total_time = 0
@@ -419,10 +438,11 @@ class MainUIWindow(Gtk.Window):
         label = labels[self.nn_result_label.value]
         accuracy = self.nn_result_accuracy.value * 100
         inference_time = self.nn_inference_time.value * 1000
+        inference_fps = self.nn_inference_fps.value
         display_fps = self.preview_fps
         grab_fps = self.grabbing_fps.value
 
-        self.update_label_preview(str(label), accuracy, inference_time, display_fps, grab_fps)
+        self.update_label_preview(str(label), accuracy, inference_time, display_fps, grab_fps, inference_fps)
 
         # update the preview frame
         self.update_frame(frame_crop_RGB)
@@ -504,6 +524,7 @@ class MainUIWindow(Gtk.Window):
         self.nn_img = np.ctypeslib.as_array(self.nn_img_shared_array.get_obj())
         self.nn_img = self.nn_img.reshape(shape[0], shape[1], shape[2])
         self.nn_inference_time = Value('f', 0)
+        self.nn_inference_fps = Value('f', 0.0)
         self.nn_result_accuracy = Value('f', 0.0)
         self.nn_result_label = Value('i', 0)
 
@@ -517,7 +538,8 @@ class MainUIWindow(Gtk.Window):
                                         self.nn_inference_time,
                                         self.nn_result_accuracy,
                                         self.nn_result_label,
-                                        self.nn_synchro_event))
+                                        self.nn_synchro_event,
+                                        self.nn_inference_fps))
         # launch nn process
         self.nn_process.daemon = True
         self.nn_process.start()
