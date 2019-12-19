@@ -17,3 +17,5 @@ IMAGE_AI_PART = "   \
 CORE_IMAGE_EXTRA_INSTALL += " \
     ${IMAGE_AI_PART}          \
 "
+
+CORE_IMAGE_EXTRA_INSTALL_append_stm32mp1-av96 = " av96-root-files "
