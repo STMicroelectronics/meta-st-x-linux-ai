@@ -281,7 +281,7 @@ class MainUIWindow(Gtk.Window):
         self.icon_grid.set_row_spacing(20)
 
         # STM32MP1 Logo and info area
-        logo_info_area = _load_image_Box(self, "%s/media/ST11249_Module_STM32MP1_alpha.png" % DEMO_PATH, "%s/media/ST7079_AI_neural_white.png" % DEMO_PATH, self.board_name, -1, 160)
+        logo_info_area = _load_image_Box(self, "%s/resources/ST11249_Module_STM32MP1_alpha.png" % DEMO_PATH, "%s/resources/ST7079_AI_neural_white.png" % DEMO_PATH, self.board_name, -1, 160)
         rgba = Gdk.RGBA(0.31, 0.32, 0.31, 1.0)
         logo_info_area.override_background_color(0,rgba)
 
@@ -291,13 +291,13 @@ class MainUIWindow(Gtk.Window):
         self.col = 0
         if os.path.isdir(DEMO_PATH+"/ai-cv"):
             # Button: tfl_mobilenet icon
-            eventBox_tfl_mobilenet = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Mobilenet v1 (quant)", -1, self.icon_size)
+            eventBox_tfl_mobilenet = _load_image_eventBox(self, "%s/resources/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Mobilenet v1 (quant)", -1, self.icon_size)
             eventBox_tfl_mobilenet.connect("button_release_event", self.tfl_mobilenet_event)
             eventBox_tfl_mobilenet.connect("button_press_event", self.highlight_eventBox)
             self.attach_icon_to_grid(eventBox_tfl_mobilenet)
 
             # Button: tfl_ icon
-            eventBox_tfl_objdetect = _load_image_eventBox(self, "%s/media/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Object detection (quant)", -1, self.icon_size)
+            eventBox_tfl_objdetect = _load_image_eventBox(self, "%s/resources/TensorFlowLogo.png" % DEMO_PATH, "Computer Vision", "TensorFlow Lite", "Object detection (quant)", -1, self.icon_size)
             eventBox_tfl_objdetect.connect("button_release_event", self.tfl_objdetect_event)
             eventBox_tfl_objdetect.connect("button_press_event", self.highlight_eventBox)
             self.attach_icon_to_grid(eventBox_tfl_objdetect)
@@ -308,7 +308,7 @@ class MainUIWindow(Gtk.Window):
         overlay.add(page_main)
         self.button_exit = Gtk.Button()
         self.button_exit.connect("clicked", Gtk.main_quit)
-        self.button_exit_image = _load_image_on_button(self, "%s/media/close_70x70_white.png" % DEMO_PATH, "Exit", -1, 50)
+        self.button_exit_image = _load_image_on_button(self, "%s/resources/close_70x70_white.png" % DEMO_PATH, "Exit", -1, 50)
         self.button_exit.set_halign(Gtk.Align.END)
         self.button_exit.set_valign(Gtk.Align.START)
         self.button_exit.add(self.button_exit_image)

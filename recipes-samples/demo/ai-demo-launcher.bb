@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;m
 SRC_URI = " \
     file://ai_demo_launcher.py \
     file://start_up_ai_demo_launcher.sh \
-    file://media \
+    file://resources \
     "
 
 do_configure[noexec] = "1"
@@ -15,9 +15,9 @@ do_compile[noexec] = "1"
 
 do_install() {
     install -d ${D}${prefix}/local/demo-ai/
-    install -d ${D}${prefix}/local/demo-ai/media
+    install -d ${D}${prefix}/local/demo-ai/resources
     install -m 0755 ${WORKDIR}/ai_demo_launcher.py ${D}${prefix}/local/demo-ai/
-    install -m 0644 ${WORKDIR}/media/* ${D}${prefix}/local/demo-ai/media/
+    install -m 0644 ${WORKDIR}/resources/* ${D}${prefix}/local/demo-ai/resources/
 
     # start at startup
     install -d ${D}${prefix}/local/weston-start-at-startup/
