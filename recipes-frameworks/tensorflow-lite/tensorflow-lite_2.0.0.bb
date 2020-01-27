@@ -3,7 +3,7 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
 
-SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz "
+SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz;downloadfilename=tensorflow-lite-v${PV}.tar.gz "
 SRC_URI[md5sum] = "86319b28bc9d0dc07685e09fcc79172e"
 SRC_URI[sha256sum] = "49b5f0495cd681cbcb5296a4476853d4aea19a43bdd9f179c928a977308a0617"
 
