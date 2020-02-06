@@ -1,7 +1,7 @@
-From 4c4ccb817d4180982c3d01460e42c3e4c3b25381 Mon Sep 17 00:00:00 2001
+From 6fc5d182f175eaabcf7cfbf545bbb645ff50d2ea Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
-Date: Mon, 16 Dec 2019 09:44:07 +0100
-Subject: [PATCH 1/1] TFLite: pip package: support cross compilation
+Date: Fri, 3 Jan 2020 14:33:40 +0100
+Subject: [PATCH 6/6] TFLite: pip package: support cross compilation
  environment variables
 
 Add build environment variable to allow to cross compile TensorFlow Lite
@@ -9,38 +9,43 @@ pip package for other platform than Rpi or X86.
 
 Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
 ---
- .../lite/tools/pip_package/build_pip_package.sh   |  8 +++++++-
+ .../lite/tools/pip_package/build_pip_package.sh   | 13 +++++++++++--
  tensorflow/lite/tools/pip_package/setup.py        | 15 +++++++++++++++
- 2 files changed, 22 insertions(+), 1 deletion(-)
+ 2 files changed, 26 insertions(+), 2 deletions(-)
 
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package.sh b/tensorflow/lite/tools/pip_package/build_pip_package.sh
-index 8a3cb661ad..e2593dc399 100755
+index 488945cdf5..c01125cfcc 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package.sh
-@@ -27,7 +27,11 @@ export TENSORFLOW_VERSION=`grep "_VERSION = " "${TENSORFLOW_SRC_ROOT}/tensorflow
- TFLITE_ROOT="${TENSORFLOW_SRC_ROOT}/tensorflow/lite"
- 
- # Build a pip build tree.
--BUILD_ROOT="/tmp/tflite_pip/${PYTHON}"
+@@ -23,7 +23,11 @@ export TENSORFLOW_DIR="${SCRIPT_DIR}/../../../.."
+ TENSORFLOW_LITE_DIR="${TENSORFLOW_DIR}/tensorflow/lite"
+ TENSORFLOW_VERSION=$(grep "_VERSION = " "${TENSORFLOW_DIR}/tensorflow/tools/pip_package/setup.py" | cut -d= -f2 | sed "s/[ '-]//g")
+ export PACKAGE_VERSION="${TENSORFLOW_VERSION}${VERSION_SUFFIX}"
+-BUILD_DIR="/tmp/tflite_pip/${PYTHON}"
 +if [ "${TENSORFLOW_CROSS_COMPILATION}" = "true" ]; then
-+  BUILD_ROOT="${SCRIPT_DIR}/gen/tflite_pip"
++  BUILD_DIR="`dirname $0`/gen/tflite_pip"
 +else
-+  BUILD_ROOT="/tmp/tflite_pip/${PYTHON}"
++  BUILD_DIR="/tmp/tflite_pip/${PYTHON}"
 +fi
- rm -rf "${BUILD_ROOT}"
- mkdir -p "${BUILD_ROOT}/tflite_runtime/"
  
-@@ -45,6 +49,8 @@ if [ "${TENSORFLOW_TARGET}" = "rpi" ]; then
-   ${PYTHON} setup.py bdist_wheel --plat-name=linux-armv7l
- elif [ "${TENSORFLOW_TARGET}" = "aarch64" ]; then
-   ${PYTHON} setup.py bdist_wheel --plat-name=linux-aarch64
-+elif [ -n "${TENSORFLOW_TARGET}" ] && [ -n "${TENSORFLOW_TARGET_ARCH}" ]; then
-+  ${PYTHON} setup.py bdist_wheel --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH}
- else
-   ${PYTHON} setup.py bdist_wheel
- fi
+ # Build source tree.
+ rm -rf "${BUILD_DIR}" && mkdir -p "${BUILD_DIR}/tflite_runtime"
+@@ -49,7 +53,12 @@ case "${TENSORFLOW_TARGET}" in
+                        bdist_wheel --plat-name=linux-aarch64
+     ;;
+   *)
+-    ${PYTHON} setup.py bdist bdist_wheel
++    if [ -n "${TENSORFLOW_TARGET}" ] && [ -n "${TENSORFLOW_TARGET_ARCH}" ]; then
++      ${PYTHON} setup.py bdist --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH} \
++                         bdist_wheel --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH}
++    else
++      ${PYTHON} setup.py bdist bdist_wheel
++    fi
+     ;;
+ esac
+ 
 diff --git a/tensorflow/lite/tools/pip_package/setup.py b/tensorflow/lite/tools/pip_package/setup.py
-index 632506bf66..b94cb5ab0c 100644
+index 90416b77bc..598612daad 100644
 --- a/tensorflow/lite/tools/pip_package/setup.py
 +++ b/tensorflow/lite/tools/pip_package/setup.py
 @@ -50,6 +50,21 @@ elif TARGET == 'aarch64':
