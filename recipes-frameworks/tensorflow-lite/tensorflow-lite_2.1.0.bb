@@ -4,13 +4,16 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
 
 SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz;downloadfilename=tensorflow-lite-v${PV}.tar.gz "
-SRC_URI[md5sum] = "86319b28bc9d0dc07685e09fcc79172e"
-SRC_URI[sha256sum] = "49b5f0495cd681cbcb5296a4476853d4aea19a43bdd9f179c928a977308a0617"
+SRC_URI[md5sum] = "269414a50b46bb676a0ef9e611839528"
+SRC_URI[sha256sum] = "638e541a4981f52c69da4a311815f1e7989bf1d67a41d204511966e1daed14f7"
 
 # Patch to be applied
-SRC_URI += " file://0001-TFLite-pip-package-avoid-bashism-in-build-pip-packag.patch "
-SRC_URI += " file://0002-TFLite-tools-make-add-fftsg2d.c-file-in-the-build-re.patch "
-SRC_URI += " file://0003-TFLite-pip-package-support-cross-compilation-environ.patch "
+SRC_URI += " file://0001-TFLite-fix-eigen-url-in-download_dependencies.sh-scr.patch "
+SRC_URI += " file://0002-TFLite-pip-package-avoid-bashism-in-build-pip-packag.patch "
+SRC_URI += " file://0003-TFLite-tools-make-remove-hash-and-flags-files-from-t.patch "
+SRC_URI += " file://0004-TFLite-tools-make-add-fftsg2d.c-file-in-the-build-re.patch "
+SRC_URI += " file://0005-TFLite-tools-make-remove-ruy-tune_tool.cc-from-the-b.patch "
+SRC_URI += " file://0006-TFLite-pip-package-support-cross-compilation-environ.patch "
 
 S = "${WORKDIR}/tensorflow-${PV}"
 
