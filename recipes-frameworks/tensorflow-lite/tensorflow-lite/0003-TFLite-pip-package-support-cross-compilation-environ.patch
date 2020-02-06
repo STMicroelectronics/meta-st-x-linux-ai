@@ -1,4 +1,4 @@
-From 78a30b0c4073afe411f928e5f8da71e769d925ff Mon Sep 17 00:00:00 2001
+From 4c4ccb817d4180982c3d01460e42c3e4c3b25381 Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
 Date: Mon, 16 Dec 2019 09:44:07 +0100
 Subject: [PATCH 1/1] TFLite: pip package: support cross compilation
@@ -9,12 +9,12 @@ pip package for other platform than Rpi or X86.
 
 Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
 ---
- tensorflow/lite/tools/pip_package/build_pip_package.sh |  8 +++++++-
- tensorflow/lite/tools/pip_package/setup.py             | 15 +++++++++++++++
+ .../lite/tools/pip_package/build_pip_package.sh   |  8 +++++++-
+ tensorflow/lite/tools/pip_package/setup.py        | 15 +++++++++++++++
  2 files changed, 22 insertions(+), 1 deletion(-)
 
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package.sh b/tensorflow/lite/tools/pip_package/build_pip_package.sh
-index 1cb3866..500e7c0 100755
+index 8a3cb661ad..e2593dc399 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package.sh
 @@ -27,7 +27,11 @@ export TENSORFLOW_VERSION=`grep "_VERSION = " "${TENSORFLOW_SRC_ROOT}/tensorflow
@@ -22,17 +22,17 @@ index 1cb3866..500e7c0 100755
  
  # Build a pip build tree.
 -BUILD_ROOT="/tmp/tflite_pip/${PYTHON}"
-+if [[ "${TENSORFLOW_CROSS_COMPILATION}" == "true" ]]; then
-+  BUILD_ROOT="`dirname $0`/gen/tflite_pip"
++if [ "${TENSORFLOW_CROSS_COMPILATION}" = "true" ]; then
++  BUILD_ROOT="${SCRIPT_DIR}/gen/tflite_pip"
 +else
 +  BUILD_ROOT="/tmp/tflite_pip/${PYTHON}"
 +fi
  rm -rf "${BUILD_ROOT}"
  mkdir -p "${BUILD_ROOT}/tflite_runtime/"
  
-@@ -45,6 +49,8 @@ if [[ "${TENSORFLOW_TARGET}" == "rpi" ]]; then
+@@ -45,6 +49,8 @@ if [ "${TENSORFLOW_TARGET}" = "rpi" ]; then
    ${PYTHON} setup.py bdist_wheel --plat-name=linux-armv7l
- elif [[ "${TENSORFLOW_TARGET}" == "aarch64" ]]; then
+ elif [ "${TENSORFLOW_TARGET}" = "aarch64" ]; then
    ${PYTHON} setup.py bdist_wheel --plat-name=linux-aarch64
 +elif [ -n "${TENSORFLOW_TARGET}" ] && [ -n "${TENSORFLOW_TARGET_ARCH}" ]; then
 +  ${PYTHON} setup.py bdist_wheel --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH}
@@ -40,7 +40,7 @@ index 1cb3866..500e7c0 100755
    ${PYTHON} setup.py bdist_wheel
  fi
 diff --git a/tensorflow/lite/tools/pip_package/setup.py b/tensorflow/lite/tools/pip_package/setup.py
-index 632506b..b94cb5a 100644
+index 632506bf66..b94cb5ab0c 100644
 --- a/tensorflow/lite/tools/pip_package/setup.py
 +++ b/tensorflow/lite/tools/pip_package/setup.py
 @@ -50,6 +50,21 @@ elif TARGET == 'aarch64':
@@ -66,5 +66,5 @@ index 632506b..b94cb5a 100644
  MAKE_DIR = os.path.join(TENSORFLOW_DIR, RELATIVE_MAKE_DIR)
  DOWNLOADS_DIR = os.path.join(MAKE_DIR, 'downloads')
 -- 
-2.7.4
+2.17.1
 
