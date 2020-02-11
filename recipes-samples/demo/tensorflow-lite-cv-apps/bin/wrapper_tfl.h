@@ -27,7 +27,6 @@ limitations under the License.
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 #include "tensorflow/lite/profiling/profiler.h"
-#include "tensorflow/lite/string.h"
 
 namespace tflite {
 namespace wrapper_tfl {
