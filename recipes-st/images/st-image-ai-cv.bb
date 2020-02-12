@@ -6,8 +6,9 @@ IMAGE_AI_PART = "   \
     opencv \
     python3-pip \
     python3-runpy \
-    tensorflow-lite-python3 \
+    python3-tensorflow-lite \
     tensorflow-lite-examples \
+    tensorflow-lite-cv-apps \
     libcxx \
 "
 
