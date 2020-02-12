@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;m
 #inherit python3native
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite-staticdev gtk+3 opencv gstreamer1.0 virtual/libgles2"
+DEPENDS += "tensorflow-lite-staticdev gtk+3 opencv gstreamer1.0"
 
 SRC_URI  = " file://bin;subdir=${PN}-${PV} "
 SRC_URI += " file://python;subdir=${PN}-${PV} "
@@ -75,4 +75,4 @@ do_install() {
 FILES_${PN} += "${prefix}/local/demo-ai/ai-cv"
 INSANE_SKIP_${PN} = "ldflags"
 
-RDEPENDS_${PN} += "python3 python3-pygobject gtk+3"
+RDEPENDS_${PN} += "python3 python3-pygobject python3-tensorflow-lite gtk+3"

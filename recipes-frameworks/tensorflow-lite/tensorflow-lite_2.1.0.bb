@@ -19,7 +19,7 @@ S = "${WORKDIR}/tensorflow-${PV}"
 
 inherit setuptools3
 
-PACKAGES += "${PN}-examples ${PN}-python3"
+PACKAGES += "${PN}-examples python3-${PN}"
 
 DEPENDS = " \
 	coreutils-native \
@@ -111,8 +111,9 @@ FILES_${PN}-examples = " \
 	${bindir}/${PN}-${PV}/examples/benchmark_model \
 "
 
-FILES_${PN}-python3 = " \
+FILES_python3-${PN} = " \
 	${PYTHON_SITEPACKAGES_DIR}/tflite_runtime \
 "
 
 PROVIDES += "tensorflow-lite-staticdev"
+PROVIDES += "python3-tensorflow-lite"
