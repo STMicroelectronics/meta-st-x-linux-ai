@@ -1,7 +1,7 @@
-From 6fc5d182f175eaabcf7cfbf545bbb645ff50d2ea Mon Sep 17 00:00:00 2001
+From 9a9a3406eaf6e623057f445ec823b1e2545438d6 Mon Sep 17 00:00:00 2001
 From: Vincent Abriou <vincent.abriou@st.com>
 Date: Fri, 3 Jan 2020 14:33:40 +0100
-Subject: [PATCH 6/6] TFLite: pip package: support cross compilation
+Subject: [PATCH 5/5] TFLite: pip package: support cross compilation
  environment variables
 
 Add build environment variable to allow to cross compile TensorFlow Lite
@@ -14,7 +14,7 @@ Signed-off-by: Vincent Abriou <vincent.abriou@st.com>
  2 files changed, 26 insertions(+), 2 deletions(-)
 
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package.sh b/tensorflow/lite/tools/pip_package/build_pip_package.sh
-index 488945cdf5..c01125cfcc 100755
+index df5423e411..60b2448e32 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package.sh
 @@ -23,7 +23,11 @@ export TENSORFLOW_DIR="${SCRIPT_DIR}/../../../.."
@@ -22,8 +22,8 @@ index 488945cdf5..c01125cfcc 100755
  TENSORFLOW_VERSION=$(grep "_VERSION = " "${TENSORFLOW_DIR}/tensorflow/tools/pip_package/setup.py" | cut -d= -f2 | sed "s/[ '-]//g")
  export PACKAGE_VERSION="${TENSORFLOW_VERSION}${VERSION_SUFFIX}"
 -BUILD_DIR="/tmp/tflite_pip/${PYTHON}"
-+if [ "${TENSORFLOW_CROSS_COMPILATION}" = "true" ]; then
-+  BUILD_DIR="`dirname $0`/gen/tflite_pip"
++if [[ "${TENSORFLOW_CROSS_COMPILATION}" == "true" ]]; then
++  BUILD_DIR="${SCRIPT_DIR}/gen/tflite_pip"
 +else
 +  BUILD_DIR="/tmp/tflite_pip/${PYTHON}"
 +fi
@@ -35,7 +35,7 @@ index 488945cdf5..c01125cfcc 100755
      ;;
    *)
 -    ${PYTHON} setup.py bdist bdist_wheel
-+    if [ -n "${TENSORFLOW_TARGET}" ] && [ -n "${TENSORFLOW_TARGET_ARCH}" ]; then
++    if [[ -n "${TENSORFLOW_TARGET}" ]] && [[ -n "${TENSORFLOW_TARGET_ARCH}" ]]; then
 +      ${PYTHON} setup.py bdist --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH} \
 +                         bdist_wheel --plat-name=${TENSORFLOW_TARGET}-${TENSORFLOW_TARGET_ARCH}
 +    else

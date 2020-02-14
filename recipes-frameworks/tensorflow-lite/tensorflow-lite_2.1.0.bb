@@ -9,11 +9,10 @@ SRC_URI[sha256sum] = "638e541a4981f52c69da4a311815f1e7989bf1d67a41d204511966e1da
 
 # Patch to be applied
 SRC_URI += " file://0001-TFLite-fix-eigen-url-in-download_dependencies.sh-scr.patch "
-SRC_URI += " file://0002-TFLite-pip-package-avoid-bashism-in-build-pip-packag.patch "
-SRC_URI += " file://0003-TFLite-tools-make-remove-hash-and-flags-files-from-t.patch "
-SRC_URI += " file://0004-TFLite-tools-make-add-fftsg2d.c-file-in-the-build-re.patch "
-SRC_URI += " file://0005-TFLite-tools-make-remove-ruy-tune_tool.cc-from-the-b.patch "
-SRC_URI += " file://0006-TFLite-pip-package-support-cross-compilation-environ.patch "
+SRC_URI += " file://0002-TFLite-tools-make-remove-hash-and-flags-files-from-t.patch "
+SRC_URI += " file://0003-TFLite-tools-make-add-fftsg2d.c-file-in-the-build-re.patch "
+SRC_URI += " file://0004-TFLite-tools-make-remove-ruy-tune_tool.cc-from-the-b.patch "
+SRC_URI += " file://0005-TFLite-pip-package-support-cross-compilation-environ.patch "
 
 S = "${WORKDIR}/tensorflow-${PV}"
 
@@ -70,9 +69,8 @@ do_compile () {
 	export TENSORFLOW_TARGET_ARCH=${TENSORFLOW_TARGET_ARCH}
 	export TENSORFLOW_CC_PREFIX=${CCACHE}${HOST_PREFIX}
 	export TENSORFLOW_EXTRA_CXXFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"
-	#export TENSORFLOW_BUILD_WITH_NNAPI=false
 
-	sh ${S}/tensorflow/lite/tools/pip_package/build_pip_package.sh
+	bash ${S}/tensorflow/lite/tools/pip_package/build_pip_package.sh
 }
 
 do_install(){
