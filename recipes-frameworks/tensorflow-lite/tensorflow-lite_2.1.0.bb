@@ -32,7 +32,8 @@ DEPENDS = " \
 	zlib \
 "
 
-RDEPENDS_${PN}-python3 += " \
+#Mark numpy and pillow python modules as dependencies to ease TFLite python script developement
+RDEPENDS_python3-${PN} += " \
 	python3-numpy \
 	python3-pillow \
 "
