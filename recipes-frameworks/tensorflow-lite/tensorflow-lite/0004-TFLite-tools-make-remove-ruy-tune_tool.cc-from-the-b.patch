@@ -1,7 +1,7 @@
-From bdd19e2f7b2f226b7bdcd1f6cd1a4fe50427aa99 Mon Sep 17 00:00:00 2001
+From f34833b97b106efd536ef7e6bb6295e89e45ed15 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 11 Feb 2020 14:39:16 +0100
-Subject: [PATCH 5/6] TFLite: tools: make: remove ruy tune_tool.cc from the
+Subject: [PATCH 4/5] TFLite: tools: make: remove ruy tune_tool.cc from the
  build sources for libtensorflow-lite.a
 
 The tune_tool.cc file should not be part of the libtensorflow-lite.a.

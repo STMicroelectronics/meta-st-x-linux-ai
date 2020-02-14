@@ -1,7 +1,7 @@
-From 09287e8e9504347c99513211dc0182ce173d4483 Mon Sep 17 00:00:00 2001
+From a7297adf0282f5236dc9096beca998a582cf5341 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Mon, 10 Feb 2020 11:46:28 +0100
-Subject: [PATCH 3/6] TFLite: tools: make: remove hash and flags files from the
+Subject: [PATCH 2/5] TFLite: tools: make: remove hash and flags files from the
  build sources for libtensorflow-lite.a
 
 By a file dependency game, hashtablez_sampler.cc and flags files include

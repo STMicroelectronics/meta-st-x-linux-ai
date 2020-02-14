@@ -1,7 +1,7 @@
-From cb5f0329dd730dd6d86165ba9d2fd3e75c06c945 Mon Sep 17 00:00:00 2001
+From 19578b3e98e153901351d6732a10523a39e7c8ad Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 11 Feb 2020 10:06:13 +0100
-Subject: [PATCH 4/6] TFLite: tools: make: add fftsg2d.c file in the build
+Subject: [PATCH 3/5] TFLite: tools: make: add fftsg2d.c file in the build
  resources for libtensorflow-lite.a
 
 lite/kernels/rfft2d.cc has reference to rdft2d.
