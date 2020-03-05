@@ -65,12 +65,12 @@ TENSORFLOW_TARGET="${@bb.utils.contains('TARGET_OS', 'linux-gnueabi', 'linux', '
 TENSORFLOW_TARGET_ARCH_armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'armv7ve', 'armv7l', '', d)}"
 
 do_compile () {
-	export TENSORFLOW_CROSS_COMPILATION="true"
 	export TENSORFLOW_TARGET=${TENSORFLOW_TARGET}
 	export TENSORFLOW_TARGET_ARCH=${TENSORFLOW_TARGET_ARCH}
 	export TENSORFLOW_CC_PREFIX=${CCACHE}${HOST_PREFIX}
 	export TENSORFLOW_EXTRA_CXXFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"
 
+	unset PYTHON
 	bash ${S}/tensorflow/lite/tools/pip_package/build_pip_package.sh
 }
 
@@ -92,7 +92,7 @@ do_install(){
 	# tensorflow-lite python3 interpreter
 	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 
-	install -m 0644 ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/build/lib.*/tflite_runtime/*                     ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
+	install -m 0644 ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/build/lib.*/tflite_runtime/*             ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 }
 
 ALLOW_EMPTY_${PN} = "1"
