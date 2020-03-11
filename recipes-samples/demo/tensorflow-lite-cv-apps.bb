@@ -1,10 +1,8 @@
 # Copyright (C) 2019, STMicroelectronics - All Rights Reserved
-
 SUMMARY = "TensorFlowLite Computer Vision application examples"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
-#inherit python3native
 inherit pkgconfig
 
 DEPENDS += "tensorflow-lite-staticdev gtk+3 opencv gstreamer1.0"
@@ -72,7 +70,23 @@ do_install() {
     install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/*.tflite	${D}${prefix}/local/demo-ai/ai-cv/models/coco_ssd_mobilenet/
 }
 
+PACKAGES_remove = "${PN}-dev"
+RDEPENDS_${PN}-staticdev = ""
+
 FILES_${PN} += "${prefix}/local/demo-ai/ai-cv"
 INSANE_SKIP_${PN} = "ldflags"
 
-RDEPENDS_${PN} += "python3 python3-pygobject python3-tensorflow-lite gtk+3"
+RDEPENDS_${PN} += " \
+	gstreamer1.0 \
+	gtk+3 \
+	python3 \
+	python3-pygobject \
+	python3-tensorflow-lite \
+	python3-opencv \
+	python3-numpy \
+	python3-pillow \
+	python3-multiprocessing \
+	python3-threading \
+	python3-ctypes \
+	opencv \
+"
