@@ -18,8 +18,6 @@ S = "${WORKDIR}/tensorflow-${PV}"
 
 inherit setuptools3
 
-PACKAGES += "${PN}-examples python3-${PN}"
-
 DEPENDS = " \
 	coreutils-native \
 	curl-native \
@@ -30,12 +28,6 @@ DEPENDS = " \
 	python3-numpy-native \
 	python3 \
 	zlib \
-"
-
-#Mark numpy and pillow python modules as dependencies to ease TFLite python script developement
-RDEPENDS_python3-${PN} += " \
-	python3-numpy \
-	python3-pillow \
 "
 
 #Recipe only tested with armv7ve
@@ -79,15 +71,15 @@ do_install(){
 	install -d ${D}${libdir}
 	install -d ${D}${includedir}/tensorflow
 	install -d ${D}${includedir}/tensorflow/lite
-	install -d ${D}${bindir}/${PN}-${PV}/examples
+	install -d ${D}${bindir}/${PN}-${PV}/tools
 
 	install -m install -m 0644 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/lib/* ${D}${libdir}
 
 	cd ${S}/tensorflow/lite
 	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/lite
 
-	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/minimal         ${D}${bindir}/${PN}-${PV}/examples
-	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/benchmark_model ${D}${bindir}/${PN}-${PV}/examples
+	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/minimal         ${D}${bindir}/${PN}-${PV}/tools
+	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/benchmark_model ${D}${bindir}/${PN}-${PV}/tools
 
 	# tensorflow-lite python3 interpreter
 	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
@@ -95,24 +87,15 @@ do_install(){
 	install -m 0644 ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/build/lib.*/tflite_runtime/*             ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 }
 
-ALLOW_EMPTY_${PN} = "1"
+PACKAGES_remove = "${PN}"
+RDEPENDS_${PN}-dev = ""
 
-FILES_${PN} = ""
+PACKAGES += "${PN}-tools python3-${PN}"
 
-FILES_${PN}-staticdev = " \
-	${includedir} \
-	${libdir}/*.a \
-"
+FILES_${PN}-tools = "${bindir}/${PN} ${bindir}/${PN}-${PV}/tools/*"
 
-FILES_${PN}-examples = " \
-	${bindir}/${PN} \
-	${bindir}/${PN}-${PV}/examples/minimal \
-	${bindir}/${PN}-${PV}/examples/benchmark_model \
-"
+FILES_python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
 
-FILES_python3-${PN} = " \
-	${PYTHON_SITEPACKAGES_DIR}/tflite_runtime \
-"
+RDEPENDS_python3-${PN} += " python3-ctypes python3-numpy "
 
-PROVIDES += "tensorflow-lite-staticdev"
-PROVIDES += "python3-tensorflow-lite"
+PROVIDES += " tensorflow-lite-staticdev python3-tensorflow-lite "
