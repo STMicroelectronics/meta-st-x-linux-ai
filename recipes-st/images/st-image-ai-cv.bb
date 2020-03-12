@@ -8,7 +8,6 @@ IMAGE_AI_PART = "   \
     python3-runpy \
     python3-tensorflow-lite \
     tensorflow-lite-tools \
-    tensorflow-lite-cv-apps \
     libcxx \
 "
 
