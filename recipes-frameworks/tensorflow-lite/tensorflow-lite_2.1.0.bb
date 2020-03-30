@@ -1,9 +1,12 @@
-DESCRIPTION = "TensorFlow Lite Python interpreter and C++ Library"
+DESCRIPTION = "TensorFlow Lite is an open source deep learning framework for \
+on-device inference."
+SUMMARY = "TensorFlow Lite Python interpreter and C++ Library"
+HOMEPAGE = "https://www.tensorflow.org/lite"
 LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
 
-SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz;downloadfilename=tensorflow-lite-v${PV}.tar.gz "
+SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz;downloadfilename=tensorflow-v${PV}.tar.gz "
 SRC_URI[md5sum] = "269414a50b46bb676a0ef9e611839528"
 SRC_URI[sha256sum] = "638e541a4981f52c69da4a311815f1e7989bf1d67a41d204511966e1daed14f7"
 
