@@ -5,6 +5,10 @@ SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on
 IMAGE_AI_PART = "   \
     python3-tensorflow-lite \
     tensorflow-lite-tools \
+    armnn \
+    armnn-tools \
+    armnn-tensorflow-lite \
+    armnn-tensorflow-lite-examples \
 "
 
 #
