@@ -416,10 +416,10 @@ static void gui_create(CustomData *data)
 	GtkWidget *drawing_area;
 
 	if (data->preview_enabled)
-		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/object-detection/resources/ST7079_AI_neural_pink_65x55.png");
+		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-object-detection/resources/ST7079_AI_neural_pink_65x55.png");
 	else
-		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/object-detection/resources/ST7079_AI_neural_pink_65x80_next_inference.png");
-	data->exit_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/object-detection/resources/close_50x50_pink.png");
+		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-object-detection/resources/ST7079_AI_neural_pink_65x80_next_inference.png");
+	data->exit_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-object-detection/resources/close_50x50_pink.png");
 
 	/* Create the window */
 	data->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);

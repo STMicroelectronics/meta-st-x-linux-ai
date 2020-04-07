@@ -1,7 +1,7 @@
 # Copyright (C) 2019, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite Computer Vision image classification application examples"
 LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
 inherit pkgconfig
 
@@ -22,10 +22,6 @@ SRC_URI += " file://applications/python/launch_python_objdetect_tfl_coco_ssd_mob
 SRC_URI += " file://applications/python/launch_python_objdetect_tfl_coco_ssd_mobilenet_testdata.sh;subdir=${PN}-${PV} "
 SRC_URI += " file://applications/resources;subdir=${PN}-${PV} "
 
-SRC_URI += " http://storage.googleapis.com/download.tensorflow.org/models/tflite/coco_ssd_mobilenet_v1_1.0_quant_2018_06_29.zip;subdir=${PN}-${PV}/coco_ssd_mobilenet_v1_1.0_quant;name=coco_ssd_mobilenet_v1_1.0_quant "
-SRC_URI[coco_ssd_mobilenet_v1_1.0_quant.md5sum] = "3764f289165250252d2323d718c04d83"
-SRC_URI[coco_ssd_mobilenet_v1_1.0_quant.sha256sum] = "a809cd290b4d6a2e8a9d5dad076e0bd695b8091974e0eed1052b480b2f21b6dc"
-
 S = "${WORKDIR}/${PN}-${PV}"
 
 do_configure[noexec] = "1"
@@ -41,37 +37,25 @@ do_install() {
     install -d ${D}${prefix}/local/demo/application
     install -d ${D}${prefix}/local/demo-ai
     install -d ${D}${prefix}/local/demo-ai/computer-vision/
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/bin
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/python
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/resources
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/models
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/models/coco_ssd_mobilenet
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/object-detection/models/coco_ssd_mobilenet/testdata
+    install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/
+    install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin
+    install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/python
+    install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/resources
 
     # install applications into the demo launcher
     install -m 0755 ${S}/*.yaml							${D}${prefix}/local/demo/application
     # install the icons for the demo launcher
-    install -m 0755 ${S}/resources/*						${D}${prefix}/local/demo-ai/computer-vision/object-detection/resources
+    install -m 0755 ${S}/resources/*						${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/resources
 
     # install python scripts and launcher scripts
-    install -m 0755 ${S}/applications/python/*					${D}${prefix}/local/demo-ai/computer-vision/object-detection/python
+    install -m 0755 ${S}/applications/python/*					${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/python
 
     # install application binaries and launcher scripts
-    install -m 0755 ${S}/applications/bin/*_gtk					${D}${prefix}/local/demo-ai/computer-vision/object-detection/bin
-    install -m 0755 ${S}/applications/bin/*.sh					${D}${prefix}/local/demo-ai/computer-vision/object-detection/bin
+    install -m 0755 ${S}/applications/bin/*_gtk					${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin
+    install -m 0755 ${S}/applications/bin/*.sh					${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin
 
     # install the resources
-    install -m 0755 ${S}/applications/resources/*				${D}${prefix}/local/demo-ai/computer-vision/object-detection/resources
-
-    # install coco ssd mobilenet model
-    # label file of the coco ssd mobilenet may be wrong, patch it before installation
-    if [ "$(sed -n '/^???/p;q'  ${S}/coco_ssd_mobilenet_v1_1.0_quant/label*.txt)" = "???" ]; then
-	# if the first line match '???' string, remove it
-	sed -i '1d' ${S}/coco_ssd_mobilenet_v1_1.0_quant/label*.txt
-    fi;
-    install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/label*.txt		${D}${prefix}/local/demo-ai/computer-vision/object-detection/models/coco_ssd_mobilenet/labels.txt
-    install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/*.tflite		${D}${prefix}/local/demo-ai/computer-vision/object-detection/models/coco_ssd_mobilenet/
+    install -m 0755 ${S}/applications/resources/*				${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/resources
 }
 
 PACKAGES_remove = "${PN}-dev"
@@ -94,4 +78,5 @@ RDEPENDS_${PN} += " \
 	python3-threading \
 	python3-ctypes \
 	opencv \
+	tflite-models-coco-ssd-mobilenetv1 \
 "
