@@ -1,7 +1,7 @@
 Application:
     Name: Image Classification
     Description: Mobilenet v1
-    Icon: ../demo-ai/computer-vision/image-classification/resources/TensorFlowLite_C++.png
+    Icon: ../demo-ai/computer-vision/tflite-image-classification/resources/TensorFlowLite_C++.png
     Board:
         List: all
     Type: script
@@ -9,7 +9,7 @@ Application:
         Exist:
             File: /dev/video0
             Msg_false: Camera is not connected (/dev/video0 doesn't exist)
-        Start: ../demo-ai/computer-vision/image-classification/bin/launch_bin_label_tfl_mobilenet.sh
+        Start: ../demo-ai/computer-vision/tflite-image-classification/bin/launch_bin_label_tfl_mobilenet.sh
     Action:
         button_release_event: script_management
         button_press_event: highlight_eventBox
