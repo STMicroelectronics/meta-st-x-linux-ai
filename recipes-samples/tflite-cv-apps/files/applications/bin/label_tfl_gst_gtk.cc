@@ -50,7 +50,6 @@
 
 #include "wrapper_tfl.h"
 
-
 /* Application parameters */
 std::vector<std::string> dir_files;
 std::string image_dir_str;
@@ -64,9 +63,9 @@ float input_mean = 127.5f;
 float input_std = 127.5f;
 
 /* TensorFlow Lite variables */
-struct tflite::wrapper_tfl::TfL_Config config;
-struct tflite::wrapper_tfl::TfL_Interpreter* interpreter;
-struct tflite::wrapper_tfl::TfL_Label_Results results;
+struct tflite::wrapper_tfl::Config config;
+struct tflite::wrapper_tfl::Interpreter* interpreter;
+struct tflite::wrapper_tfl::Label_Results results;
 std::vector<std::string> labels;
 
 /* Synchronization variables */
@@ -115,9 +114,9 @@ gdouble nn_avg_fps = 0;
  */
 static void nn_inference(uint8_t *img)
 {
-	tflite::wrapper_tfl::TfLiteRunInference(&config, interpreter, img);
+	tflite::wrapper_tfl::RunInference(&config, interpreter, img);
 
-	tflite::wrapper_tfl::TfLiteGetLabelResults(&config, interpreter, &results);
+	tflite::wrapper_tfl::GetLabelResults(&config, interpreter, &results);
 }
 
 /**
@@ -850,14 +849,14 @@ int main(int argc, char *argv[])
 	config.model_name = model_file_str;
 	config.labels_file_name = labels_file_str;
 
-	interpreter = tflite::wrapper_tfl::TfLiteInitInterpreter(&config);
+	interpreter = tflite::wrapper_tfl::InitInterpreter(&config);
 
 	if (tflite::wrapper_tfl::ReadLabelsFile(config.labels_file_name, &labels, &label_count) != kTfLiteOk)
 		exit(0);
 
 	/* Get model input size */
-	data.nn_input_width = TfLiteGetInputWidth(interpreter);
-	data.nn_input_height = TfLiteGetInputHeight(interpreter);
+	data.nn_input_width = tflite::wrapper_tfl::GetInputWidth(interpreter);
+	data.nn_input_height = tflite::wrapper_tfl::GetInputHeight(interpreter);
 
 	/* Initialize GTK */
 	gtk_init(&argc, &argv);

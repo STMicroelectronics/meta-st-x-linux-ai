@@ -55,21 +55,21 @@ void PrintProfilingInfo(const profiling::ProfileEvent* e, uint32_t op_index,
 		<< "\n";
 }
 
-int TfLiteGetInputWidth(TfL_Interpreter* interpreter)
+int GetInputWidth(Interpreter* interpreter)
 {
 	int input = interpreter->impl->inputs()[0];
 	TfLiteIntArray* input_dims = interpreter->impl->tensor(input)->dims;
 	return input_dims->data[2];
 }
 
-int TfLiteGetInputHeight(TfL_Interpreter* interpreter)
+int GetInputHeight(Interpreter* interpreter)
 {
 	int input = interpreter->impl->inputs()[0];
 	TfLiteIntArray* input_dims = interpreter->impl->tensor(input)->dims;
 	return input_dims->data[1];
 }
 
-int TfLiteGetInputChannels(TfL_Interpreter* interpreter)
+int GetInputChannels(Interpreter* interpreter)
 {
 	int input = interpreter->impl->inputs()[0];
 	TfLiteIntArray* input_dims = interpreter->impl->tensor(input)->dims;
@@ -77,7 +77,7 @@ int TfLiteGetInputChannels(TfL_Interpreter* interpreter)
 }
 
 
-void TfLiteDisplaySettings(TfL_Config* conf)
+void DisplaySettings(Config* conf)
 {
 	LOG(INFO) << "accel             " << conf->accel << "\n";
 	LOG(INFO) << "verbose           " << conf->verbose << "\n";
@@ -92,7 +92,7 @@ void TfLiteDisplaySettings(TfL_Config* conf)
 	LOG(INFO) << "model_name        " << conf->model_name << "\n";
 }
 
-TfL_Interpreter* TfLiteInitInterpreter(TfL_Config* conf)
+Interpreter* InitInterpreter(Config* conf)
 {
 	if (!conf->model_name.c_str()) {
 		LOG(ERROR) << "no model file name\n";
@@ -125,10 +125,10 @@ TfL_Interpreter* TfLiteInitInterpreter(TfL_Config* conf)
 		interpreter->SetNumThreads(conf->number_of_threads);
 	}
 
-	return new TfL_Interpreter{std::move(model), std::move(interpreter)};
+	return new Interpreter{std::move(model), std::move(interpreter)};
 }
 
-void TfLiteDisplayModelInformation(TfL_Interpreter* interpreter)
+void DisplayModelInformation(Interpreter* interpreter)
 {
 	LOG(INFO) << "tensors size: " << interpreter->impl->tensors_size() << "\n";
 	LOG(INFO) << "nodes size: " << interpreter->impl->nodes_size() << "\n";
@@ -146,7 +146,7 @@ void TfLiteDisplayModelInformation(TfL_Interpreter* interpreter)
 	}
 }
 
-void TfLiteRunInference(TfL_Config* conf, TfL_Interpreter* interpreter, uint8_t* img)
+void RunInference(Config* conf, Interpreter* interpreter, uint8_t* img)
 {
 	int input = interpreter->impl->inputs()[0];
 	if (conf->verbose) LOG(INFO) << "input: " << input << "\n";
@@ -216,7 +216,7 @@ void TfLiteRunInference(TfL_Config* conf, TfL_Interpreter* interpreter, uint8_t*
 	}
 }
 
-void TfLiteGetLabelResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Label_Results* results)
+void GetLabelResults(Config* conf, Interpreter* interpreter, Label_Results* results)
 {
 
 	const float threshold = 0.001f;
@@ -246,7 +246,7 @@ void TfLiteGetLabelResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_L
 	results->inference_time = interpreter->inference_time;
 }
 
-void TfLiteGetObjDetectResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_ObjDetect_Results* results)
+void GetObjDetectResults(Config* conf, Interpreter* interpreter, ObjDetect_Results* results)
 {
 	// location
 	float *locations = interpreter->impl->typed_output_tensor<float>(0);
@@ -277,8 +277,8 @@ void TfLiteGetObjDetectResults(TfL_Config* conf, TfL_Interpreter* interpreter, T
 // Takes a file name, and loads a list of labels from it, one per line, and
 // returns a vector of the strings. It pads with empty strings so the length
 // of the result is a multiple of 16, because our model expects that.
-TfLiteStatus ReadLabelsFile(const string& file_name,
-			    std::vector<string>* result,
+TfLiteStatus ReadLabelsFile(const std::string& file_name,
+			    std::vector<std::string>* result,
 			    size_t* found_label_count)
 {
 	std::ifstream file(file_name);
@@ -287,7 +287,7 @@ TfLiteStatus ReadLabelsFile(const string& file_name,
 		return kTfLiteError;
 	}
 	result->clear();
-	string line;
+	std::string line;
 	while (std::getline(file, line)) {
 		result->push_back(line);
 	}
