@@ -31,7 +31,7 @@ limitations under the License.
 namespace tflite {
 namespace wrapper_tfl {
 
-struct TfL_Config {
+struct Config {
 	bool verbose = false;
 	bool accel = false;
 	bool input_floating = false;
@@ -42,11 +42,11 @@ struct TfL_Config {
 	float input_std = 127.5f;
 	int number_of_threads = 4;
 	int number_of_results = 5;
-	string model_name;
-	string labels_file_name;
+	std::string model_name;
+	std::string labels_file_name;
 };
 
-struct TfL_Interpreter {
+struct Interpreter {
 	// Taking a reference to the (const) model data avoids lifetime-related issues
 	// and complexity with the TFL_Model's existence.
 	std::unique_ptr<tflite::FlatBufferModel> model;
@@ -54,32 +54,32 @@ struct TfL_Interpreter {
 	float inference_time;
 };
 
-struct TfL_Label_Results {
+struct Label_Results {
 	float accuracy[10];
 	int index[10];
 	float inference_time;
 };
 
-struct Tfl_ObjDetect_Location {
+struct ObjDetect_Location {
 	float y0, x0, y1, x1;
 };
 
-struct TfL_ObjDetect_Results {
+struct ObjDetect_Results {
 	float score[10];
 	int index[10];
-	struct Tfl_ObjDetect_Location location[10];
+	struct ObjDetect_Location location[10];
 	float inference_time;
 };
 
-int TfLiteGetInputWidth(TfL_Interpreter* interpreter);
-int TfLiteGetInputHeight(TfL_Interpreter* interpreter);
-int TfLiteGetInputChannels(TfL_Interpreter* interpreter);
-void TfLiteDisplayModelInformation(TfL_Interpreter* interpreter);
-TfL_Interpreter* TfLiteInitInterpreter(TfL_Config* conf);
-void TfLiteRunInference(TfL_Config* conf, TfL_Interpreter* interpreter, uint8_t* img);
-void TfLiteGetLabelResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_Label_Results* results);
-void TfLiteGetObjDetectResults(TfL_Config* conf, TfL_Interpreter* interpreter, TfL_ObjDetect_Results* results);
-TfLiteStatus ReadLabelsFile(const string& file_name,
+int GetInputWidth(Interpreter* interpreter);
+int GetInputHeight(Interpreter* interpreter);
+int GetInputChannels(Interpreter* interpreter);
+void DisplayModelInformation(Interpreter* interpreter);
+Interpreter* InitInterpreter(Config* conf);
+void RunInference(Config* conf, Interpreter* interpreter, uint8_t* img);
+void GetLabelResults(Config* conf, Interpreter* interpreter, Label_Results* results);
+void GetObjDetectResults(Config* conf, Interpreter* interpreter, ObjDetect_Results* results);
+TfLiteStatus ReadLabelsFile(const std::string& file_name,
 			    std::vector<std::string>* result,
 			    size_t* found_label_count);
 
