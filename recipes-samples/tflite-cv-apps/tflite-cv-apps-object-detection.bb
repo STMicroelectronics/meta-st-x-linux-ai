@@ -1,7 +1,9 @@
-# Copyright (C) 2019, STMicroelectronics - All Rights Reserved
+# Copyright (C) 2020, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite Computer Vision image classification application examples"
-LICENSE = "BSD-3-Clause"
+LICENSE = "BSD-3-Clause & GPLv2 & Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 inherit pkgconfig
 

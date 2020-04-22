@@ -14,7 +14,7 @@
  *
  * This combination is quite simple and efficient in term of CPU consumption.
  *
- * Copyright (C) 2019, STMicroelectronics - All Rights Reserved
+ * Copyright (C) 2020, STMicroelectronics - All Rights Reserved
  * Author: Vincent Abriou <vincent.abriou@st.com> for STMicroelectronics.
  *
  * License type: GPLv2
