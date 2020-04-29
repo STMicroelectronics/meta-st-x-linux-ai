@@ -118,6 +118,12 @@ Interpreter* InitInterpreter(Config* conf)
 		exit(-1);
 	}
 
+	int input = interpreter->inputs()[0];
+	if (interpreter->tensor(input)->type == kTfLiteFloat32) {
+		conf->input_floating = true;
+		LOG(INFO) << "Floating point Tensorflow Lite Model\n";
+	}
+
 	interpreter->UseNNAPI(conf->accel);
 	interpreter->SetAllowFp16PrecisionForFp32(conf->allow_fp16);
 
@@ -171,14 +177,11 @@ void RunInference(Config* conf, Interpreter* interpreter, uint8_t* img)
 	int input_width = input_dims->data[2];
 	int input_channels = input_dims->data[3];
 
-	if (interpreter->impl->tensor(input)->type == kTfLiteFloat32)
-		conf->input_floating = true;
-
 	auto output_number_of_pixels = input_height * input_width * input_channels;
 	if (conf->input_floating) {
 		auto in = interpreter->impl->typed_tensor<float>(input);
 		for (int i = 0; i < output_number_of_pixels; i++)
-			in[i] = img[i];
+			in[i] = (img[i] - conf->input_mean) / conf->input_std;
 	} else {
 		auto in = interpreter->impl->typed_tensor<uint8_t>(input);
 		for (int i = 0; i < output_number_of_pixels; i++)
