@@ -166,7 +166,6 @@ static void gui_compute_frame_position(GdkWindow *window,
 		window_height = gdk_window_get_height(window) + WESTON_PANEL_THICKNESS;
 	} else {
 		window_height = gdk_window_get_height(window) - BRAIN_AREA_HEIGHT;
-		offset_x = BRAIN_AREA_WIDTH;
 		offset_y = BRAIN_AREA_HEIGHT;
 	}
 
@@ -299,6 +298,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		cv::Size size_nn(data->nn_input_width, data->nn_input_height);
 		cv::resize(img_bgr, img_nn, size_nn);
 		cv::cvtColor(img_nn, img_nn, cv::COLOR_BGR2RGB);
+
 		nn_inference(img_nn.data);
 	}
 
@@ -415,7 +415,7 @@ static void gui_create(CustomData *data)
 	GtkWidget *drawing_area;
 
 	if (data->preview_enabled)
-		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-image-classification/resources/ST7079_AI_neural_pink_65x55.png");
+		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-image-classification/resources/ST7079_AI_neural_pink_65x80.png");
 	else
 		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-image-classification/resources/ST7079_AI_neural_pink_65x80_next_inference.png");
 	data->exit_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-image-classification/resources/close_50x50_pink.png");
@@ -856,8 +856,6 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 	} else {
-		data.frame_width  = std::stoi(camera_width_str);
-		data.frame_height = std::stoi(camera_height_str);
 		data.preview_enabled = false;
 
 		/* Check if directory is empty */
