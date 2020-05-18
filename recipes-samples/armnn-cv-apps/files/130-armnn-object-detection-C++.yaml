@@ -1,0 +1,17 @@
+Application:
+    Name: Object Detection
+    Description: COCO SSD v1
+    Icon: ../demo-ai/computer-vision/armnn-tfl-object-detection/resources/armNN_C++.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /dev/video0
+            Msg_false: Camera is not connected (/dev/video0 doesn't exist)
+        Start: ../demo-ai/computer-vision/armnn-tfl-object-detection/bin/launch_bin_objdetect_armnn_tfl_coco_ssd_mobilenet.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
+
+
