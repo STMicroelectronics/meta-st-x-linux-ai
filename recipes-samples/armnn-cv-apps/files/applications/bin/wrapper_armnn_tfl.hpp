@@ -58,6 +58,17 @@ namespace wrapper_armnn_tfl {
 		float inference_time;
 	};
 
+	struct ObjDetect_Location {
+		float y0, x0, y1, x1;
+	};
+
+	struct ObjDetect_Results {
+		float score[10];
+		int index[10];
+		struct ObjDetect_Location location[10];
+		float inference_time;
+	};
+
 	class Tfl_Wrapper {
 	private:
 		armnnTfLiteParser::ITfLiteParserPtr              m_parser;
@@ -165,6 +176,14 @@ namespace wrapper_armnn_tfl {
 				RunInference<uint8_t>(img, results);
 		}
 
+		void RunInference(uint8_t* img, ObjDetect_Results* results)
+		{
+			if (m_inputFloating)
+				RunInference<float>(img, results);
+			else
+				RunInference<uint8_t>(img, results);
+		}
+
 		template <class T>
 		void RunInference(uint8_t* img, Label_Results* results)
 		{
@@ -210,6 +229,63 @@ namespace wrapper_armnn_tfl {
 					results->accuracy[i] = out[0][results->index[i]] / 255.0;
 
 				out[0][results->index[i]] = 0;
+			}
+			results->inference_time = m_inferenceTime;
+		}
+
+		template <class T>
+		void RunInference(uint8_t* img, ObjDetect_Results* results)
+		{
+			int input_height = GetInputHeight();
+			int input_width = GetInputWidth();
+			int input_channels = GetInputChannels();
+			auto sizeInBytes = input_height * input_width * input_channels;
+
+			std::vector<T> in(sizeInBytes);
+			if (m_inputFloating) {
+				for (int i = 0; i < sizeInBytes; i++)
+					in[i] = (img[i] - m_inputMean) / m_inputStd;
+			} else {
+				for (int i = 0; i < sizeInBytes; i++)
+					in[i] = img[i];
+			}
+
+			armnn::InputTensors inputTensors;
+			inputTensors.push_back({ m_inputBindings[0].first, armnn::ConstTensor(m_inputBindings[0].second, in.data()) });
+
+			armnn::OutputTensors outputTensors;
+			std::vector<std::vector<float>> out;
+			for (unsigned int i = 0; i < GetNumberOfOutputs() ; i++) {
+				std::vector<float> out_data(GetOutputSize(i));
+				out.push_back(out_data);
+				outputTensors.push_back({ m_outputBindings[i].first, armnn::Tensor(m_outputBindings[i].second, out[i].data()) });
+			}
+
+			struct timeval start_time, stop_time;
+			gettimeofday(&start_time, nullptr);
+
+			m_runtime->EnqueueWorkload(m_networkId, inputTensors, outputTensors);
+
+			gettimeofday(&stop_time, nullptr);
+			m_inferenceTime = (get_ms(stop_time) - get_ms(start_time));
+
+			/* Get results */
+			std::vector<float> locations = out[0];
+			std::vector<float> classes = out[1];
+			std::vector<float> scores = out[2];
+
+			// get the output size by geting the size of the
+			// output tensor 1 that represente the classes
+			auto output_size = GetOutputSize(1);
+
+			// the outputs are already sort by descending order
+			for (int i = 0; i < output_size; i++) {
+				results->score[i]       = scores[i];
+				results->index[i]       = (int)classes[i];
+				results->location[i].y0 = locations[(i * 4) + 0];
+				results->location[i].x0 = locations[(i * 4) + 1];
+				results->location[i].y1 = locations[(i * 4) + 2];
+				results->location[i].x1 = locations[(i * 4) + 3];
 			}
 			results->inference_time = m_inferenceTime;
 		}
