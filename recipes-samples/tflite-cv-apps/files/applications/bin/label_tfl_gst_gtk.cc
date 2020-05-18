@@ -61,6 +61,8 @@ std::string model_file_str;
 std::string labels_file_str;
 float input_mean = 127.5f;
 float input_std = 127.5f;
+bool crop = false;
+cv::Rect cropRect(0, 0, 0, 0);
 
 /* TensorFlow Lite variables */
 struct tflite::wrapper_tfl::Config config;
@@ -344,6 +346,14 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 					std::max(data->frame_fullscreen_pos.x,
 						 BRAIN_AREA_WIDTH),
 					0);
+
+		if (crop) {
+			/* draw the crop window on the preview to center image
+			 * to classify */
+			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+			cairo_rectangle(cr, int(cropRect.x), int(cropRect.y), int(cropRect.width), int(cropRect.height));
+			cairo_stroke(cr);
+		}
 	}
 
 	/* Display inference result */
@@ -557,7 +567,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 {
 	GstStateChangeReturn ret;
 	GstElement *pipeline, *source, *dispsink, *tee, *scale, *framerate;
-	GstElement *queue1, *queue2, *convert, *appsink;
+	GstElement *queue1, *queue2, *convert, *appsink, *framecrop;
 	GstElement *fpsmeasure1, *fpsmeasure2;
 	GstBus *bus;
 
@@ -571,6 +581,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	queue1      = gst_element_factory_make("queue",          "queue-1");
 	queue2      = gst_element_factory_make("queue",          "queue-2");
 	convert     = gst_element_factory_make("videoconvert",   "video-convert");
+	framecrop   = gst_element_factory_make("videocrop",      "videocrop");
 	scale       = gst_element_factory_make("videoscale",     "videoscale");
 	dispsink    = gst_element_factory_make("waylandsink",    "display-sink");
 	appsink     = gst_element_factory_make("appsink",        "app-sink");
@@ -581,7 +592,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 
 	if (!pipeline || !source || !tee || !queue1 || !queue2 || !convert ||
 	    !scale || !dispsink || !appsink || !framerate || !fpsmeasure1 ||
-	    !fpsmeasure2) {
+	    !fpsmeasure2 || !framecrop) {
 		g_printerr("One element could not be created. Exiting.\n");
 		return -1;
 	}
@@ -617,6 +628,21 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		     "video-sink", appsink, NULL);
 	g_signal_connect(fpsmeasure2, "fps-measurements", G_CALLBACK(gst_fps_measure_nn_cb), NULL);
 
+	/* Configure the videocrop */
+	if (crop) {
+		/* Crop requested */
+		int left   = cropRect.x;
+		int right  = data->frame_width - left - cropRect.width;
+		int top    = cropRect.y;
+		int bottom = data->frame_height - top - cropRect.height;
+		g_object_set(framecrop, "left", left, "right", right,
+			     "top", top, "bottom", bottom, NULL);
+	} else {
+		/* No crop requested */
+		g_object_set(framecrop, "left", 0, "right", 0,
+			     "top", 0, "bottom", 0, NULL);
+	}
+
 	/* Configure appsink */
 	g_object_set(appsink, "emit-signals", TRUE, "sync", FALSE,
 		     "max-buffers", 1, "drop", TRUE, "caps", scaleCaps, NULL);
@@ -625,7 +651,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	/* Add all elements into the pipeline */
 	gst_bin_add_many(GST_BIN(pipeline),
 			 source, framerate, tee, convert, queue1, queue2, scale,
-			 fpsmeasure1, fpsmeasure2, NULL);
+			 framecrop, fpsmeasure1, fpsmeasure2, NULL);
 
 	/* Link the elements together */
 	if (!gst_element_link_many(source, framerate, NULL)) {
@@ -636,7 +662,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		g_error("Failed to link elements (2)");
 		return -2;
 	}
-	if (!gst_element_link_many(tee, queue2, convert, scale, NULL)) {
+	if (!gst_element_link_many(tee, queue2, convert, framecrop, scale, NULL)) {
 		g_error("Failed to link elements (3)");
 		return -2;
 	}
@@ -681,13 +707,15 @@ static void print_help(int argc, char** argv)
 	std::cout <<
 		"Usage: " << argv[0] << " -m <model .tflite> -l <label .txt file>\n"
 		"\n"
+		"-m --model_file <.tflite file path>:  .tflite model to be executed\n"
+		"-l --label_file <label file path>:    name of file containing labels\n"
 		"-i --image <directory path>:          image directory with image to be classified\n"
 		"-v --video_device <n>:                video device (default /dev/video0)\n"
+		"--crop:                               if set, the nn input image is cropped (with the expected nn aspect ratio) before being resized,\n"
+		"                                      else the nn imput image is only resized to the nn input size (could cause picture deformation).\n"
 		"--frame_width  <val>:                 width of the camera frame (default is 640)\n"
 		"--frame_height <val>:                 height of the camera frame (default is 480)\n"
 		"--framerate <val>:                    framerate of the camera (default is 15fps)\n"
-		"-m --model_file <.tflite file path>:  .tflite model to be executed\n"
-		"-l --label_file <label file path>:    name of file containing labels\n"
 		"--input_mean <val>:                   model input mean (default is 127.5)\n"
 		"--input_std  <val>:                   model input standard deviation (default is 127.5)\n"
 		"--help:                               show this help\n";
@@ -705,15 +733,16 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_STD    1004
 void process_args(int argc, char** argv)
 {
-	const char* const short_opts = "i:v:m:l:h";
+	const char* const short_opts = "m:l:i:v:c:h";
 	const option long_opts[] = {
+		{"model_file",   required_argument, nullptr, 'm'},
+		{"label_file",   required_argument, nullptr, 'l'},
 		{"image",        required_argument, nullptr, 'i'},
 		{"video_device", required_argument, nullptr, 'v'},
+		{"crop",         no_argument,       nullptr, 'c'},
 		{"frame_width",  required_argument, nullptr, OPT_FRAME_WIDTH},
 		{"frame_height", required_argument, nullptr, OPT_FRAME_HEIGHT},
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
-		{"model_file",   required_argument, nullptr, 'm'},
-		{"label_file",   required_argument, nullptr, 'l'},
 		{"input_mean",   required_argument, nullptr, OPT_INPUT_MEAN},
 		{"input_std",    required_argument, nullptr, OPT_INPUT_STD},
 		{"help",         no_argument,       nullptr, 'h'},
@@ -729,6 +758,14 @@ void process_args(int argc, char** argv)
 
 		switch (opt)
 		{
+		case 'm':
+			model_file_str = std::string(optarg);
+			std::cout << "model file set to: " << model_file_str << std::endl;
+			break;
+		case 'l':
+			labels_file_str = std::string(optarg);
+			std::cout << "label file set to: " << labels_file_str << std::endl;
+			break;
 		case 'i':
 			image_dir_str = std::string(optarg);
 			std::cout << "image directory set to: " << image_dir_str << std::endl;
@@ -736,6 +773,10 @@ void process_args(int argc, char** argv)
 		case 'v':
 			video_device_str = std::string(optarg);
 			std::cout << "camera device set to: /dev/video" << video_device_str << std::endl;
+			break;
+		case 'c':
+			crop = true;
+			std::cout << "nn input image will be cropped then resized" << std::endl;
 			break;
 		case OPT_FRAME_WIDTH:
 			camera_width_str = std::string(optarg);
@@ -748,14 +789,6 @@ void process_args(int argc, char** argv)
 		case OPT_FRAMERATE:
 			camera_fps_str = std::string(optarg);
 			std::cout << "camera framerate set to: " << camera_fps_str << std::endl;
-			break;
-		case 'm':
-			model_file_str = std::string(optarg);
-			std::cout << "model file set to: " << model_file_str << std::endl;
-			break;
-		case 'l':
-			labels_file_str = std::string(optarg);
-			std::cout << "label file set to: " << labels_file_str << std::endl;
 			break;
 		case OPT_INPUT_MEAN:
 			input_mean = std::stof(optarg);
@@ -857,6 +890,30 @@ int main(int argc, char *argv[])
 	/* Get model input size */
 	data.nn_input_width = tflite::wrapper_tfl::GetInputWidth(interpreter);
 	data.nn_input_height = tflite::wrapper_tfl::GetInputHeight(interpreter);
+
+	if (data.preview_enabled) {
+		if (crop) {
+			int frame_width = data.frame_width;
+			int frame_height = data.frame_height;
+			int nn_input_width = data.nn_input_width;
+			int nn_input_height = data.nn_input_height;
+
+			float nn_input_aspect_ratio = (float)nn_input_width / (float)nn_input_height;
+
+			/* Setup a rectangle to define the crop region */
+			if (nn_input_aspect_ratio >  1) {
+				cropRect.width = frame_width;
+				cropRect.height = int((float)frame_width / (float)nn_input_aspect_ratio);
+				cropRect.x = 0;
+				cropRect.y = (int)((frame_height - cropRect.height) / 2);
+			} else {
+				cropRect.width = int((float)frame_height * (float)nn_input_aspect_ratio);
+				cropRect.height = frame_height;
+				cropRect.x = (int)((frame_width - cropRect.width) / 2);
+				cropRect.y = 0;
+			}
+		}
+	}
 
 	/* Initialize GTK */
 	gtk_init(&argc, &argv);
