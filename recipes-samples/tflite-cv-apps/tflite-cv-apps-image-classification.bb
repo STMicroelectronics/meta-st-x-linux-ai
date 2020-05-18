@@ -69,16 +69,24 @@ INSANE_SKIP_${PN} = "ldflags"
 
 RDEPENDS_${PN} += " \
 	gstreamer1.0 \
+	gstreamer1.0-plugins-bad-waylandsink \
+	gstreamer1.0-plugins-bad-debugutilsbad \
+	gstreamer1.0-plugins-base-app \
+	gstreamer1.0-plugins-base-videoconvert \
+	gstreamer1.0-plugins-base-videorate \
+	gstreamer1.0-plugins-good-video4linux2 \
+	gstreamer1.0-plugins-base-videoscale \
 	gtk+3 \
+	libopencv-core \
 	python3 \
+	python3-ctypes \
+	python3-multiprocessing \
+	python3-numpy \
+	python3-opencv \
+	python3-runpy \
+	python3-threading \
+	python3-pillow \
 	python3-pygobject \
 	python3-tensorflow-lite \
-	python3-opencv \
-	python3-numpy \
-	python3-pillow \
-	python3-multiprocessing \
-	python3-threading \
-	python3-ctypes \
-	opencv \
 	tflite-models-mobilenetv1 \
 "
