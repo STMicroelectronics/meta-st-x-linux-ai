@@ -64,8 +64,12 @@ EXTRA_OECMAKE_append_aarch64=" \
 
 do_install() {
 	install -d ${D}${libdir}
-	install -d ${D}${bindir}/${PN}-${PV}/tools
-	install -d ${D}${bindir}/${PN}-${PV}/tools/examples/tensorflow-lite
+	install -d ${D}${prefix}/local/bin/
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/dynamic/reference
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite
 	install -d ${D}${includedir}
 	install -d ${D}${includedir}/armnn-tensorflow-lite/schema
 
@@ -76,9 +80,23 @@ do_install() {
 	# install static libraries
 	install -m 0644 ${WORKDIR}/build/libarmnnUtils.a                                              ${D}${libdir}
 
-	# install tools
-	install -m 0555 ${WORKDIR}/build/UnitTests                                                    ${D}${bindir}/${PN}-${PV}/tools
-	install -m 0555 ${WORKDIR}/build/tests/ExecuteNetwork                                         ${D}${bindir}/${PN}-${PV}/tools
+	# install unitary tests in the userfs partition
+	install -m 0555 ${WORKDIR}/build/UnitTests                                                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/testSharedObject                     ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/testDynamicBackend                   ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath1                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath2                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath3                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath5                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath6                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath7                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/backendsCommon/test/backendsTestPath9                    ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test
+	cp -rf ${WORKDIR}/build/src/backends/dynamic/reference/Arm_CpuRef_backend.so                  ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/dynamic/reference
+	# remove symlink
+	rm  ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test/backendsTestPath2/Arm_no_backend.so
+
+	# install ExecuteNetwork tool in the userfs partition
+	install -m 0555 ${WORKDIR}/build/tests/ExecuteNetwork                                         ${D}${prefix}/local/bin/${PN}-${PV}/tools
 
 	# install armnn include files
 	cp -rf ${S}/include/armnn                                                                     ${D}${includedir}
@@ -90,16 +108,21 @@ do_install() {
 	# install armnn TfLite schema
 	install -m 0644 ${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema/schema.fbs ${D}${includedir}/armnn-tensorflow-lite/schema/
 
-	# install armnn TfLite examples
-	install -m 0555 ${WORKDIR}/build/tests/TfLite*                                                ${D}${bindir}/${PN}-${PV}/tools/examples/tensorflow-lite
+	# install armnn TfLite examples in the userfs partition
+	install -m 0555 ${WORKDIR}/build/tests/TfLite*                                                ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite
 
 	# install armnn TfLiteParser include files
 	cp -rf ${S}/include/armnnTfLiteParser                                                         ${D}${includedir}
 
 	# Update the rpath
-	chrpath -d ${D}${bindir}/${PN}-${PV}/tools/UnitTests
-	chrpath -d ${D}${bindir}/${PN}-${PV}/tools/ExecuteNetwork
-	chrpath -d ${D}${bindir}/${PN}-${PV}/tools/examples/tensorflow-lite/*
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/UnitTests
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test/testDynamicBackend/*
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test/backendsTestPath5/*
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test/backendsTestPath9/*
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon/test/backendsTestPath6/*
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/dynamic/reference/*
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/ExecuteNetwork
+	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite/*
 	chrpath -d ${D}${libdir}/libarmnnTfLiteParser.so.*
 }
 
@@ -117,6 +140,10 @@ FILES_${PN} = " \
 	${libdir}/libarmnn.so.* \
 "
 
+FILES_${PN}-dbg = " \
+	${prefix}/src/debug \
+"
+
 FILES_${PN}-dev = " \
 	${libdir}/libarmnn.so \
 	${includedir}/armnn \
@@ -127,8 +154,10 @@ FILES_${PN}-dev = " \
 "
 
 FILES_${PN}-tools = " \
-	${bindir}/${PN}-${PV}/tools/ExecuteNetwork \
-	${bindir}/${PN}-${PV}/tools/UnitTests \
+	${prefix}/local/bin/${PN}-${PV}/tools/ExecuteNetwork \
+	${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/ \
+	${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/backendsCommon \
+	${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/dynamic \
 "
 
 FILES_${PN}-tensorflow-lite = " \
@@ -142,5 +171,10 @@ FILES_${PN}-tensorflow-lite-dev = " \
 "
 
 FILES_${PN}-tensorflow-lite-examples = " \
-	${bindir}/${PN}-${PV}/tools/examples/tensorflow-lite/* \
+	${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite/* \
 "
+
+# Remove warnig when installing UnitTests libraries in a directory that not
+# use to store libraries.
+INSANE_SKIP_${PN}-tools = "dev-so libdir"
+INSANE_SKIP_${PN}-dbg = "dev-so libdir"
