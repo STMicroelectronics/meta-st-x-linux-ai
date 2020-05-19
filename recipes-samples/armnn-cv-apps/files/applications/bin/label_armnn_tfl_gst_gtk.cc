@@ -1,9 +1,9 @@
 /*
- * label_armnn_gst_gtk.cc
+ * label_armnn_tfl_gst_gtk.cc
  *
  * This application demonstrate a computer vision use case for image
  * classification where frames are grabbed from a camera input (/dev/videox) and
- * analyzed by a neural network model interpreted by armNN framework.
+ * analyzed by a neural network model interpreted by armNN TfL framework.
  *
  * Gstreamer pipeline is used to stream camera frames (using v4l2src), to
  * display a preview (using waylandsink) and to execute neural network inference
@@ -884,7 +884,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* TensorFlow Lite parser initialization */
+	/* TensorFlow Lite wrapper initialization */
 	config.model_name = model_file_str;
 	config.labels_file_name = labels_file_str;
 	config.compute_devices = preferred_backends_order;
