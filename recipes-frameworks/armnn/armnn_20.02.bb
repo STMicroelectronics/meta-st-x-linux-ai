@@ -13,10 +13,10 @@ SRC_URI = " https://github.com/ARM-software/armnn/archive/v${PV}.tar.gz;download
 SRC_URI[armnn.md5sum] = "7183d26e8464e64e0e71f2386b4d972b"
 SRC_URI[armnn.sha256sum] = "75dcaf18ede3410f7f6b7abd48924985044a7aff9a0c04302811e524cae6ba9e"
 
-TENSORFLOW_VERSION="2.1.0"
+TENSORFLOW_VERSION="2.2.0"
 SRC_URI += " https://github.com/tensorflow/tensorflow/archive/v${TENSORFLOW_VERSION}.tar.gz;downloadfilename=tensorflow-v${TENSORFLOW_VERSION}.tar.gz;name=tensorflow "
-SRC_URI[tensorflow.md5sum] = "269414a50b46bb676a0ef9e611839528"
-SRC_URI[tensorflow.sha256sum] = "638e541a4981f52c69da4a311815f1e7989bf1d67a41d204511966e1daed14f7"
+SRC_URI[tensorflow.md5sum] = "2054bc08cafbdd3fcde0337e836b7a02"
+SRC_URI[tensorflow.sha256sum] = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3"
 
 S = "${WORKDIR}/armnn-${PV}"
 
