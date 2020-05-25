@@ -7,15 +7,11 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
 
 SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz;downloadfilename=tensorflow-v${PV}.tar.gz "
-SRC_URI[md5sum] = "269414a50b46bb676a0ef9e611839528"
-SRC_URI[sha256sum] = "638e541a4981f52c69da4a311815f1e7989bf1d67a41d204511966e1daed14f7"
+SRC_URI[md5sum] = "2054bc08cafbdd3fcde0337e836b7a02"
+SRC_URI[sha256sum] = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3"
 
 # Patch to be applied
-SRC_URI += " file://0001-TFLite-fix-eigen-url-in-download_dependencies.sh-scr.patch "
-SRC_URI += " file://0002-TFLite-tools-make-remove-hash-and-flags-files-from-t.patch "
-SRC_URI += " file://0003-TFLite-tools-make-add-fftsg2d.c-file-in-the-build-re.patch "
-SRC_URI += " file://0004-TFLite-tools-make-remove-ruy-tune_tool.cc-from-the-b.patch "
-SRC_URI += " file://0005-TFLite-pip-package-support-cross-compilation-environ.patch "
+SRC_URI += " file://0001-TFLite-add-EXTRA_CFLAGS-variable.patch "
 
 S = "${WORKDIR}/tensorflow-${PV}"
 
@@ -63,6 +59,7 @@ do_compile () {
 	export TENSORFLOW_TARGET=${TENSORFLOW_TARGET}
 	export TENSORFLOW_TARGET_ARCH=${TENSORFLOW_TARGET_ARCH}
 	export TENSORFLOW_CC_PREFIX=${CCACHE}${HOST_PREFIX}
+	export TENSORFLOW_EXTRA_CFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"
 	export TENSORFLOW_EXTRA_CXXFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"
 
 	unset PYTHON
