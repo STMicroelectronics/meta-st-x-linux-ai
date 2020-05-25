@@ -71,15 +71,15 @@ do_install(){
 	install -d ${D}${libdir}
 	install -d ${D}${includedir}/tensorflow
 	install -d ${D}${includedir}/tensorflow/lite
-	install -d ${D}${bindir}/${PN}-${PV}/tools
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools
 
-	install -m install -m 0644 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/lib/* ${D}${libdir}
+	install -m 0644 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/lib/*               ${D}${libdir}
 
 	cd ${S}/tensorflow/lite
 	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/lite
 
-	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/minimal         ${D}${bindir}/${PN}-${PV}/tools
-	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/benchmark_model ${D}${bindir}/${PN}-${PV}/tools
+	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/minimal         ${D}${prefix}/local/bin/${PN}-${PV}/tools
+	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/benchmark_model ${D}${prefix}/local/bin/${PN}-${PV}/tools
 
 	# tensorflow-lite python3 interpreter
 	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
@@ -92,7 +92,7 @@ RDEPENDS_${PN}-dev = ""
 
 PACKAGES += "${PN}-tools python3-${PN}"
 
-FILES_${PN}-tools = "${bindir}/${PN} ${bindir}/${PN}-${PV}/tools/*"
+FILES_${PN}-tools = "${prefix}/local/bin/${PN}-${PV}/tools/*"
 
 FILES_python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
 
