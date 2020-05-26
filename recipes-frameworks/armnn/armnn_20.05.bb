@@ -9,16 +9,16 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=3e14a924c16f7d828b8335a59da64074"
 
-SRC_URI = " https://github.com/ARM-software/armnn/archive/v${PV}.tar.gz;downloadfilename=armnn-v${PV}.tar.gz;name=armnn "
-SRC_URI[armnn.md5sum] = "7183d26e8464e64e0e71f2386b4d972b"
-SRC_URI[armnn.sha256sum] = "75dcaf18ede3410f7f6b7abd48924985044a7aff9a0c04302811e524cae6ba9e"
+SRC_URI = " git://github.com/ARM-software/armnn;name=armnn;branch=branches/armnn_20_05;protocol=https"
+SRCREV_armnn = "ea104f29baf384eb098215fd55fd0bdd680711c2"
+S = "${WORKDIR}/git"
+
+# Patch to be applied
+SRC_URI += " file://0001-Catch-exceptions-by-const-reference.patch "
 
 TENSORFLOW_VERSION="2.2.0"
-SRC_URI += " https://github.com/tensorflow/tensorflow/archive/v${TENSORFLOW_VERSION}.tar.gz;downloadfilename=tensorflow-v${TENSORFLOW_VERSION}.tar.gz;name=tensorflow "
-SRC_URI[tensorflow.md5sum] = "2054bc08cafbdd3fcde0337e836b7a02"
-SRC_URI[tensorflow.sha256sum] = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3"
-
-S = "${WORKDIR}/armnn-${PV}"
+SRC_URI += " git://github.com/tensorflow/tensorflow.git;name=tensorflow;branch=r2.2;destsuffix=tensorflow-${TENSORFLOW_VERSION} "
+SRCREV_tensorflow = "2b96f3662bd776e277f86997659e61046b56c315"
 
 inherit cmake
 
@@ -123,6 +123,8 @@ do_install() {
 	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/dynamic/reference/*
 	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/ExecuteNetwork
 	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite/*
+	chrpath -d ${D}${libdir}/libarmnnBasePipeServer.so.*
+	chrpath -d ${D}${libdir}/libtimelineDecoder.so.*
 	chrpath -d ${D}${libdir}/libarmnnTfLiteParser.so.*
 }
 
@@ -138,6 +140,8 @@ RDEPENDS_${PN}-tensorflow-lite-examples += "${PN}-tensorflow-lite"
 
 FILES_${PN} = " \
 	${libdir}/libarmnn.so.* \
+	${libdir}/libarmnnBasePipeServer.so.* \
+	${libdir}/libtimelineDecoder.so.* \
 "
 
 FILES_${PN}-dbg = " \
@@ -146,6 +150,8 @@ FILES_${PN}-dbg = " \
 
 FILES_${PN}-dev = " \
 	${libdir}/libarmnn.so \
+	${libdir}/libarmnnBasePipeServer.so \
+	${libdir}/libtimelineDecoder.so \
 	${includedir}/armnn \
 	${includedir}/armnnDeserializer \
 	${includedir}/armnnQuantizer \
@@ -160,16 +166,22 @@ FILES_${PN}-tools = " \
 	${prefix}/local/bin/${PN}-${PV}/tools/UnitTests/src/backends/dynamic \
 "
 
+# avoid to rename the package
+DEBIAN_NOAUTONAME_${PN}-tensorflow-lite = "1"
 FILES_${PN}-tensorflow-lite = " \
 	${libdir}/libarmnnTfLiteParser.so.* \
 	${includedir}/armnn-tensorflow-lite/schema \
 "
 
+# avoid to rename the package
+DEBIAN_NOAUTONAME_${PN}-tensorflow-lite-dev = "1"
 FILES_${PN}-tensorflow-lite-dev = " \
 	${libdir}/libarmnnTfLiteParser.so \
 	${includedir}/armnnTfLiteParser \
 "
 
+# avoid to rename the package
+DEBIAN_NOAUTONAME_${PN}-tensorflow-lite-examples = "1"
 FILES_${PN}-tensorflow-lite-examples = " \
 	${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite/* \
 "
