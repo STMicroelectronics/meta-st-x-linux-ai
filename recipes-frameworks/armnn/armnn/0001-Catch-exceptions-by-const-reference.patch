@@ -1,0 +1,162 @@
+From 724b1f2eebd59e7c2045e90b2aca3310ec6df956 Mon Sep 17 00:00:00 2001
+From: Pavel Macenauer <pavel.macenauer@linaro.org>
+Date: Tue, 26 May 2020 10:54:22 +0000
+Subject: [PATCH 1/1] Catch exceptions by const reference
+
+Change-Id: I4b4d8ae419dfb8470e8937e75cd3bab85f03b935
+Signed-off-by: Pavel Macenauer <pavel.macenauer@nxp.com>
+---
+ .../src/pyarmnn/swig/standard_header.i        |  6 ++---
+ src/profiling/test/ProfilingTests.cpp         |  2 +-
+ .../ModelAccuracyTool-Armnn.cpp               |  6 ++---
+ .../MultipleNetworksCifar10.cpp               |  4 ++--
+ .../NetworkExecutionUtils.hpp                 |  2 +-
+ .../TfLiteYoloV3Big-Armnn.cpp                 | 22 +++++++++----------
+ 6 files changed, 21 insertions(+), 21 deletions(-)
+
+diff --git a/python/pyarmnn/src/pyarmnn/swig/standard_header.i b/python/pyarmnn/src/pyarmnn/swig/standard_header.i
+index b26cb0d3..a4698156 100644
+--- a/python/pyarmnn/src/pyarmnn/swig/standard_header.i
++++ b/python/pyarmnn/src/pyarmnn/swig/standard_header.i
+@@ -23,7 +23,7 @@
+ %exception{
+     try {
+         $action
+-    } catch (armnn::Exception &e) {
++    } catch (const armnn::Exception& e) {
+         SWIG_exception(SWIG_RuntimeError, const_cast<char*>(e.what()));
+     }
+ };
+@@ -31,7 +31,7 @@
+ %exception __getitem__ {
+     try {
+         $action
+-    } catch (armnn::InvalidArgumentException &e) {
++    } catch (const armnn::InvalidArgumentException &e) {
+         SWIG_exception(SWIG_ValueError, const_cast<char*>(e.what()));
+     } catch (const std::out_of_range &e) {
+         SWIG_exception(SWIG_IndexError, const_cast<char*>(e.what()));
+@@ -43,7 +43,7 @@
+ %exception __setitem__ {
+     try {
+         $action
+-    } catch (armnn::InvalidArgumentException &e) {
++    } catch (const armnn::InvalidArgumentException &e) {
+         SWIG_exception(SWIG_ValueError, const_cast<char*>(e.what()));
+     } catch (const std::out_of_range &e) {
+         SWIG_exception(SWIG_IndexError, const_cast<char*>(e.what()));
+diff --git a/src/profiling/test/ProfilingTests.cpp b/src/profiling/test/ProfilingTests.cpp
+index c541c827..e3a49e48 100644
+--- a/src/profiling/test/ProfilingTests.cpp
++++ b/src/profiling/test/ProfilingTests.cpp
+@@ -2088,7 +2088,7 @@ BOOST_AUTO_TEST_CASE(CheckSocketConnectionException2)
+     {
+         new SocketProfilingConnection();
+     }
+-    catch (armnnProfiling::SocketConnectionException& ex)
++    catch (const armnnProfiling::SocketConnectionException& ex)
+     {
+         BOOST_CHECK(ex.GetSocketFd() == 0);
+         BOOST_CHECK(ex.GetErrorNo() == 111);
+diff --git a/tests/ModelAccuracyTool-Armnn/ModelAccuracyTool-Armnn.cpp b/tests/ModelAccuracyTool-Armnn/ModelAccuracyTool-Armnn.cpp
+index 20f61807..85d757f8 100644
+--- a/tests/ModelAccuracyTool-Armnn/ModelAccuracyTool-Armnn.cpp
++++ b/tests/ModelAccuracyTool-Armnn/ModelAccuracyTool-Armnn.cpp
+@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
+         {
+             optimizedNet = armnn::Optimize(*network, computeDevice, runtime->GetDeviceSpec());
+         }
+-        catch (armnn::Exception& e)
++        catch (const armnn::Exception& e)
+         {
+             std::stringstream message;
+             message << "armnn::Exception (" << e.what() << ") caught from optimize.";
+@@ -367,7 +367,7 @@ int main(int argc, char* argv[])
+         ARMNN_LOG(info) << "Accuracy Tool ran successfully!";
+         return 0;
+     }
+-    catch (armnn::Exception const & e)
++    catch (const armnn::Exception& e)
+     {
+         // Coverity fix: BOOST_LOG_TRIVIAL (typically used to report errors) may throw an
+         // exception of type std::length_error.
+@@ -375,7 +375,7 @@ int main(int argc, char* argv[])
+         std::cerr << "Armnn Error: " << e.what() << std::endl;
+         return 1;
+     }
+-    catch (const std::exception & e)
++    catch (const std::exception& e)
+     {
+         // Coverity fix: various boost exceptions can be thrown by methods called by this test.
+         std::cerr << "WARNING: ModelAccuracyTool-Armnn: An error has occurred when running the "
+diff --git a/tests/MultipleNetworksCifar10/MultipleNetworksCifar10.cpp b/tests/MultipleNetworksCifar10/MultipleNetworksCifar10.cpp
+index 0e72f7bc..c8026013 100644
+--- a/tests/MultipleNetworksCifar10/MultipleNetworksCifar10.cpp
++++ b/tests/MultipleNetworksCifar10/MultipleNetworksCifar10.cpp
+@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
+             {
+                 optimizedNet = armnn::Optimize(*network, computeDevice, runtime->GetDeviceSpec());
+             }
+-            catch (armnn::Exception& e)
++            catch (const armnn::Exception& e)
+             {
+                 std::stringstream message;
+                 message << "armnn::Exception ("<<e.what()<<") caught from optimize.";
+@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
+         ARMNN_LOG(info) << "Multiple networks inference ran successfully!";
+         return 0;
+     }
+-    catch (armnn::Exception const& e)
++    catch (const armnn::Exception& e)
+     {
+         // Coverity fix: BOOST_LOG_TRIVIAL (typically used to report errors) may throw an
+         // exception of type std::length_error.
+diff --git a/tests/NetworkExecutionUtils/NetworkExecutionUtils.hpp b/tests/NetworkExecutionUtils/NetworkExecutionUtils.hpp
+index ec0eaf90..ff28eb4f 100644
+--- a/tests/NetworkExecutionUtils/NetworkExecutionUtils.hpp
++++ b/tests/NetworkExecutionUtils/NetworkExecutionUtils.hpp
+@@ -519,7 +519,7 @@ int MainImpl(const ExecuteNetworkParams& params,
+             }
+         }
+     }
+-    catch (armnn::Exception const& e)
++    catch (const armnn::Exception& e)
+     {
+         ARMNN_LOG(fatal) << "Armnn Error: " << e.what();
+         return EXIT_FAILURE;
+diff --git a/tests/TfLiteYoloV3Big-Armnn/TfLiteYoloV3Big-Armnn.cpp b/tests/TfLiteYoloV3Big-Armnn/TfLiteYoloV3Big-Armnn.cpp
+index c96d1f28..1905e900 100644
+--- a/tests/TfLiteYoloV3Big-Armnn/TfLiteYoloV3Big-Armnn.cpp
++++ b/tests/TfLiteYoloV3Big-Armnn/TfLiteYoloV3Big-Armnn.cpp
+@@ -28,17 +28,17 @@ static const int LOAD_NETWORK_ERROR = -4;
+ static const int LOAD_IMAGE_ERROR = -5;
+ static const int GENERAL_ERROR = -100;
+ 
+-#define CHECK_OK(v)                                 \
+-    do {                                            \
+-        try {                                       \
+-            auto r_local = v;                       \
+-            if (r_local != 0) { return r_local;}    \
+-        }                                           \
+-        catch(armnn::Exception e)                                  \
+-        { \
+-            ARMNN_LOG(error) << "Oops: " << e.what(); \
+-            return GENERAL_ERROR; \
+-        }                 \
++#define CHECK_OK(v)                                     \
++    do {                                                \
++        try {                                           \
++            auto r_local = v;                           \
++            if (r_local != 0) { return r_local;}        \
++        }                                               \
++        catch (const armnn::Exception& e)               \
++        {                                               \
++            ARMNN_LOG(error) << "Oops: " << e.what();   \
++            return GENERAL_ERROR;                       \
++        }                                               \
+     } while(0)
+ 
+ 
+-- 
+2.17.1
+
