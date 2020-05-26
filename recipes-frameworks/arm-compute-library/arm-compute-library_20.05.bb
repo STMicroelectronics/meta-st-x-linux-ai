@@ -9,11 +9,9 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=2c2e6902c16b52c68b379cecc3fafad7"
 
-SRC_URI = " https://github.com/ARM-software/ComputeLibrary/archive/v${PV}.tar.gz;downloadfilename=arm-compute-library-v${PV}.tar.gz "
-SRC_URI[md5sum] = "84c0e218e36c8cde90f1a7a2f0f98e9d"
-SRC_URI[sha256sum] = "319cc145e8b99efbdee2a70a8b39885a3cf6b8612f39bc9ac96a7666f9a588e0"
-
-S = "${WORKDIR}/ComputeLibrary-${PV}"
+SRC_URI = " git://github.com/ARM-software/ComputeLibrary;protocol=https"
+SRCREV = "6a7771e460abeac7d401d6d38a0fcf0a0d2c3cbe"
+S = "${WORKDIR}/git"
 
 inherit scons
 
@@ -26,8 +24,9 @@ OESCONS_COMMON_FLAG += " set_soname=1 "
 OESCONS_COMMON_FLAG += " benchmark_tests=1 "
 OESCONS_COMMON_FLAG += " validation_tests=0 "
 
-EXTRA_OESCONS_arm = "arch=armv7a ${OESCONS_COMMON_FLAG}"
-EXTRA_OESCONS_aarch64 = "arch=arm64-v8a ${OESCONS_COMMON_FLAG}"
+# Selection of arch=armv7a allow to select 32 bits system.
+# The -march is overide by the extra_cxx_flags configuration to match armv7ve
+EXTRA_OESCONS = "arch=armv7a ${OESCONS_COMMON_FLAG}"
 
 do_compile_prepend() {
 	unset CC CXX
