@@ -16,7 +16,7 @@ S = "${WORKDIR}/git"
 inherit scons
 
 OESCONS_COMMON_FLAG  = " toolchain_prefix="${CCACHE}${HOST_PREFIX}" "
-OESCONS_COMMON_FLAG += " extra_cxx_flags="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS} -fPIC" "
+OESCONS_COMMON_FLAG += " extra_cxx_flags="${TARGET_CC_ARCH} -march=armv7ve ${TOOLCHAIN_OPTIONS} -fPIC" "
 OESCONS_COMMON_FLAG += " extra_link_flags="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}" "
 OESCONS_COMMON_FLAG += " neon=1 "
 OESCONS_COMMON_FLAG += " opencl=0 "
