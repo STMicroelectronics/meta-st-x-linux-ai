@@ -51,7 +51,7 @@ do_configure(){
 
 # Set building environment variables
 TENSORFLOW_TARGET="${@bb.utils.contains('TARGET_OS', 'linux-gnueabi', 'linux', '', d)}"
-TENSORFLOW_TARGET_ARCH_armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'armv7ve', 'armv7l', '', d)}"
+TENSORFLOW_TARGET_ARCH_armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7l', '', d)}"
 
 do_compile () {
 	export TENSORFLOW_TARGET=${TENSORFLOW_TARGET}
