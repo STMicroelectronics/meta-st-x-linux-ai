@@ -5,11 +5,11 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425
 
 DEPENDS += "armnn"
 
-SRC_URI  = " file://armnn_tfl_benchmark.cc;subdir=${PN}-${PV} "
-SRC_URI += " file://Makefile;subdir=${PN}-${PV} "
-SRC_URI += " file://wrapper_armnn_tfl.hpp;subdir=${PN}-${PV} "
+SRC_URI  = " file://armnn_tfl_benchmark.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://Makefile;subdir=${BPN}-${PV} "
+SRC_URI += " file://wrapper_armnn_tfl.hpp;subdir=${BPN}-${PV} "
 
-S = "${WORKDIR}/${PN}-${PV}"
+S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 
