@@ -78,7 +78,7 @@ RDEPENDS_${PN} += " \
 	gstreamer1.0-plugins-base-videoscale \
 	gtk+3 \
 	libopencv-core \
-	python3 \
+	python3-core \
 	python3-ctypes \
 	python3-multiprocessing \
 	python3-numpy \
