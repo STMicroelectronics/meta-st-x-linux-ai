@@ -83,7 +83,6 @@ RDEPENDS_${PN} += " \
 	python3-multiprocessing \
 	python3-numpy \
 	python3-opencv \
-	python3-runpy \
 	python3-threading \
 	python3-pillow \
 	python3-pygobject \
