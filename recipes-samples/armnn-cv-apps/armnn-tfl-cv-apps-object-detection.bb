@@ -7,16 +7,16 @@ inherit pkgconfig
 
 DEPENDS += "armnn gtk+3 opencv gstreamer1.0"
 
-SRC_URI  = " file://130-armnn-object-detection-C++.yaml;subdir=${PN}-${PV} "
-SRC_URI += " file://resources/armNN_C++.png;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/objdetect_armnn_tfl_gst_gtk.cc;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/wrapper_armnn_tfl.hpp;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/Makefile_objdetect;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/launch_bin_objdetect_armnn_tfl_coco_ssd_mobilenet.sh;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/launch_bin_objdetect_armnn_tfl_coco_ssd_mobilenet_testdata.sh;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/resources;subdir=${PN}-${PV} "
+SRC_URI  = " file://130-armnn-object-detection-C++.yaml;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/armNN_C++.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/objdetect_armnn_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/wrapper_armnn_tfl.hpp;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/Makefile_objdetect;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/launch_bin_objdetect_armnn_tfl_coco_ssd_mobilenet.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/launch_bin_objdetect_armnn_tfl_coco_ssd_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/resources;subdir=${BPN}-${PV} "
 
-S = "${WORKDIR}/${PN}-${PV}"
+S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 

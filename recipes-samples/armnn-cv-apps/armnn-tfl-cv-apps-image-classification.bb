@@ -7,16 +7,16 @@ inherit pkgconfig
 
 DEPENDS += "armnn gtk+3 opencv gstreamer1.0"
 
-SRC_URI  = " file://120-armnn-image-classification-C++.yaml;subdir=${PN}-${PV} "
-SRC_URI += " file://resources/armNN_C++.png;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/label_armnn_tfl_gst_gtk.cc;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/wrapper_armnn_tfl.hpp;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/Makefile_label;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/launch_bin_label_armnn_tfl_mobilenet.sh;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/bin/launch_bin_label_armnn_tfl_mobilenet_testdata.sh;subdir=${PN}-${PV} "
-SRC_URI += " file://applications/resources;subdir=${PN}-${PV} "
+SRC_URI  = " file://120-armnn-image-classification-C++.yaml;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/armNN_C++.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/label_armnn_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/wrapper_armnn_tfl.hpp;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/Makefile_label;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/launch_bin_label_armnn_tfl_mobilenet.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/bin/launch_bin_label_armnn_tfl_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://applications/resources;subdir=${BPN}-${PV} "
 
-S = "${WORKDIR}/${PN}-${PV}"
+S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 
