@@ -35,8 +35,8 @@ do_compile_prepend() {
 
 do_install() {
 	install -d ${D}${libdir}
-	install -d ${D}${bindir}/${PN}-${PV}/tools
-	install -d ${D}${bindir}/${PN}-${PV}/tools/examples
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools
+	install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples
 	install -d ${D}${includedir}/${BPN}
 
 	# install dynamic libraries
@@ -47,13 +47,13 @@ do_install() {
 	install -m 0644 ${S}/build/*.a                          ${D}${libdir}
 
 	# install example and benchmark binaries
-	install -m 0555 ${S}/build/examples/*                   ${D}${bindir}/${PN}-${PV}/tools/examples
-	rm ${D}${bindir}/${PN}-${PV}/tools/examples/*.o
+	install -m 0555 ${S}/build/examples/*                   ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples
+	rm ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/*.o
 
-	install -m 0555 ${S}/build/tests/arm_compute_benchmark  ${D}${bindir}/${PN}-${PV}/tools
-	install -m 0555 ${S}/build/tests/benchmark_graph*       ${D}${bindir}/${PN}-${PV}/tools
-	install -m 0555 ${S}/build/tests/benchmark_neon*        ${D}${bindir}/${PN}-${PV}/tools
-	rm ${D}${bindir}/${PN}-${PV}/tools/*.o
+	install -m 0555 ${S}/build/tests/arm_compute_benchmark  ${D}${prefix}/local/bin/${PN}-${PV}/tools
+	install -m 0555 ${S}/build/tests/benchmark_graph*       ${D}${prefix}/local/bin/${PN}-${PV}/tools
+	install -m 0555 ${S}/build/tests/benchmark_neon*        ${D}${prefix}/local/bin/${PN}-${PV}/tools
+	rm ${D}${prefix}/local/bin/${PN}-${PV}/tools/*.o
 
 	# install include files
 	cp -rf ${S}/arm_compute                                 ${D}${includedir}/${BPN}
@@ -63,7 +63,7 @@ do_install() {
 
 PACKAGES += "${PN}-tools"
 
-FILES_${PN}-tools = "${bindir}/${PN}-${PV}/tools/*"
+FILES_${PN}-tools = "${prefix}/local/bin/${PN}-${PV}/tools/*"
 
 FILES_${PN} = "${libdir}"
 
