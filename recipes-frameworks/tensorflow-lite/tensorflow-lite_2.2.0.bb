@@ -6,14 +6,12 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
 
-SRC_URI = " https://github.com/tensorflow/tensorflow/archive/v${PV}.tar.gz;downloadfilename=tensorflow-v${PV}.tar.gz "
-SRC_URI[md5sum] = "2054bc08cafbdd3fcde0337e836b7a02"
-SRC_URI[sha256sum] = "69cd836f87b8c53506c4f706f655d423270f5a563b76dc1cfa60fbc3184185a3"
+SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.2 "
+SRCREV = "2b96f3662bd776e277f86997659e61046b56c315"
+S = "${WORKDIR}/git"
 
 # Patch to be applied
 SRC_URI += " file://0001-TFLite-add-EXTRA_CFLAGS-variable.patch "
-
-S = "${WORKDIR}/tensorflow-${PV}"
 
 inherit setuptools3
 
