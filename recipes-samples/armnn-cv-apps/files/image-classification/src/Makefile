@@ -1,7 +1,7 @@
 TARGET_BIN = label_armnn_tfl_gst_gtk
 
-CXXFLAGS += -Wall $(shell pkg-config --cflags gtk+-3.0 opencv gstreamer-plugins-base-1.0)
-LDFLAGS = $(shell pkg-config --libs gtk+-3.0 opencv gstreamer-plugins-base-1.0) -lpthread -larmnn -larmnnTfLiteParser
+CXXFLAGS += -Wall $(shell pkg-config --cflags gtk+-3.0 opencv cairo gstreamer-plugins-base-1.0)
+LDFLAGS = $(shell pkg-config --libs gtk+-3.0 opencv cairo gstreamer-plugins-base-1.0) -lpthread -larmnn -larmnnTfLiteParser
 
 SRCS = label_armnn_tfl_gst_gtk.cc
 OBJS = $(SRCS:.cc=.o)

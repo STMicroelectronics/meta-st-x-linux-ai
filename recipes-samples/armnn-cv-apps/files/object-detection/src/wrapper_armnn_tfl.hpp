@@ -168,69 +168,12 @@ namespace wrapper_armnn_tfl {
 			return m_outputTensorInfos.at(index).GetNumElements();
 		}
 
-		void RunInference(uint8_t* img, Label_Results* results)
-		{
-			if (m_inputFloating)
-				RunInference<float>(img, results);
-			else
-				RunInference<uint8_t>(img, results);
-		}
-
 		void RunInference(uint8_t* img, ObjDetect_Results* results)
 		{
 			if (m_inputFloating)
 				RunInference<float>(img, results);
 			else
 				RunInference<uint8_t>(img, results);
-		}
-
-		template <class T>
-		void RunInference(uint8_t* img, Label_Results* results)
-		{
-			int input_height = GetInputHeight();
-			int input_width = GetInputWidth();
-			int input_channels = GetInputChannels();
-			auto sizeInBytes = input_height * input_width * input_channels;
-
-			std::vector<T> in(sizeInBytes);
-			if (m_inputFloating) {
-				for (int i = 0; i < sizeInBytes; i++)
-					in[i] = (img[i] - m_inputMean) / m_inputStd;
-			} else {
-				for (int i = 0; i < sizeInBytes; i++)
-					in[i] = img[i];
-			}
-
-			armnn::InputTensors inputTensors;
-			inputTensors.push_back({ m_inputBindings[0].first, armnn::ConstTensor(m_inputBindings[0].second, in.data()) });
-
-			armnn::OutputTensors outputTensors;
-			std::vector<std::vector<T>> out;
-			for (unsigned int i = 0; i < GetNumberOfOutputs() ; i++) {
-				std::vector<T> out_data(GetOutputSize(i));
-				out.push_back(out_data);
-				outputTensors.push_back({ m_outputBindings[i].first, armnn::Tensor(m_outputBindings[i].second, out[i].data()) });
-			}
-
-			struct timeval start_time, stop_time;
-			gettimeofday(&start_time, nullptr);
-
-			m_runtime->EnqueueWorkload(m_networkId, inputTensors, outputTensors);
-
-			gettimeofday(&stop_time, nullptr);
-			m_inferenceTime = (get_ms(stop_time) - get_ms(start_time));
-
-			/* Get results */
-			for (int i = 0; i < m_numberOfResults; i++) {
-				results->index[i] = std::distance(out[0].begin(), std::max_element(out[0].begin(), out[0].end()));
-				if (m_inputFloating)
-					results->accuracy[i] = out[0][results->index[i]];
-				else
-					results->accuracy[i] = out[0][results->index[i]] / 255.0;
-
-				out[0][results->index[i]] = 0;
-			}
-			results->inference_time = m_inferenceTime;
 		}
 
 		template <class T>
