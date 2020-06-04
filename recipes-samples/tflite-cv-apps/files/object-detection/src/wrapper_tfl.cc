@@ -219,36 +219,6 @@ void RunInference(Config* conf, Interpreter* interpreter, uint8_t* img)
 	}
 }
 
-void GetLabelResults(Config* conf, Interpreter* interpreter, Label_Results* results)
-{
-
-	const float threshold = 0.001f;
-
-	std::vector<std::pair<float, int>> top_results;
-
-	int output = interpreter->impl->outputs()[0];
-	TfLiteIntArray* output_dims = interpreter->impl->tensor(output)->dims;
-	// assume output dims to be something like (1, 1, ... ,size)
-	auto output_size = output_dims->data[output_dims->size - 1];
-	if (conf->input_floating) {
-		get_top_n<float>(interpreter->impl->typed_output_tensor<float>(0),
-				 output_size, conf->number_of_results, threshold,
-				 &top_results, true);
-	} else {
-		get_top_n<uint8_t>(interpreter->impl->typed_output_tensor<uint8_t>(0),
-				   output_size, conf->number_of_results, threshold,
-				   &top_results, false);
-	}
-
-	int i = 0;
-	for (const auto& result : top_results) {
-		results->accuracy[i] = result.first;
-		results->index[i] = result.second;
-		i++;
-	}
-	results->inference_time = interpreter->inference_time;
-}
-
 void GetObjDetectResults(Config* conf, Interpreter* interpreter, ObjDetect_Results* results)
 {
 	// location
