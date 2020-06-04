@@ -60,17 +60,6 @@ struct Label_Results {
 	float inference_time;
 };
 
-struct ObjDetect_Location {
-	float y0, x0, y1, x1;
-};
-
-struct ObjDetect_Results {
-	float score[10];
-	int index[10];
-	struct ObjDetect_Location location[10];
-	float inference_time;
-};
-
 int GetInputWidth(Interpreter* interpreter);
 int GetInputHeight(Interpreter* interpreter);
 int GetInputChannels(Interpreter* interpreter);
@@ -78,7 +67,6 @@ void DisplayModelInformation(Interpreter* interpreter);
 Interpreter* InitInterpreter(Config* conf);
 void RunInference(Config* conf, Interpreter* interpreter, uint8_t* img);
 void GetLabelResults(Config* conf, Interpreter* interpreter, Label_Results* results);
-void GetObjDetectResults(Config* conf, Interpreter* interpreter, ObjDetect_Results* results);
 TfLiteStatus ReadLabelsFile(const std::string& file_name,
 			    std::vector<std::string>* result,
 			    size_t* found_label_count);
