@@ -14,7 +14,6 @@ do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
 do_install() {
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/models
     install -d ${D}${prefix}/local/demo-ai/computer-vision/models/coco_ssd_mobilenet
     install -d ${D}${prefix}/local/demo-ai/computer-vision/models/coco_ssd_mobilenet/testdata
 
