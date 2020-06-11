@@ -1,0 +1,35 @@
+From a7297adf0282f5236dc9096beca998a582cf5341 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Mon, 10 Feb 2020 11:46:28 +0100
+Subject: [PATCH 2/5] TFLite: tools: make: remove hash and flags files from the
+ build sources for libtensorflow-lite.a
+
+By a file dependency game, hashtablez_sampler.cc and flags files include
+the absl/synchronization/mutex.h file but all files related to absl
+synchronization are not part of the build and as a result it generates a
+linking issue while linking the generated libtensorflow-lite.a library into
+a C/C++ application.
+
+It is not obvious that hash and flags files are needed so simply remove them
+from the list of the build sources.
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/make/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/make/Makefile b/tensorflow/lite/tools/make/Makefile
+index f67094f37b..bf973ea17a 100644
+--- a/tensorflow/lite/tools/make/Makefile
++++ b/tensorflow/lite/tools/make/Makefile
+@@ -115,7 +115,7 @@ tensorflow/lite/tools/make/downloads/fft2d/fftsg.c \
+ tensorflow/lite/tools/make/downloads/flatbuffers/src/util.cpp
+ CORE_CC_ALL_SRCS += \
+ 	$(shell find tensorflow/lite/tools/make/downloads/absl/absl/ \
+-	             -type f -name \*.cc | grep -v test | grep -v benchmark | grep -v synchronization | grep -v debugging)
++	             -type f -name \*.cc | grep -v test | grep -v benchmark | grep -v synchronization | grep -v debugging | grep -v hash | grep -v flags)
+ endif
+ # Remove any duplicates.
+ CORE_CC_ALL_SRCS := $(sort $(CORE_CC_ALL_SRCS))
+-- 
+2.17.1
