@@ -4,6 +4,7 @@ SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on
 
 IMAGE_AI_PART = "   \
     python3-tensorflow-lite \
+    python3-tensorflow-lite-edgetpu \
     armnn \
     armnn-tensorflow-lite \
 "
