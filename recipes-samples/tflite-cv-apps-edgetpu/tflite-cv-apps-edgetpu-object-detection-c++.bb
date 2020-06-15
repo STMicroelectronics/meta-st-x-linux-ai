@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7ca
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite-edgetpu-staticdev gtk+3 opencv gstreamer1.0 tensorflow-lite-edgetpu"
+DEPENDS += "tensorflow-lite-edgetpu-staticdev gtk+3 opencv gstreamer1.0 tensorflow-lite-edgetpu libusb1"
 
 SRC_URI  = " file://object-detection/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_C++.png;subdir=${BPN}-${PV} "
