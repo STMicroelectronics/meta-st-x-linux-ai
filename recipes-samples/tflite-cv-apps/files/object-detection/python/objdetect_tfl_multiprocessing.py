@@ -308,16 +308,32 @@ def nn_processing(nn,
 
 class MainUIWindow(Gtk.Window):
     def __init__(self, args):
-        Gtk.Window.__init__(self, title=os.path.basename(args.model_file))
+        Gtk.Window.__init__(self)
+
+        # set the title bar
+        self.headerbar = Gtk.HeaderBar()
+        Gtk.HeaderBar.set_has_subtitle(self.headerbar, True)
+        Gtk.HeaderBar.set_title(self.headerbar, "TensorFlow Lite")
+        Gtk.HeaderBar.set_show_close_button(self.headerbar, False)
+        self.set_titlebar(self.headerbar)
+
+        # add close button
+        self.close_button = Gtk.Button.new_with_label("Close")
+        self.close_button.connect("clicked", self.close)
+        self.headerbar.pack_end(self.close_button)
 
         if args.image == "":
             self.enable_camera_preview = True
         else:
             self.enable_camera_preview = False
 
+        GdkDisplay = Gdk.Display.get_default()
+        monitor = Gdk.Display.get_monitor(GdkDisplay, 0)
+        workarea = Gdk.Monitor.get_workarea(monitor)
+
         self.maximize()
-        self.screen_width = self.get_screen().get_width()
-        self.screen_height = self.get_screen().get_height()
+        self.screen_width = workarea.width
+        self.screen_height = workarea.height
 
         if self.screen_width == 720:
             self.picture_width = 480
@@ -343,12 +359,16 @@ class MainUIWindow(Gtk.Window):
 
         self.label = Gtk.Label()
         self.label.set_size_request(400, -1) # -1 to keep height automatic
-        self.label.set_alignment(0, 0)
+        self.label.set_xalign(0)
+        self.label.set_yalign(0)
         self.label.set_line_wrap(True)
         self.label.set_line_wrap_mode(Gtk.WrapMode.WORD)
         self.hbox.pack_start(self.label, False, False, 15)
 
         self.timeout_id = GLib.timeout_add(50, self.on_timeout)
+
+    def close(self, button):
+        self.destroy()
 
     def on_timeout(self):
         self.progressbar.pulse()
@@ -543,6 +563,11 @@ class MainUIWindow(Gtk.Window):
         # initialize NeuralNetwork object
         self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
         shape = self.nn.get_img_size()
+
+        if self.nn._floating_model:
+            Gtk.HeaderBar.set_subtitle(self.headerbar, "float model " + os.path.basename(args.model_file))
+        else:
+            Gtk.HeaderBar.set_subtitle(self.headerbar, "quant model " + os.path.basename(args.model_file))
 
         # define shared variables
         self.nn_processing_start = Value(ctypes.c_bool, False)
