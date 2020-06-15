@@ -1,5 +1,5 @@
 /*
- * objdetect_tfl_gst_gtk.cc
+ * objdetect_tfl_edgetpu_gst_gtk.cc
  *
  * This application demonstrate a computer vision use case for object
  * detection where frames are grabbed from a camera input (/dev/videox) and

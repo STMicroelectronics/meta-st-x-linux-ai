@@ -245,6 +245,8 @@ void GetLabelResults(Config* conf, Interpreter* interpreter, Label_Results* resu
 		results->accuracy[i] = result.first;
 		results->index[i] = result.second;
 		i++;
+	}
+	results->inference_time = interpreter->inference_time;
 }
 
 
