@@ -302,6 +302,13 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		nn_inference(img_nn.data, edgetpu_context);
 	}
 
+	std::stringstream information_sstr;
+	if (config.input_floating)
+		information_sstr << std::left  << "float model ";
+	else
+		information_sstr << std::left  << "quant model ";
+	information_sstr << config.model_name.substr(config.model_name.find_last_of("/\\") + 1);
+
 	std::stringstream display_fps_sstr;
 	display_fps_sstr   << std::left  << std::setw(11) << "disp. fps:";
 	display_fps_sstr   << std::right << std::setw(5) << std::fixed << std::setprecision(1) << display_avg_fps;
@@ -346,6 +353,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 					std::max(data->frame_fullscreen_pos.x,
 						 BRAIN_AREA_WIDTH),
 					0);
+
 		if (crop) {
 			/* draw the crop window on the preview to center image
 			 * to classify */
@@ -365,12 +373,14 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	if (data->preview_enabled) {
 		/* Camera preview use case */
 		cairo_move_to(cr, 2, 20);
-		cairo_show_text(cr, display_fps_sstr.str().c_str());
+		cairo_show_text(cr, information_sstr.str().c_str());
 		cairo_move_to(cr, 2, 40);
-		cairo_show_text(cr, inference_fps_sstr.str().c_str());
+		cairo_show_text(cr, display_fps_sstr.str().c_str());
 		cairo_move_to(cr, 2, 60);
-		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_show_text(cr, inference_fps_sstr.str().c_str());
 		cairo_move_to(cr, 2, 80);
+		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_move_to(cr, 2, 100);
 		cairo_show_text(cr, accuracy_sstr.str().c_str());
 
 		/* Set the font size to display the label */
@@ -379,8 +389,10 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	} else {
 		/* Still picture use case */
 		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 20);
-		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_show_text(cr, information_sstr.str().c_str());
 		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 40);
+		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 60);
 		cairo_show_text(cr, accuracy_sstr.str().c_str());
 
 		/* Translate coordinate to the preview area */
@@ -626,6 +638,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		     "fps-update-interval", 2000, "text-overlay", FALSE,
 		     "video-sink", appsink, NULL);
 	g_signal_connect(fpsmeasure2, "fps-measurements", G_CALLBACK(gst_fps_measure_nn_cb), NULL);
+
 	/* Configure the videocrop */
 	if (crop) {
 		/* Crop requested */
@@ -640,6 +653,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		g_object_set(framecrop, "left", 0, "right", 0,
 			     "top", 0, "bottom", 0, NULL);
 	}
+
 	/* Configure appsink */
 	g_object_set(appsink, "emit-signals", TRUE, "sync", FALSE,
 		     "max-buffers", 1, "drop", TRUE, "caps", scaleCaps, NULL);
@@ -913,7 +927,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
 	/* Initialize GTK */
 	gtk_init(&argc, &argv);
 
@@ -931,8 +944,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Create the GUI */
+	g_print("Start Creating GTK window\n");
 	gui_create(&data);
-	//g_print("Created a GTK GUI window\n");
 
 	/* Start the GTK main loop.
 	 * We will not regain control until gtk_main_quit is called. */

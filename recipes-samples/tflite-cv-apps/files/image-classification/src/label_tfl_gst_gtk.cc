@@ -302,6 +302,13 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		nn_inference(img_nn.data);
 	}
 
+	std::stringstream information_sstr;
+	if (config.input_floating)
+		information_sstr << std::left  << "float model ";
+	else
+		information_sstr << std::left  << "quant model ";
+	information_sstr << config.model_name.substr(config.model_name.find_last_of("/\\") + 1);
+
 	std::stringstream display_fps_sstr;
 	display_fps_sstr   << std::left  << std::setw(11) << "disp. fps:";
 	display_fps_sstr   << std::right << std::setw(5) << std::fixed << std::setprecision(1) << display_avg_fps;
@@ -366,12 +373,14 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	if (data->preview_enabled) {
 		/* Camera preview use case */
 		cairo_move_to(cr, 2, 20);
-		cairo_show_text(cr, display_fps_sstr.str().c_str());
+		cairo_show_text(cr, information_sstr.str().c_str());
 		cairo_move_to(cr, 2, 40);
-		cairo_show_text(cr, inference_fps_sstr.str().c_str());
+		cairo_show_text(cr, display_fps_sstr.str().c_str());
 		cairo_move_to(cr, 2, 60);
-		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_show_text(cr, inference_fps_sstr.str().c_str());
 		cairo_move_to(cr, 2, 80);
+		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_move_to(cr, 2, 100);
 		cairo_show_text(cr, accuracy_sstr.str().c_str());
 
 		/* Set the font size to display the label */
@@ -380,8 +389,10 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	} else {
 		/* Still picture use case */
 		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 20);
-		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_show_text(cr, information_sstr.str().c_str());
 		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 40);
+		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_move_to(cr, BRAIN_AREA_WIDTH + 2, 60);
 		cairo_show_text(cr, accuracy_sstr.str().c_str());
 
 		/* Translate coordinate to the preview area */
