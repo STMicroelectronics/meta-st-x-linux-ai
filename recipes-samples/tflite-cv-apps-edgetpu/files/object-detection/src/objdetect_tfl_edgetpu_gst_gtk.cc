@@ -14,7 +14,7 @@
  *
  * This combination is quite simple and efficient in term of CPU consumption.
  *
- * Copyright (C) 2019, STMicroelectronics - All Rights Reserved
+ * Copyright (C) 2020, STMicroelectronics - All Rights Reserved
  * Author: Vincent Abriou <vincent.abriou@st.com> for STMicroelectronics.
  *
  * License type: GPLv2
@@ -301,6 +301,13 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		nn_inference(img_nn.data, edgetpu_context);
 	}
 
+	std::stringstream information_sstr;
+	if (config.input_floating)
+		information_sstr << std::left  << "float model ";
+	else
+		information_sstr << std::left  << "quant model ";
+	information_sstr << config.model_name.substr(config.model_name.find_last_of("/\\") + 1);
+
 	std::stringstream display_fps_sstr;
 	display_fps_sstr   << std::left  << std::setw(11) << "disp. fps:";
 	display_fps_sstr   << std::right << std::setw(5) << std::fixed << std::setprecision(1) << display_avg_fps;
@@ -337,6 +344,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 					std::max(data->frame_fullscreen_pos.x,
 						 BRAIN_AREA_WIDTH),
 					0);
+
 		if (crop) {
 			/* draw the crop window on the preview to center image
 			 * to classify */
@@ -358,14 +366,18 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	if (data->preview_enabled) {
 		/* Camera preview use case */
 		cairo_move_to(cr, 2, 20);
-		cairo_show_text(cr, display_fps_sstr.str().c_str());
+		cairo_show_text(cr, information_sstr.str().c_str());
 		cairo_move_to(cr, 2, 40);
-		cairo_show_text(cr, inference_fps_sstr.str().c_str());
+		cairo_show_text(cr, display_fps_sstr.str().c_str());
 		cairo_move_to(cr, 2, 60);
+		cairo_show_text(cr, inference_fps_sstr.str().c_str());
+		cairo_move_to(cr, 2, 80);
 		cairo_show_text(cr, inference_time_sstr.str().c_str());
 	} else {
 		/* Still picture use case */
 		cairo_move_to(cr, 2, 30);
+		cairo_show_text(cr, information_sstr.str().c_str());
+		cairo_move_to(cr, 2, 50);
 		cairo_show_text(cr, inference_time_sstr.str().c_str());
 	}
 
@@ -742,7 +754,7 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_STD    1004
 void process_args(int argc, char** argv)
 {
-	const char* const short_opts = "i:v:m:l:c:h";
+	const char* const short_opts = "m:l:i:v:c:h";
 	const option long_opts[] = {
 		{"model_file",   required_argument, nullptr, 'm'},
 		{"label_file",   required_argument, nullptr, 'l'},
