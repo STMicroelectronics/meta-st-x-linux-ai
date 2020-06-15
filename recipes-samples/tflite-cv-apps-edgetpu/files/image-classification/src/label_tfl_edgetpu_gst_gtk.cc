@@ -1,5 +1,5 @@
 /*
- * label_tfl_gst_gtk.cc
+ * label_tfl_edgetpu_gst_gtk.cc
  *
  * This application demonstrate a computer vision use case for image
  * classification where frames are grabbed from a camera input (/dev/videox) and
