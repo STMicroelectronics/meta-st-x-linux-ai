@@ -91,20 +91,27 @@ do_install(){
 	# Install the edgge TPU udev rules
 	install -m 0666 ${S}/../edgetpu_runtime/libedgetpu/edgetpu-accelerator.rules                               ${D}${sysconfdir}/udev/rules.d/99-edgetpu-accelerator.rules
 
-	# Installing the Edge TPU Shared Library"
-	install -m 0755 ${S}/../edgetpu_runtime/libedgetpu/direct/armv7a/libedgetpu.so.1.0                         ${D}${libdir}
-	ln -sf libedgetpu.so.1.0 ${D}${libdir}/libedgetpu.so.1
-	ln -sf libedgetpu.so.1.0 ${D}${libdir}/libedgetpu.so
+	# Installing the Edge TPU Shared Library - Max Frequency version"
+	install -m 0755 ${S}/../edgetpu_runtime/libedgetpu/direct/armv7a/libedgetpu.so.1.0                         ${D}${libdir}/libedgetpu_max.so.1.0
+	ln -sf libedgetpu_max.so.1.0 ${D}${libdir}/libedgetpu_max.so.1
+	ln -sf libedgetpu_max.so.1.0 ${D}${libdir}/libedgetpu_max.so
+
+	# Installing the Edge TPU Shared Library - Throttled version"
+	install -m 0755 ${S}/../edgetpu_runtime/libedgetpu/throttled/armv7a/libedgetpu.so.1.0                      ${D}${libdir}/libedgetpu_throttled.so.1.0
+	ln -sf libedgetpu_throttled.so.1.0 ${D}${libdir}/libedgetpu_throttled.so.1
+	ln -sf libedgetpu_throttled.so.1.0 ${D}${libdir}/libedgetpu_throttled.so
 
 	# Installing the edgetpu header
 	cp ${S}/../edgetpu_runtime/libedgetpu/edgetpu.h                                                            ${D}${includedir}/tensorflow/lite
 }
 
 FILES_${PN}  = "${sysconfdir}"
-FILES_${PN} += "${libdir}/libedgetpu.so.1.0"
-FILES_${PN} += "${libdir}/libedgetpu.so.1"
+FILES_${PN} += "${libdir}/libedgetpu_throttled.so.1.0"
+FILES_${PN} += "${libdir}/libedgetpu_throttled.so.1"
+FILES_${PN} += "${libdir}/libedgetpu_max.so.1.0"
+FILES_${PN} += "${libdir}/libedgetpu_max.so.1"
 
-FILES_${PN}-dev = "${libdir}/libedgetpu.so ${includedir}"
+FILES_${PN}-dev = "${libdir}/libedgetpu_max.so ${libdir}/libedgetpu_throttled.so ${includedir}"
 
 INHIBIT_PACKAGE_STRIP = "1"
 

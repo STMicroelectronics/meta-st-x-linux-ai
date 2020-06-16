@@ -29,15 +29,13 @@ from multiprocessing import Array
 from threading import Thread
 import tflite_edgetpu_runtime.interpreter as tflite
 
-EDGETPU_SHARED_LIB = "libedgetpu.so.1"
-
 char_text_width = 6
 
 class NeuralNetwork:
     """
     Class that handles Neural Network inference
     """
-    def __init__(self, model_file, label_file, input_mean, input_std):
+    def __init__(self, model_file, label_file, input_mean, input_std, lib_edgetpu):
         """
         :param model_path: .tflite model to be executedname of file containing labels")
         :param label_file:  name of file containing labels
@@ -51,14 +49,19 @@ class NeuralNetwork:
                 my_labels.append(l.strip())
             return my_labels
 
+
         self._model_file = model_file
         self._label_file = label_file
         self._input_mean = input_mean
         self._input_std  = input_std
         self._floating_model = False
+        if lib_edgetpu == 'max':
+            self._lib_edgetpu = "libedgetpu_max.so.1"
+        elif lib_edgetpu == 'throttled':
+            self._lib_edgetpu = "libedgetpu_throttled.so.1"
 
         self._interpreter = tflite.Interpreter(self._model_file,
-                                               experimental_delegates=[tflite.load_delegate(EDGETPU_SHARED_LIB)])
+                                               experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
         self._interpreter.allocate_tensors()
         self._input_details  = self._interpreter.get_input_details()
         self._output_details = self._interpreter.get_output_details()
@@ -81,7 +84,7 @@ class NeuralNetwork:
                 self._input_details, self._output_details, self._labels = state
 
         self._interpreter = tflite.Interpreter(self._model_file,
-                                            experimental_delegates=[tflite.load_delegate(EDGETPU_SHARED_LIB)])
+                                            experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
         self._interpreter.allocate_tensors()
 
     def get_labels(self):
@@ -128,7 +131,6 @@ class FrameCapture:
         """
         self.cap = cv2.VideoCapture(_device_addr)
         assert self.cap.isOpened()
-        #ret = self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         ret = self.cap.set(cv2.CAP_PROP_FPS, _frame_rate)
         ret = self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,_frame_width)
         ret = self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,_frame_height)
@@ -374,7 +376,7 @@ class MainUIWindow(Gtk.Window):
 
 
     def main(self, args):
-        self.nn                     = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
+        self.nn                     = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.lib_edgetpu)
         self.input_shape            = self.nn.get_img_size()
         self.labels                 = self.nn.get_labels()
         self.frame_rate             = 150
@@ -448,6 +450,7 @@ if __name__ == '__main__':
     parser.add_argument("--framerate", default=30, help="framerate of the camera (default is 15fps)")
     parser.add_argument("-m", "--model_file", default="detect_edgetpu.tflite", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="labels.txt", help="name of file containing labels")
+    parser.add_argument("--lib_edgetpu", default='max', choices= ['max', 'throttled'], help="Choose the version of your EdgeTPU runtime")
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--top_k", type = int, default = 5, help=" The top_k classes to show")
