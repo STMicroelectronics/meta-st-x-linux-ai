@@ -16,24 +16,16 @@ from gi.repository import Gdk
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
 
+import time
+from PIL import Image, ImageDraw
 import argparse
-import platform
 import numpy as np
 import cv2
 import signal
-import ctypes
-
-import time
-from PIL import Image, ImageDraw
-
-import sys
 import os
 import random
-import platform
-import operator
-import collections
-from multiprocessing import Process, Event, Array, Value
-from timeit import default_timer as timer
+import ctypes
+from multiprocessing import Array
 from threading import Thread
 import tflite_edgetpu_runtime.interpreter as tflite
 
@@ -105,14 +97,16 @@ class NeuralNetwork:
                 int(self._input_details[0]['shape'][3]))
 
     def launch_inference(self, img):
-        # add N dim
+        """
+        :param img: the image to be inferenced
+        This method launches inference using the invoke call
+        """
         input_data = np.expand_dims(img, axis=0)
         if self._floating_model:
             input_data = (np.float32(input_data) - self._input_mean) / self._input_std
         self._interpreter.set_tensor(self._input_details[0]['index'], input_data)
         start = time.perf_counter()
         self._interpreter.invoke()
-        #print('Invoke func time : %.2fms' % ((time.perf_counter() - start) * 1000))
 
     def get_results(self):
         # display output results
@@ -124,18 +118,21 @@ class NeuralNetwork:
 
 
 class FrameCapture:
-    """Camera object that controls video caping"""
+    """Camera class that controls video caping"""
     def __init__(self,_frame_width, _frame_height,_frame_rate, _device_addr):
+        """
+        :param frame_width : The width of the captured frame
+        :param frame_height: The height of the captured frame
+        :param frame_rate  : The frame_rate of the video capture
+        :param device_addr : The address of the camera device
+        """
         self.cap = cv2.VideoCapture(_device_addr)
         assert self.cap.isOpened()
         #ret = self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         ret = self.cap.set(cv2.CAP_PROP_FPS, _frame_rate)
         ret = self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,_frame_width)
         ret = self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,_frame_height)
-        # Read first frame from the cap
-        #assert self.cap.grab(), "Couldn't grab the VideoCapture"
         (self.grabbed, self.frame) = self.cap.read()
-
         # Variable to control when the camera is stopped
         self.stopped = False
 
@@ -147,9 +144,8 @@ class FrameCapture:
     def update(self):
         # Keep looping indefinitely until the thread is stopped
         while True:
-            # If the camera is stopped, stop the thread
+            # Stop the thread if the camera is stopped
             if self.stopped:
-                # Close camera resources
                 self.cap.release()
                 return
             # Otherwise, grab the next frame from the cap
@@ -309,53 +305,54 @@ class MainUIWindow(Gtk.Window):
         #input("Press Enter to process new inference...")
         GLib.source_remove(self.timeout_id)
         self.progressbar.hide()
-        self.nn_inference_finish = False
+
         # get randomly a picture in the directory
         rfile = self.getRandomFile(args.image)
-        print("Picture ", args.image + "/" + rfile)
+        print("Picture: ", args.image + "/" + rfile)
         img = Image.open(args.image + "/" + rfile)
+
+        #Resize the preview frame
         prev_frame = cv2.resize(np.array(img), (self.picture_width, self.picture_height))
-        array_base = Array(ctypes.c_uint8, self.input_shape[0] * self.input_shape[1] * self.input_shape[2])
-        self.nn_img = np.ctypeslib.as_array(array_base.get_obj())
-        self.nn_img = self.nn_img.reshape(self.input_shape[0], self.input_shape[1], self.input_shape[2])
-        # update the preview frame
-        self.update_frame(prev_frame, self.labels)
+
         # execute the inference
-        nn_frame = cv2.resize(prev_frame, (self.nn_img.shape[1],  self.nn_img.shape[0]))
-        self.nn_img[:, :, :] = nn_frame
-        self.nn_inference_start = True
-        #while not self.nn_processing_finished.value:
-        #    pass
-        if self.nn_inference_start == True:
-            self.nn_inference_start = False
-            start = time.perf_counter()
-            self.nn.launch_inference(self.nn_img)
-            #print("ok3\n")
-            inference_time = time.perf_counter() - start
-            #print("ok4\n")
-            print('Inference time : %.8fms' % (inference_time * 1000))
-            self.result_locations[:, :, :], self.result_classes[:, :], self.result_scores[:, :] = self.nn.get_results()
-            inference_time = inference_time * 1000
-            self.update_label_still(inference_time)
+        nn_frame = cv2.resize(prev_frame, (self.input_shape[0], self.input_shape[1]))
+
+         #Run the inference and compute its time
+        start = time.perf_counter()
+        self.nn.launch_inference(nn_frame)
+        inference_time = time.perf_counter() - start
+        print('Inference time : %.8fms' % (inference_time * 1000))
+
+        #Display the results on the GUI interface
+        self.result_locations[:, :, :], self.result_classes[:, :], self.result_scores[:, :] = self.nn.get_results()
+        inference_time = inference_time * 1000
+        self.update_still(inference_time)
+        self.update_frame(prev_frame, self.labels)
         return True
 
 
     # GTK camera preview function
     def inference_camera(self):
+        """
+        This method runs an inference on an frame captured from the FrameCapture class
+        and processed for the model interpreter input dimensions
+        """
         cap_img = self.video_stream.read()
         frame = cap_img[:, :, ::-1].copy()
+
+        #Process the image for inference and display and update the preview frame
         loop_stop = time.perf_counter();
         processing_start = time.perf_counter()
         frame_crop = frame[self.y1:self.y2, self.x1:self.x2]
-        #frame_crop_RGB = cv2.cvtColor(frame_crop,cv2.COLOR_BGR2RGB)
         frame_crop_RGB_resize = cv2.resize(frame_crop, (self.input_shape[1], self.input_shape[0]))
-        self.nn_inference_start = False
         img = Image.fromarray(frame_crop_RGB_resize)
+
+        # Run the inference
         start = time.perf_counter()
         self.nn.launch_inference(img)
-        inference_time  = time.perf_counter() - start
-        #print('Processing and Inference time : %.2fms' % ((time.perf_counter() - processing_start) * 1000))
-        #print('Inference time : %.2fms' % ((time.perf_counter() - start) * 1000))
+        self.inference_time  = time.perf_counter() - start
+
+        #Computing the inference FPS to get inference performances
         self.loop_time  = loop_stop - self.loop_start
         self.loop_start = loop_stop
         self.total_time = self.total_time + self.loop_time
@@ -364,14 +361,15 @@ class MainUIWindow(Gtk.Window):
             self.loop_count = 0
             self.total_time = 0
         self.loop_count = self.loop_count + 1
-        self.nn_inference_finish = True
+
+        # Display the inference results on the GUI interface
         self.result_locations[:, :, :], self.result_classes[:, :], self.result_scores[:, :] = self.nn.get_results()
-        print("Inference fps %.5f" % self.inference_fps)
-        inference_time = inference_time * 1000
+        #print("Inference fps %.5f" % self.inference_fps)
+        inference_time = self.inference_time * 1000
         inference_fps  = self.inference_fps
         self.update_preview(inference_time, inference_fps)
-        # update the preview frame
         self.update_frame(frame_crop, self.labels)
+
         return True
 
 
@@ -379,15 +377,12 @@ class MainUIWindow(Gtk.Window):
         self.nn                     = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
         self.input_shape            = self.nn.get_img_size()
         self.labels                 = self.nn.get_labels()
+        self.frame_rate             = 150
 
         if self.nn._floating_model:
             Gtk.HeaderBar.set_subtitle(self.headerbar, "float model " + os.path.basename(args.model_file))
         else:
             Gtk.HeaderBar.set_subtitle(self.headerbar, "quant model " + os.path.basename(args.model_file))
-
-        self.nn_inference_start     = True
-        self.nn_inference_finish    = True
-        self.frame_rate             = 150
 
         self.result_locations_shared_array = Array(ctypes.c_float, 1 * 10 * 4)
         self.result_locations = np.ctypeslib.as_array(self.result_locations_shared_array.get_obj())
@@ -401,7 +396,6 @@ class MainUIWindow(Gtk.Window):
         self.result_scores = np.ctypeslib.as_array(self.result_scores_shared_array.get_obj())
         self.result_scores = self.result_scores.reshape(1, 10)
 
-
         if self.enable_camera_preview:
             print("Running Inferences on camera input")
             #variable to compute inference framerate
@@ -412,13 +406,10 @@ class MainUIWindow(Gtk.Window):
             self.inference_fps      = 0
             self.display_fps        = 0
             self.inference_time     = 0
-            self.camera_not_started = True
 
             # initialize VideoFrameCapture object
             self.video_stream = FrameCapture(args.frame_width, args.frame_height, args.framerate, args.video_device)
             self.video_stream.start()
-
-            self.camera_not_started = False
 
             self.y1 = int(0)
             self.y2 = int(self.input_shape[0])
@@ -427,11 +418,12 @@ class MainUIWindow(Gtk.Window):
 
             GLib.source_remove(self.timeout_id)
             self.progressbar.hide()
-
             GLib.idle_add(self.inference_camera)
 
         else :
             print("Running Inferences on picture input")
+            print("Warning: First inference might take a long time to be ran because of \n the time that takes the EdgeTPU to load the model to its RAM Memory ")
+
             self.button = Gtk.Button.new_with_label("Next inference")
             self.vbox.pack_start(self.button, False, False, 15)
             self.button.show_all()
