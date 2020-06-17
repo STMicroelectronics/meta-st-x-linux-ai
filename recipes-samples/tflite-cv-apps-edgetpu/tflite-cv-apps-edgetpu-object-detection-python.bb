@@ -11,7 +11,6 @@ SRC_URI  = " file://object-detection/python;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_Python.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80_next_inference.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80.png;subdir=${PN}-${PV} "
-SRC_URI += " file://resources/ST7079_AI_neural_white.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/close_50x50_pink.png;subdir=${PN}-${PV} "
 
 S = "${WORKDIR}/${PN}-${PV}"
