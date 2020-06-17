@@ -7,9 +7,13 @@ SRC_URI  = " https://storage.googleapis.com/download.tensorflow.org/models/tflit
 SRC_URI[mobilenet_v1_1.0_224_quant.md5sum] = "38ac0c626947875bd311ef96c8baab62"
 SRC_URI[mobilenet_v1_1.0_224_quant.sha256sum] = "2f8054076cf655e1a73778a49bd8fd0306d32b290b7e576dda9574f00f186c0f"
 
-SRC_URI += " http://download.tensorflow.org/models/mobilenet_v1_2018_02_22/mobilenet_v1_0.5_128_quant.tgz;subdir=${PN}-${PV}/mobilenet_v1_0.5_128_quant;name=mobilenet_v1_0.5_128_quant "
-SRC_URI[mobilenet_v1_0.5_128_quant.md5sum] = "170a3b882e57a5e5e04d913333ff21f7"
-SRC_URI[mobilenet_v1_0.5_128_quant.sha256sum] = "3b5c9a8fccc4fd2f7c2a8fd2852b498294e76f81b3d19c007951fb04877db00c"
+SRC_URI += " https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_0.5_128_quant.tgz;subdir=${PN}-${PV}/mobilenet_v1_0.5_128_quant;name=mobilenet_v1_0.5_128_quant "
+SRC_URI[mobilenet_v1_0.5_128_quant.md5sum] = "5cc8484cf04a407fc90993296f3f02db"
+SRC_URI[mobilenet_v1_0.5_128_quant.sha256sum] = "0a5b18571d3df4d85a5ac6cb5be829d141dd5855243ea04422ca7d19f730a506"
+
+SRC_URI += " https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_02_22/mobilenet_v1_0.5_128.tgz;subdir=${PN}-${PV}/mobilenet_v1_0.5_128_float;name=mobilenet_v1_0.5_128_float "
+SRC_URI[mobilenet_v1_0.5_128_float.md5sum] = "1950d02e12e2c85613c6f973b1213d1b"
+SRC_URI[mobilenet_v1_0.5_128_float.sha256sum] = "5a0def0d844327526385b110cdcaa6428d0828ff6d07515ef25bf3976e049d88"
 
 S = "${WORKDIR}/${PN}-${PV}"
 
@@ -24,6 +28,7 @@ do_install() {
     install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/label*.txt ${D}${prefix}/local/demo-ai/computer-vision/models/mobilenet/labels.txt
     install -m 0644 ${S}/mobilenet_v1_1.0_224_quant/*.tflite   ${D}${prefix}/local/demo-ai/computer-vision/models/mobilenet/
     install -m 0644 ${S}/mobilenet_v1_0.5_128_quant/*.tflite   ${D}${prefix}/local/demo-ai/computer-vision/models/mobilenet/
+    install -m 0644 ${S}/mobilenet_v1_0.5_128_float/*.tflite   ${D}${prefix}/local/demo-ai/computer-vision/models/mobilenet/
 }
 
 PACKAGES_remove = "${PN}-dbg"
