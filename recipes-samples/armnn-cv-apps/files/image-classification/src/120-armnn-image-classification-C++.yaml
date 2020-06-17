@@ -1,7 +1,7 @@
 Application:
     Name: Image Classification
     Description: Mobilenet v1
-    Icon: ../demo-ai/computer-vision/armnn-tfl-image-classification/bin/resources/armNN_C++.png
+    Icon: ../demo-ai/computer-vision/armnn-tfl-image-classification/bin/resources/armNN_tflite_C++.png
     Board:
         List: all
     Type: script

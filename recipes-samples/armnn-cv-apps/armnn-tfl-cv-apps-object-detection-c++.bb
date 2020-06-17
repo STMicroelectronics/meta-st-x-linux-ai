@@ -8,7 +8,7 @@ inherit pkgconfig
 DEPENDS += "armnn gtk+3 opencv gstreamer1.0"
 
 SRC_URI  = " file://object-detection/src;subdir=${PN}-${PV} "
-SRC_URI += " file://resources/armNN_C++.png;subdir=${PN}-${PV} "
+SRC_URI += " file://resources/armNN_tflite_C++.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80_next_inference.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/close_50x50_pink.png;subdir=${PN}-${PV} "
