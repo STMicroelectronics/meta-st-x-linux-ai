@@ -7,7 +7,7 @@ inherit pkgconfig
 
 DEPENDS += "armnn gtk+3 opencv gstreamer1.0"
 
-SRC_URI  = " file://object-detection/src;subdir=${PN}-${PV} "
+SRC_URI  = " file://tfl-object-detection/src;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/armNN_tflite_C++.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80_next_inference.png;subdir=${PN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80.png;subdir=${PN}-${PV} "
@@ -18,7 +18,7 @@ S = "${WORKDIR}/${PN}-${PV}"
 do_configure[noexec] = "1"
 
 do_compile() {
-    oe_runmake -C ${S}/object-detection/src
+    oe_runmake -C ${S}/tfl-object-detection/src
 }
 
 do_install() {
@@ -27,14 +27,14 @@ do_install() {
     install -d ${D}${prefix}/local/demo-ai/computer-vision/armnn-tfl-object-detection/bin/resources
 
     # install applications into the demo launcher
-    install -m 0755 ${S}/object-detection/src/*.yaml	${D}${prefix}/local/demo/application
+    install -m 0755 ${S}/tfl-object-detection/src/*.yaml	${D}${prefix}/local/demo/application
 
     # install the icons
     install -m 0755 ${S}/resources/*			${D}${prefix}/local/demo-ai/computer-vision/armnn-tfl-object-detection/bin/resources
 
     # install application binaries and launcher scripts
-    install -m 0755 ${S}/object-detection/src/*_gtk	${D}${prefix}/local/demo-ai/computer-vision/armnn-tfl-object-detection/bin
-    install -m 0755 ${S}/object-detection/src/*.sh	${D}${prefix}/local/demo-ai/computer-vision/armnn-tfl-object-detection/bin
+    install -m 0755 ${S}/tfl-object-detection/src/*_gtk	${D}${prefix}/local/demo-ai/computer-vision/armnn-tfl-object-detection/bin
+    install -m 0755 ${S}/tfl-object-detection/src/*.sh	${D}${prefix}/local/demo-ai/computer-vision/armnn-tfl-object-detection/bin
 }
 
 PACKAGES_remove = "${PN}-dev"
