@@ -126,6 +126,11 @@ namespace wrapper_armnn_tfl {
 			}
 		}
 
+		bool IsModelQuantized()
+		{
+			return !m_inputFloating;
+		}
+
 		int GetInputWidth()
 		{
 			armnn::TensorShape shape;
