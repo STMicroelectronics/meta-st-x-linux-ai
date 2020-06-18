@@ -52,9 +52,9 @@ class NeuralNetwork:
         self._floating_model = False
 
         if lib_edgetpu == 'max':
-            self._lib_edgetpu = "libedgetpu_max.so.1"
+            self._lib_edgetpu = "libedgetpu-max.so.1.0"
         elif lib_edgetpu == 'throttled':
-            self._lib_edgetpu = "libedgetpu_throttled.so.1"
+            self._lib_edgetpu = "libedgetpu-throttled.so.1.0"
 
         self._interpreter = tflite.Interpreter(self._model_file,
                                                experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
