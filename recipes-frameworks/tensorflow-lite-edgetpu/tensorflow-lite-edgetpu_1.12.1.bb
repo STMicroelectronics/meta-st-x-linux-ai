@@ -100,7 +100,7 @@ do_install(){
 	ln -sf libedgetpu-max.so.1.0 ${D}${libdir}/libedgetpu.so.1.0
 	ln -sf libedgetpu.so.1.0 ${D}${libdir}/libedgetpu.so.1
 	ln -sf libedgetpu.so.1.0 ${D}${libdir}/libedgetpu.so
-	
+
 	# Installing the edgetpu header
 	cp ${S}/../edgetpu_runtime/libedgetpu/edgetpu.h                                                            ${D}${includedir}/tensorflow/lite
 }
@@ -118,12 +118,12 @@ INHIBIT_PACKAGE_STRIP = "1"
 
 PACKAGES += "python3-${PN}"
 
-FILES_${PN}-tools = "${prefix}/local/bin/${PN}-${PV}/tools/*"
-
+# avoid to rename the package
+DEBIAN_NOAUTONAME_python3-${PN} = "1"
 FILES_python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_edgetpu_runtime"
 
 RDEPENDS_${PN} += "libusb1"
-RDEPENDS_python3-${PN} += " python3-ctypes python3-numpy "
+RDEPENDS_python3-${PN} += " ${PN} python3-ctypes python3-numpy "
 
 PROVIDES += " tensorflow-lite-edgetpu-staticdev python3-tensorflow-lite-edgetpu "
 
