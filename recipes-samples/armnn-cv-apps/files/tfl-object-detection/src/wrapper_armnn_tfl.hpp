@@ -52,12 +52,6 @@ namespace wrapper_armnn_tfl {
 		int number_of_results = 5;
 	};
 
-	struct Label_Results {
-		float accuracy[10];
-		int index[10];
-		float inference_time;
-	};
-
 	struct ObjDetect_Location {
 		float y0, x0, y1, x1;
 	};
