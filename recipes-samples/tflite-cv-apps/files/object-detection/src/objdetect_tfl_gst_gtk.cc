@@ -14,23 +14,15 @@
  *
  * This combination is quite simple and efficient in term of CPU consumption.
  *
- * Copyright (C) 2020, STMicroelectronics - All Rights Reserved
  * Author: Vincent Abriou <vincent.abriou@st.com> for STMicroelectronics.
  *
- * License type: GPLv2
+ * Copyright (c) 2020 STMicroelectronics. All rights reserved.
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 2 as published by
- * the Free Software Foundation.
+ * This software component is licensed by ST under BSD 3-Clause license,
+ * the "License"; You may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at:
  *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.
- * See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see
- * <http://www.gnu.org/licenses/>.
+ *     http://www.opensource.org/licenses/BSD-3-Clause
  */
 
 #include <cairo.h>
@@ -48,26 +40,28 @@
 #include <sys/types.h>
 #include <thread>
 
-#include "wrapper_tfl.h"
+#include "wrapper_tfl.hpp"
 
 /* Application parameters */
 std::vector<std::string> dir_files;
+std::string model_file_str;
+std::string labels_file_str;
 std::string image_dir_str;
 std::string video_device_str  = "0";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
-std::string model_file_str;
-std::string labels_file_str;
+bool verbose = false;
 float input_mean = 127.5f;
 float input_std = 127.5f;
 bool crop = false;
 cv::Rect cropRect(0, 0, 0, 0);
 
 /* TensorFlow Lite variables */
-struct tflite::wrapper_tfl::Config config;
-struct tflite::wrapper_tfl::Interpreter* interpreter;
-struct tflite::wrapper_tfl::ObjDetect_Results results;
+wrapper_tfl::Tfl_Wrapper tfl_wrapper;
+
+struct wrapper_tfl::Config config;
+struct wrapper_tfl::ObjDetect_Results results;
 std::vector<std::string> labels;
 
 /* Synchronization variables */
@@ -116,9 +110,7 @@ gdouble nn_avg_fps = 0;
  */
 static void nn_inference(uint8_t *img)
 {
-	tflite::wrapper_tfl::RunInference(&config, interpreter, img);
-
-	tflite::wrapper_tfl::GetObjDetectResults(&config, interpreter, &results);
+	tfl_wrapper.RunInference(img, &results);
 }
 
 /**
@@ -302,10 +294,10 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	}
 
 	std::stringstream information_sstr;
-	if (config.input_floating)
-		information_sstr << std::left  << "float model ";
-	else
+	if (tfl_wrapper.IsModelQuantized())
 		information_sstr << std::left  << "quant model ";
+	else
+		information_sstr << std::left  << "float model ";
 	information_sstr << config.model_name.substr(config.model_name.find_last_of("/\\") + 1);
 
 	std::stringstream display_fps_sstr;
@@ -756,6 +748,7 @@ static void print_help(int argc, char** argv)
 		"--framerate <val>:                    framerate of the camera (default is 15fps)\n"
 		"--input_mean <val>:                   model input mean (default is 127.5)\n"
 		"--input_std  <val>:                   model input standard deviation (default is 127.5)\n"
+		"--verbose:                            enable verbose mode\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
@@ -769,6 +762,7 @@ static void print_help(int argc, char** argv)
 #define OPT_FRAMERATE    1002
 #define OPT_INPUT_MEAN   1003
 #define OPT_INPUT_STD    1004
+#define OPT_VERBOSE      1005
 void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "m:l:i:v:c:h";
@@ -783,6 +777,7 @@ void process_args(int argc, char** argv)
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
 		{"input_mean",   required_argument, nullptr, OPT_INPUT_MEAN},
 		{"input_std",    required_argument, nullptr, OPT_INPUT_STD},
+		{"verbose",      no_argument,       nullptr, OPT_VERBOSE},
 		{"help",         no_argument,       nullptr, 'h'},
 		{nullptr,        no_argument,       nullptr, 0}
 	};
@@ -835,6 +830,10 @@ void process_args(int argc, char** argv)
 		case OPT_INPUT_STD:
 			input_std = std::stof(optarg);
 			std::cout << "input standard deviation set to: " << input_std << std::endl;
+			break;
+		case OPT_VERBOSE:
+			verbose = true;
+			std::cout << "verbose mode enabled" << std::endl;
 			break;
 		case 'h': // -h or --help
 		case '?': // Unrecognized option
@@ -904,28 +903,23 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* TensorFlow Lite interpreter initialization */
-	config.verbose = false;
-	config.accel = false;
-	config.input_floating = false;
-	config.profiling = false;
-	config.allow_fp16 = false;
-	config.loop_count = 1;
+	/* TensorFlow Lite wrapper initialization */
+	config.verbose = verbose;
+	config.model_name = model_file_str;
+	config.labels_file_name = labels_file_str;
 	config.input_mean = input_mean;
 	config.input_std = input_std;
 	config.number_of_threads = 2;
 	config.number_of_results = 5;
-	config.model_name = model_file_str;
-	config.labels_file_name = labels_file_str;
 
-	interpreter = tflite::wrapper_tfl::InitInterpreter(&config);
+	tfl_wrapper.Initialize(&config);
 
-	if (tflite::wrapper_tfl::ReadLabelsFile(config.labels_file_name, &labels, &label_count) != kTfLiteOk)
+	if (tfl_wrapper.ReadLabelsFile(config.labels_file_name, &labels, &label_count) != kTfLiteOk)
 		exit(0);
 
 	/* Get model input size */
-	data.nn_input_width = tflite::wrapper_tfl::GetInputWidth(interpreter);
-	data.nn_input_height = tflite::wrapper_tfl::GetInputHeight(interpreter);
+	data.nn_input_width = tfl_wrapper.GetInputWidth();
+	data.nn_input_height = tfl_wrapper.GetInputHeight();
 
 	if (data.preview_enabled) {
 		if (crop) {
