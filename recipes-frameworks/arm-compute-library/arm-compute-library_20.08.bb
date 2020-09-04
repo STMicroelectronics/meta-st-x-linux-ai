@@ -7,10 +7,10 @@ SUMMARY = "Arm Compute Library (ACL)"
 HOMEPAGE = "https://developer.arm.com/ip-products/processors/machine-learning/compute-library"
 LICENSE = "MIT"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=2c2e6902c16b52c68b379cecc3fafad7"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=a700d9de43fc22e998001a63c3feb1d2"
 
 SRC_URI = " git://github.com/ARM-software/ComputeLibrary;protocol=https"
-SRCREV = "6a7771e460abeac7d401d6d38a0fcf0a0d2c3cbe"
+SRCREV = "18b685f5d09ba07aa54e050f881a0befe3e36047"
 S = "${WORKDIR}/git"
 
 inherit scons
