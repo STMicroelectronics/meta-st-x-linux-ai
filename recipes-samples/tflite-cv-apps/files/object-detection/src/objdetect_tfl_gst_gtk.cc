@@ -412,7 +412,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		}
 		if (results.score[i] > 0.5) {
 			std::stringstream info_sstr;
-			info_sstr << labels[results.index[i]] << " " << std::fixed << std::setprecision(1) << results.score[0] * 100 << "%";
+			info_sstr << labels[results.index[i]] << " " << std::fixed << std::setprecision(1) << results.score[i] * 100 << "%";
 			float x      = data->frame_fullscreen_pos.width  * results.location[i].x0;
 			float y      = data->frame_fullscreen_pos.height * results.location[i].y0;
 			float width  = data->frame_fullscreen_pos.width  * (results.location[i].x1 - results.location[i].x0);
