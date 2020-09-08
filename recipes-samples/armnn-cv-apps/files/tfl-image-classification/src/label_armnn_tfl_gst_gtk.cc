@@ -359,8 +359,25 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		if (crop) {
 			/* draw the crop window on the preview to center image
 			 * to classify */
+			float ratio;
+			cv::Rect cropDisplay;
+
+			float ratio_width = (float)data->frame_fullscreen_pos.width / (float)cropRect.width;
+			float ratio_height = (float)data->frame_fullscreen_pos.height / (float)cropRect.height;
+
+			/* Adapt the cropRect to the display size */
+			if (ratio_width > ratio_height)
+				ratio = ratio_height;
+			else
+				ratio = ratio_width;
+
+			cropDisplay.width = cropRect.width * ratio;
+			cropDisplay.height = cropRect.height * ratio;
+			cropDisplay.x = cropRect.x * ratio;
+			cropDisplay.y = cropRect.y * ratio;
+
 			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-			cairo_rectangle(cr, int(cropRect.x), int(cropRect.y), int(cropRect.width), int(cropRect.height));
+			cairo_rectangle(cr, int(cropDisplay.x), int(cropDisplay.y), int(cropDisplay.width), int(cropDisplay.height));
 			cairo_stroke(cr);
 		}
 	}
