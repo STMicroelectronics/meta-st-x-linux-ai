@@ -22,6 +22,7 @@ EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 
 do_compile() {
     oe_runmake -C ${S}/face-recognition/src
+    oe_runmake -C ${S}/face-recognition/src -f Makefile_data_collection
 }
 
 do_install() {
