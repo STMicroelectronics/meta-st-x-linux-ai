@@ -31,12 +31,10 @@ class NeuralNetwork:
     """
     Class that handles Neural Network inference
     """
-    def __init__(self, model_file, label_file, input_mean, input_std, lib_edgetpu):
+    def __init__(self, model_file, label_file, lib_edgetpu):
         """
         :param model_path: .tflite model to be executedname of file containing labels")
         :param label_file:  name of file containing labels
-        :param input_mean: input_mean
-        :param input_std: input standard deviation
         """
         def load_labels(filename):
             my_labels = []
@@ -47,8 +45,6 @@ class NeuralNetwork:
 
         self._model_file = model_file
         self._label_file = label_file
-        self._input_mean = input_mean
-        self._input_std  = input_std
         self._floating_model = False
 
         if lib_edgetpu == 'max':
@@ -70,17 +66,15 @@ class NeuralNetwork:
         self._labels = load_labels(self._label_file)
 
     def __getstate__(self):
-        return (self._model_file, self._label_file, self._input_mean,
-                self._input_std, self._floating_model,
+        return (self._model_file, self._label_file, self._floating_model,
                 self._input_details, self._output_details, self._labels)
 
     def __setstate__(self, state):
-        self._model_file, self._label_file, self._input_mean, \
-                self._input_std, self._floating_model, \
+        self._model_file, self._label_file, self._floating_model, \
                 self._input_details, self._output_details, self._labels = state
 
         self._interpreter = tflite.Interpreter(self._model_file,
-                                               experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
+                                            experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
         self._interpreter.allocate_tensors()
 
     def get_labels(self):
@@ -101,9 +95,6 @@ class NeuralNetwork:
         This method launches inference using the invoke call
         """
         input_data = np.expand_dims(img, axis=0)
-        if self._floating_model:
-            input_data = (np.float32(input_data) - self._input_mean) / self._input_std
-            print("Floating point Tensorflow Model")
         self._interpreter.set_tensor(self._input_details[0]['index'], input_data)
         self._interpreter.invoke()
 
@@ -367,15 +358,16 @@ class MainUIWindow(Gtk.Window):
 
 
     def main(self, args):
-        self.nn                     = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.lib_edgetpu)
+        self.nn                     = NeuralNetwork(args.model_file, args.label_file, args.lib_edgetpu)
         self.input_shape            = self.nn.get_img_size()
         self.labels                 = self.nn.get_labels()
         self.frame_rate             = 150
 
         if self.nn._floating_model:
-            Gtk.HeaderBar.set_subtitle(self.headerbar, "float model " + os.path.basename(args.model_file))
-        else:
-            Gtk.HeaderBar.set_subtitle(self.headerbar, "quant model " + os.path.basename(args.model_file))
+            print("The model is not quantized! Please quantized it for egde tpu usage...")
+            Gtk.main_quit()
+
+        Gtk.HeaderBar.set_subtitle(self.headerbar, "quant model " + os.path.basename(args.model_file))
 
         if self.enable_camera_preview:
             print("Running Inferences on camera input")
@@ -431,8 +423,6 @@ if __name__ == '__main__':
     parser.add_argument("-m", "--model_file", default="mobilenet_v1_1.0_224_quant_edgetpu.tflite", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="labels.txt", help="name of file containing labels")
     parser.add_argument("--lib_edgetpu", default='max', choices= ['max', 'throttled'], help="Choose the version of your EdgeTPU runtime")
-    parser.add_argument("--input_mean", default=127.5, help="input mean")
-    parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--top_k", type = int, default = 5, help=" The top_k classes to show")
     args = parser.parse_args()
 
