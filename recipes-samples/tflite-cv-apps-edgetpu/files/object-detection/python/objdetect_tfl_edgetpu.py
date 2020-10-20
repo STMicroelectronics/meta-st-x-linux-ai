@@ -21,6 +21,8 @@ from PIL import Image, ImageDraw
 import argparse
 import numpy as np
 import cv2
+import re
+import subprocess
 import signal
 import os
 import random
@@ -437,6 +439,23 @@ def destroy_window(gtkobject):
 if __name__ == '__main__':
     # add signal to catch CRTL+C
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    # Check if the Edge TPU is connected
+    edge_tpu = False
+    device_re = re.compile(".+?ID\s(?P<id>\w+)", re.I)
+    lsusb = subprocess.check_output("lsusb").decode("utf-8")
+    for i in lsusb.split('\n'):
+        if i:
+            info = device_re.match(i)
+            if info:
+                d = info.groupdict()
+                if '1a6e' in d.values() or '18d1' in d.values():
+                    edge_tpu = True
+
+    if not edge_tpu:
+        print("Edge TPU is not plugged!")
+        print("Please connect the Edge TPU and try again.")
+        exit()
 
     #Tensorflow Lite NN intitalisation
     parser = argparse.ArgumentParser()
