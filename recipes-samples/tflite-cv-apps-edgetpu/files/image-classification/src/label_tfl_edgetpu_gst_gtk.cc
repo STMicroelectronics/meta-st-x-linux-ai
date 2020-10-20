@@ -42,7 +42,6 @@
 
 #include "wrapper_tfl_edgetpu.hpp"
 
-
 /* Application parameters */
 std::vector<std::string> dir_files;
 std::string image_dir_str;
@@ -848,6 +847,14 @@ int main(int argc, char *argv[])
 	/* Initialize our data structure */
 	data.pipeline = NULL;
 	data.window = NULL;
+
+	/*  Check if the Edge TPU is connected */
+	int status = system("lsusb -d 1a6e:");
+	status &= system("lsusb -d 18d1:");
+	if (status) {
+		g_printerr("ERROR: Edge TPU not connected.\n");
+		return 0;
+	}
 
 	/* If image_dir is set by the user, test data picture are used instead
 	 * of camera frames */
