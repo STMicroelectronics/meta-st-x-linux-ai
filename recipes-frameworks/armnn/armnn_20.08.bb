@@ -15,6 +15,7 @@ S = "${WORKDIR}/git"
 
 # Patch to be applied
 SRC_URI += " file://0001-fix-cxxopts-and-ghc-cross-compilation-issue.patch "
+SRC_URI += " file://0002-add-a-TfLite-benchmark-test-application.patch "
 
 TENSORFLOW_VERSION="2.3.1"
 SRC_URI += " git://github.com/tensorflow/tensorflow.git;name=tensorflow;branch=r2.3;destsuffix=tensorflow-${TENSORFLOW_VERSION} "

@@ -51,7 +51,6 @@ RDEPENDS_packagegroup-x-linux-ai-armnn-tflite = "\
     armnn \
     armnn-tensorflow-lite \
     armnn-tensorflow-lite-examples \
-    armnn-tfl-benchmark \
     armnn-tools \
     python3-tensorflow-lite \
     tensorflow-lite-tools \
