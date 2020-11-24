@@ -32,6 +32,7 @@ RDEPENDS_packagegroup-x-linux-ai-tflite = "\
     tflite-cv-apps-image-classification-python \
     tflite-cv-apps-object-detection-c++ \
     tflite-cv-apps-object-detection-python \
+    tflite-cv-apps-face-recognition-c++ \
 "
 
 SUMMARY_packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
