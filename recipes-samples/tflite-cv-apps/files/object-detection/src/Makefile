@@ -1,8 +1,14 @@
+OPENCV_PKGCONFIG?="opencv4"
 SYSROOT?=""
 TARGET_BIN = objdetect_tfl_gst_gtk
 
-CXXFLAGS += -Wall $(shell pkg-config --cflags gtk+-3.0 opencv4 cairo gstreamer-plugins-base-1.0) -I${SYSROOT}/usr/include/tensorflow/lite/tools/make/downloads/flatbuffers/include -I${SYSROOT}/usr/include/tensorflow/lite/tools/make/downloads/absl
-LDFLAGS = $(shell pkg-config --libs gtk+-3.0 opencv4 cairo gstreamer-plugins-base-1.0) -lpthread -ldl -Wl,--whole-archive -ltensorflow-lite  -Wl,--no-whole-archive
+CXXFLAGS += -Wall $(shell pkg-config --cflags gtk+-3.0 ${OPENCV_PKGCONFIG} gstreamer-plugins-base-1.0)
+CXXFLAGS += -I${SYSROOT}/usr/include/tensorflow/lite/tools/make/downloads/flatbuffers/include
+CXXFLAGS += -I${SYSROOT}/usr/include/tensorflow/lite/tools/make/downloads/absl
+
+LDFLAGS  = $(shell pkg-config --libs gtk+-3.0 gstreamer-plugins-base-1.0)
+LDFLAGS += -lpthread -ldl -lopencv_core -lopencv_imgproc -lopencv_imgcodecs
+LDFLAGS += -Wl,--whole-archive -ltensorflow-lite -Wl,--no-whole-archive
 
 SRCS = objdetect_tfl_gst_gtk.cc
 OBJS = $(SRCS:.cc=.o)

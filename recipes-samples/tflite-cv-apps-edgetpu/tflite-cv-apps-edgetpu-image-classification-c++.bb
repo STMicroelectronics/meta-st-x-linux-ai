@@ -20,6 +20,16 @@ do_configure[noexec] = "1"
 
 EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 
+#Check the version of OpenCV and fill EXTRA_OEMAKE accordingly
+python () {
+    import os.path
+
+    if os.path.isfile(d.getVar('RECIPE_SYSROOT') + '/usr/lib/pkgconfig/opencv4.pc'):
+        d.appendVar('EXTRA_OEMAKE', ' OPENCV_PKGCONFIG=opencv4')
+    else:
+        d.appendVar('EXTRA_OEMAKE', ' OPENCV_PKGCONFIG=opencv')
+}
+
 do_compile() {
     oe_runmake -C ${S}/image-classification/src
 }
@@ -64,5 +74,7 @@ RDEPENDS_${PN} += " \
 	tensorflow-lite-edgetpu \
 	gtk+3 \
 	libopencv-core \
+	libopencv-imgproc \
+	libopencv-imgcodecs \
 	tflite-models-mobilenetv1-edgetpu \
 "
