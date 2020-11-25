@@ -126,6 +126,7 @@ do_install() {
 	chrpath -d ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite/*
 	chrpath -d ${D}${libdir}/libarmnnBasePipeServer.so.*
 	chrpath -d ${D}${libdir}/libtimelineDecoder.so.*
+	chrpath -d ${D}${libdir}/libtimelineDecoderJson.so.*
 	chrpath -d ${D}${libdir}/libarmnnTfLiteParser.so.*
 }
 
