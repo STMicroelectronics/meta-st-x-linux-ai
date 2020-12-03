@@ -3,7 +3,7 @@ require recipes-st/images/st-image-weston.bb
 SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on weston image"
 
 IMAGE_AI_PART = "   \
-    packagegroup-x-linux-ai \
+    packagegroup-x-linux-ai-rootfs \
 "
 
 #
