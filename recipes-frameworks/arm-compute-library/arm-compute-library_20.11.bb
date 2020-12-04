@@ -10,7 +10,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=a700d9de43fc22e998001a63c3feb1d2"
 
 SRC_URI = " git://github.com/ARM-software/ComputeLibrary;protocol=https"
-SRCREV = "18b685f5d09ba07aa54e050f881a0befe3e36047"
+SRCREV = "49b8f9080cf2a24da986b6f156c7418ee3d28478"
 S = "${WORKDIR}/git"
 
 inherit scons
