@@ -1,8 +1,9 @@
 SUMMARY = "X-LINUX-AI full components (TFLite, armNN and application samples)"
-LICENSE = "MIT & Apache-2.0 & BSD-3-Clause"
+LICENSE = "MIT & Apache-2.0 & GPLv2 & BSD-3-Clause"
 
 LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -10,15 +11,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 inherit packagegroup
 
 PROVIDES = "${PACKAGES}"
-
-#Package created to split rootfs and userfs while image creation
 PACKAGES = "\
-    packagegroup-x-linux-ai-rootfs           \
-    packagegroup-x-linux-ai-userfs           \
-"
-
-#Package created to be exposed in the package repository
-PACKAGES += "\
     packagegroup-x-linux-ai                  \
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
@@ -30,33 +23,6 @@ RDEPENDS_packagegroup-x-linux-ai = "\
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
     packagegroup-x-linux-ai-armnn-tflite     \
-"
-
-SUMMARY_packagegroup-x-linux-ai-rootfs = "X-LINUX-AI rootfs components"
-RDEPENDS_packagegroup-x-linux-ai-rootfs = "\
-    python3-tensorflow-lite \
-    python3-tensorflow-lite-edgetpu \
-    arm-compute-library-tools \
-    armnn \
-"
-
-SUMMARY_packagegroup-x-linux-ai-userfs = "X-LINUX-AI userfs components"
-RDEPENDS_packagegroup-x-linux-ai-userfs = "\
-    tensorflow-lite-tools \
-    tflite-cv-apps-image-classification-c++ \
-    tflite-cv-apps-image-classification-python \
-    tflite-cv-apps-object-detection-c++ \
-    tflite-cv-apps-object-detection-python \
-    tflite-edgetpu-benchmark \
-    tflite-cv-apps-edgetpu-image-classification-c++ \
-    tflite-cv-apps-edgetpu-image-classification-python \
-    tflite-cv-apps-edgetpu-object-detection-c++ \
-    tflite-cv-apps-edgetpu-object-detection-python \
-    armnn-tensorflow-lite \
-    armnn-tensorflow-lite-examples \
-    armnn-tools \
-    armnn-tfl-cv-apps-image-classification-c++ \
-    armnn-tfl-cv-apps-object-detection-c++ \
 "
 
 SUMMARY_packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
@@ -86,6 +52,8 @@ RDEPENDS_packagegroup-x-linux-ai-armnn-tflite = "\
     armnn-tensorflow-lite \
     armnn-tensorflow-lite-examples \
     armnn-tools \
+    python3-tensorflow-lite \
+    tensorflow-lite-tools \
     armnn-tfl-cv-apps-image-classification-c++ \
     armnn-tfl-cv-apps-object-detection-c++ \
 "

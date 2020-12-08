@@ -1,3 +1,3 @@
 PACKAGE_INSTALL += "\
-    packagegroup-x-linux-ai-userfs \
+    packagegroup-x-linux-ai \
 "
