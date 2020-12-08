@@ -9,11 +9,12 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=3e14a924c16f7d828b8335a59da64074"
 
-SRC_URI = " git://github.com/ARM-software/armnn;name=armnn;branch=branches/armnn_20_11;protocol=https"
-SRCREV_armnn = "fa52dfeebeda690399d1d32fbeca1d9c33994deb"
+SRC_URI = " git://github.com/ARM-software/armnn;name=armnn;branch=branches/armnn_20_08;protocol=https"
+SRCREV_armnn = "ba163f93c8a0e858c9fb1ea85e4ac34c966ef38a"
 S = "${WORKDIR}/git"
 
 # Patch to be applied
+SRC_URI += " file://0001-fix-cxxopts-and-ghc-cross-compilation-issue.patch "
 SRC_URI += " file://0002-add-a-TfLite-benchmark-test-application.patch "
 
 TENSORFLOW_VERSION="2.3.1"
