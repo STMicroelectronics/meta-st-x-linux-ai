@@ -1,7 +1,7 @@
 # Copyright (C) 2020, STMicroelectronics - All Rights Reserved
 SUMMARY = "armNN TfLite Computer Vision image classification application example"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+LICENSE = "BSD-3-Clause"
+LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
 inherit pkgconfig
 
