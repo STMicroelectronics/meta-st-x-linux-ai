@@ -15,7 +15,6 @@ inherit setuptools3
 DEPENDS = " \
 	coreutils-native \
 	curl-native \
-	ca-certificates-native \
 	gzip-native \
 	unzip-native \
 	swig-native \
@@ -43,7 +42,7 @@ do_configure(){
 		export https_proxy=${https_proxy}
 	fi
 	# fix CURL certificates path
-	export CURL_CA_BUNDLE="${RECIPE_SYSROOT_NATIVE}/etc/ssl/certs/ca-certificates.crt"
+	export CURL_CA_BUNDLE="/etc/ssl/certs/ca-certificates.crt"
 
 	${S}/tensorflow/lite/tools/make/download_dependencies.sh
 }
