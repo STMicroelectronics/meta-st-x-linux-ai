@@ -1462,14 +1462,14 @@ static void print_help(int argc, char** argv)
 	std::cout <<
 		"Usage: " << argv[0] << " [option]\n"
 		"\n"
-		"--reco_simultaneous_faces <val>:      number of faces that could be recognized simultaneously (default is 1)\n"
+		"--reco_simultaneous_faces <val>:      number of faces that can be recognized simultaneously (default is 1)\n"
 		"--reco_threshold <val>:               face recognition threshold for face similarity (default is 0.70 = 70%)\n"
-		"--max_db_faces <val>:                 max number of faces to be stored in the data base (default is 200)\n"
-		"-i --image <directory path>:          image directory with image to be classified\n"
+		"--max_db_faces <val>:                 maximum number of faces to be stored in the database (default is 200)\n"
+		"-i --image <directory path>:          image directory with images to be classified\n"
 		"-v --video_device <n>:                video device (default /dev/video0)\n"
-		"--frame_width  <val>:                 width of the camera frame (default is 640)\n"
-		"--frame_height <val>:                 height of the camera frame (default is 480)\n"
-		"--framerate <val>:                    framerate of the camera (default is 15fps)\n"
+		"--frame_width  <val>:                 width of the camera frame (default is 640 pixels)\n"
+		"--frame_height <val>:                 height of the camera frame (default is 480 pixels)\n"
+		"--framerate <val>:                    frame rate of the camera (default is 15 fps)\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
