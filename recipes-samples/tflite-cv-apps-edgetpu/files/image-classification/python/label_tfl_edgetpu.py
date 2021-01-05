@@ -27,13 +27,13 @@ import signal
 import os
 import random
 from threading import Thread
-import tflite_edgetpu_runtime.interpreter as tflite
+import tflite_runtime.interpreter as tflite
 
 class NeuralNetwork:
     """
     Class that handles Neural Network inference
     """
-    def __init__(self, model_file, label_file, lib_edgetpu):
+    def __init__(self, model_file, label_file, perf):
         """
         :param model_path: .tflite model to be executedname of file containing labels")
         :param label_file:  name of file containing labels
@@ -49,10 +49,14 @@ class NeuralNetwork:
         self._label_file = label_file
         self._floating_model = False
 
-        if lib_edgetpu == 'max':
+        if perf == 'max':
             self._lib_edgetpu = "libedgetpu-max.so.1.0"
-        elif lib_edgetpu == 'throttled':
-            self._lib_edgetpu = "libedgetpu-throttled.so.1.0"
+        elif perf == 'high':
+            self._lib_edgetpu = "libedgetpu-high.so.1.0"
+        elif perf == 'med':
+            self._lib_edgetpu = "libedgetpu-med.so.1.0"
+        elif perf == 'low':
+            self._lib_edgetpu = "libedgetpu-low.so.1.0"
 
         self._interpreter = tflite.Interpreter(self._model_file,
                                                experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
@@ -360,7 +364,7 @@ class MainUIWindow(Gtk.Window):
 
 
     def main(self, args):
-        self.nn                     = NeuralNetwork(args.model_file, args.label_file, args.lib_edgetpu)
+        self.nn                     = NeuralNetwork(args.model_file, args.label_file, args.perf)
         self.input_shape            = self.nn.get_img_size()
         self.labels                 = self.nn.get_labels()
         self.frame_rate             = 150
@@ -441,7 +445,7 @@ if __name__ == '__main__':
     parser.add_argument("--framerate", default=30, help="framerate of the camera (default is 15fps)")
     parser.add_argument("-m", "--model_file", default="mobilenet_v1_1.0_224_quant_edgetpu.tflite", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="labels.txt", help="name of file containing labels")
-    parser.add_argument("--lib_edgetpu", default='max', choices= ['max', 'throttled'], help="Choose the version of your EdgeTPU runtime")
+    parser.add_argument("-p", "--perf", default='high', choices= ['max', 'high', 'med', 'low'], help="Select the performance of the Coral EdgeTPU")
     parser.add_argument("--top_k", type = int, default = 5, help=" The top_k classes to show")
     args = parser.parse_args()
 

@@ -17,30 +17,20 @@
 
 
 #include <iostream>
-#include <getopt.h>     // needed to process arguments
-#include <signal.h>     // needed for signal function
-#include <sys/time.h>   // needed for gettimeofday function
+#include <getopt.h>
+#include <signal.h>
+#include <sys/time.h>
 #include <numeric>
 
 #include "wrapper_tfl_edgetpu.hpp"
-
-#define INPUT_MEAN  127.5f
-#define INPUT_STD   127.5f
 
 /* Application parameters */
 std::string model_file_str;
 unsigned int nb_loops = 1;
 
-
 /* Tflite-EdgeTPU parameters */
-std::shared_ptr<edgetpu::EdgeTpuContext>* edgetpu_context;
-struct tflite::wrapper_tfl::Interpreter* interpreter;
-struct tflite::wrapper_tfl::Config config;
-float input_mean = INPUT_MEAN;
-float input_std = INPUT_STD;
-
-double get_us(struct timeval t) { return (t.tv_sec * 1000000 + t.tv_usec); }
-double get_ms(struct timeval t) { return (t.tv_sec * 1000 + t.tv_usec / 1000); }
+wrapper_tfl::Tfl_WrapperEdgeTPU tfl_wrapper_tpu;
+struct wrapper_tfl::Config config;
 
 /**
  * This function display the help when -h or --help is passed as parameter.
@@ -51,11 +41,10 @@ static void print_help(int argc, char** argv)
 		"Usage: " << argv[0] << "./tflite-edgetpu-benchmark -m <model .tflite> -l <label .txt file>\n"
 		"\n"
 		"-m --model_file <.tflite file path>:  .tflite model to be executed\n"
-        "-l --loops <int>:                     provide the number of time the inference will be executed (by default nb_loops=1)\n"
+		"-l --loops <int>:                     provide the number of time the inference will be executed (by default nb_loops=1)\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
-
 
 /**
  * This function parse the parameters of the application -m and -l ar
@@ -63,40 +52,40 @@ static void print_help(int argc, char** argv)
  */
 void process_args(int argc, char** argv)
 {
-    const char* const short_opts = "m:l:h";
-    const option long_opts[] = {
-        {"model_file",   required_argument, nullptr, 'm'},
-        {"loops",        required_argument, nullptr, 'l'},
-        {"help",         no_argument,       nullptr, 'h'},
-        {nullptr,        no_argument,       nullptr, 0}
-    };
+	const char* const short_opts = "m:l:p:h";
+	const option long_opts[] = {
+		{"model_file", required_argument, nullptr, 'm'},
+		{"loops",      required_argument, nullptr, 'l'},
+		{"help",       no_argument,       nullptr, 'h'},
+		{nullptr,      no_argument,       nullptr, 0}
+	};
 
-    while (true)
-    {
-        const auto opt = getopt_long(argc, argv, short_opts, long_opts, nullptr);
+	while (true)
+	{
+		const auto opt = getopt_long(argc, argv, short_opts, long_opts, nullptr);
 
-        if (-1 == opt)
-            break;
+		if (-1 == opt)
+			break;
 
-        switch (opt)
-        {
-        case 'm':
-            model_file_str = std::string(optarg);
-            std::cout << "model file set to: " << model_file_str << std::endl;
-            break;
-        case 'l':
-            nb_loops = std::stoi(optarg);
-            std::cout << "This benchmark will execute " << nb_loops << " inference(s)" << std::endl;
-            break;
-        case 'h': // -h or --help
-        case '?': // Unrecognized option
-        default:
-            print_help(argc, argv);
-            break;
-        }
-    }
-    if (model_file_str.empty())
-        print_help(argc, argv);
+		switch (opt)
+		{
+		case 'm':
+			model_file_str = std::string(optarg);
+			std::cout << "model file set to: " << model_file_str << std::endl;
+			break;
+		case 'l':
+			nb_loops = std::stoi(optarg);
+			std::cout << "This benchmark will execute " << nb_loops << " inference(s)" << std::endl;
+			break;
+		case 'h': // -h or --help
+		case '?': // Unrecognized option
+		default:
+			print_help(argc, argv);
+			break;
+		}
+	}
+	if (model_file_str.empty())
+		print_help(argc, argv);
 }
 
 /**
@@ -109,62 +98,49 @@ static void int_handler(int dummy)
 
 int main(int argc, char** argv)
 {
-    /* Catch CTRL + C signal */
-    signal(SIGINT, int_handler);
-    /* Catch kill signal */
-    signal(SIGTERM, int_handler);
+	std::vector<double> m_inferenceTimes;
 
-    process_args(argc, argv);
+	/* Catch CTRL + C signal */
+	signal(SIGINT, int_handler);
+	/* Catch kill signal */
+	signal(SIGTERM, int_handler);
 
-    config.verbose = false;
-    config.accel = false;
-    config.input_floating = false;
-    config.profiling = false;
-    config.allow_fp16 = false;
-    config.loop_count = 1;
-    config.input_mean = input_mean;
-    config.input_std = input_std;
-    config.number_of_threads = 2;
-    config.number_of_results = 5;
-    config.model_name = model_file_str;
-    config.labels_file_name = std::string();
+	process_args(argc, argv);
 
-    std::vector<double> m_inferenceTimes;
+	config.verbose = false;
+	config.model_name = model_file_str;
 
-    std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_context_ptr = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
-    edgetpu_context = &edgetpu_context_ptr;
+	tfl_wrapper_tpu.Initialize(&config);
 
-    interpreter = tflite::wrapper_tfl::InitInterpreter(&config, edgetpu_context);
-    int nn_input_width  = tflite::wrapper_tfl::GetInputWidth(interpreter);
-    int nn_input_height = tflite::wrapper_tfl::GetInputHeight(interpreter);
-    int nn_buffer_size  = nn_input_width * nn_input_height * 3;
-    uint8_t *nn_img;
+	if (!tfl_wrapper_tpu.IsModelQuantized()) {
+		std::cout << "The model is not quantized! Please quantized it for egde tpu usage...\n";
+		exit(0);
+	}
 
-    // Allocate memory for tensor
-    if(interpreter->impl->AllocateTensors() != kTfLiteOk){
-            std::cout << "Failed to allocate tensors\n";
-            exit(0);
-    }
+	int nn_input_width  = tfl_wrapper_tpu.GetInputWidth();
+	int nn_input_height = tfl_wrapper_tpu.GetInputHeight();
+	int nn_input_channels = tfl_wrapper_tpu.GetInputChannels();
+	int nn_buffer_size  = nn_input_width * nn_input_height * nn_input_channels;
+	uint8_t *nn_img;
 
-    std::cout << "\ninferences are running: " << std::flush;
-    for(unsigned int i = 0; i <= nb_loops ; i++){
-        nn_img = (uint8_t*)malloc(nn_buffer_size * sizeof(uint8_t));
-        struct timeval start_time, stop_time;
-        gettimeofday(&start_time, nullptr);
-        tflite::wrapper_tfl::RunInference(&config, interpreter, edgetpu_context, nn_img);
-        gettimeofday(&stop_time, nullptr);
-        interpreter->inference_time = float(get_ms(stop_time) - get_ms(start_time));
-        if (i != 0) m_inferenceTimes.push_back((get_us(stop_time) - get_us(start_time)));
-        std::cout << "# " << std::flush;
-    }
-    auto maxInfTime = *std::max_element(m_inferenceTimes.begin(), m_inferenceTimes.end());
-    auto minInfTime = *std::min_element(m_inferenceTimes.begin(), m_inferenceTimes.end());
-    auto avgInfTime = std::accumulate(m_inferenceTimes.begin(), m_inferenceTimes.end(), 0.0) / m_inferenceTimes.size();
-    std::cout << "\n\ninference time: ";
-    std::cout << "min=" << minInfTime << "us  ";
-    std::cout << "max=" << maxInfTime << "us  ";
-    std::cout << "avg=" << avgInfTime << "us" << std::endl;
-    free(nn_img);
-    return 0;
+	std::cout << "\ninferences are running: " << std::flush;
+	for(unsigned int i = 0; i <= nb_loops ; i++){
+		double inference_time;
+		nn_img = (uint8_t*)malloc(nn_buffer_size * sizeof(uint8_t));
+		inference_time = tfl_wrapper_tpu.RunInference(nn_img);
+		if (i != 0)
+			m_inferenceTimes.push_back(inference_time);
+		std::cout << "# " << std::flush;
+	}
+	auto maxInfTime = *std::max_element(m_inferenceTimes.begin(), m_inferenceTimes.end());
+	auto minInfTime = *std::min_element(m_inferenceTimes.begin(), m_inferenceTimes.end());
+	auto avgInfTime = std::accumulate(m_inferenceTimes.begin(), m_inferenceTimes.end(), 0.0) / m_inferenceTimes.size();
+	std::cout << "\n\ninference time: ";
+	std::cout << "min=" << minInfTime << "us  ";
+	std::cout << "max=" << maxInfTime << "us  ";
+	std::cout << "avg=" << avgInfTime << "us" << std::endl;
+	free(nn_img);
+
+	return 0;
 }
 
