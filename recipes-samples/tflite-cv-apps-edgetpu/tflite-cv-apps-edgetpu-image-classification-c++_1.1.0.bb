@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite-edgetpu-staticdev gtk+3 opencv gstreamer1.0 tensorflow-lite-edgetpu libusb1"
+DEPENDS += "tensorflow-lite-staticdev libedgetpu gtk+3 opencv gstreamer1.0"
 
 SRC_URI  = " file://image-classification/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_C++.png;subdir=${BPN}-${PV} "
@@ -71,8 +71,8 @@ RDEPENDS_${PN} += " \
 	gstreamer1.0-plugins-base-videorate \
 	gstreamer1.0-plugins-good-video4linux2 \
 	gstreamer1.0-plugins-base-videoscale \
-	tensorflow-lite-edgetpu \
 	gtk+3 \
+	libedgetpu \
 	libopencv-core \
 	libopencv-imgproc \
 	libopencv-imgcodecs \

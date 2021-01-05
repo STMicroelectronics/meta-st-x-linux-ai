@@ -3,10 +3,6 @@ SUMMARY = "TensorFlowLite Python Computer Vision object detection application ex
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 
-inherit pkgconfig
-
-DEPENDS += "tensorflow-lite-edgetpu"
-
 SRC_URI  = " file://object-detection/python;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80_next_inference.png;subdir=${BPN}-${PV} "
@@ -46,12 +42,13 @@ FILES_${PN} += "${prefix}/local/"
 RDEPENDS_${PN} += " \
 	python3-core \
 	python3-ctypes \
-	python3-tensorflow-lite-edgetpu \
+	python3-tensorflow-lite \
 	python3-numpy \
 	python3-opencv \
 	python3-multiprocessing \
 	python3-threading \
 	python3-pillow \
 	python3-pygobject \
+	libedgetpu \
 	tflite-models-coco-ssd-mobilenetv1-edgetpu \
 "
