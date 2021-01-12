@@ -1,8 +1,7 @@
 # Copyright (C) 2020, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite C++ API Computer Vision face recognition application example"
-LICENSE = "BSD-3-Clause & Apache-2.0"
-LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
-LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+LICENSE = "Proprietary"
+LIC_FILES_CHKSUM  = "file://face-recognition/src/LICENSE;md5=63992915400dc116081b7b8fc7fe7178"
 
 inherit pkgconfig
 
