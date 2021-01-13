@@ -70,10 +70,6 @@ do_install () {
 	cp ${S}/tflite/public/edgetpu.h         ${D}${includedir}/tensorflow/lite
 }
 
-do_clean () {
-	oe_runmake -C ${S} -f Makefile.linux clean
-}
-
 FILES_${PN} += "${sysconfdir}"
 FILES_${PN} += "${libdir}/libedgetpu-max.so.1.0"
 FILES_${PN} += "${libdir}/libedgetpu-high.so.1.0"
@@ -84,5 +80,7 @@ FILES_${PN} += "${libdir}/libedgetpu.so.1"
 
 FILES_${PN}-dev  = "${libdir}/libedgetpu.so"
 FILES_${PN}-dev += "${includedir}/tensorflow/lite"
+
+INSANE_SKIP_${PN} = "ldflags"
 
 RDEPENDS_${PN} += "libusb1"
