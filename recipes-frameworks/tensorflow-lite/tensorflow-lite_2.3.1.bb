@@ -32,7 +32,10 @@ COMPATIBLE_HOST_armv5  = 'null'
 COMPATIBLE_HOST_armv6  = 'null'
 COMPATIBLE_HOST_aarch64_class-target = 'null'
 
-do_configure(){
+do_configure[noexec] = "1"
+do_unpack[postfuncs] += " download_dependencies "
+
+download_dependencies(){
 	if [ -n "${http_proxy}" ]; then
 		export HTTP_PROXY=${http_proxy}
 		export http_proxy=${http_proxy}
