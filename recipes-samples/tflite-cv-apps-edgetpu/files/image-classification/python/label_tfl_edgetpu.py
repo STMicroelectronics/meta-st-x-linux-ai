@@ -50,13 +50,13 @@ class NeuralNetwork:
         self._floating_model = False
 
         if perf == 'max':
-            self._lib_edgetpu = "libedgetpu-max.so.1.0"
+            self._lib_edgetpu = "libedgetpu-max.so.2"
         elif perf == 'high':
-            self._lib_edgetpu = "libedgetpu-high.so.1.0"
+            self._lib_edgetpu = "libedgetpu-high.so.2"
         elif perf == 'med':
-            self._lib_edgetpu = "libedgetpu-med.so.1.0"
+            self._lib_edgetpu = "libedgetpu-med.so.2"
         elif perf == 'low':
-            self._lib_edgetpu = "libedgetpu-low.so.1.0"
+            self._lib_edgetpu = "libedgetpu-low.so.2"
 
         self._interpreter = tflite.Interpreter(self._model_file,
                                                experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])

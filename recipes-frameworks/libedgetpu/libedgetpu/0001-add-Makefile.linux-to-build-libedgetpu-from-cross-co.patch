@@ -175,10 +175,10 @@ index 0000000..18c9f99
 +LIBEDGETPU_LINKER_FILE := $(SRC_DIR)/tflite/public/libedgetpu.lds
 +#LDFLAGS  += -T $(LIBEDGETPU_LINKER_FILE)
 +
-+LIB_NAME_MAX  := libedgetpu-max.so.1.0
-+LIB_NAME_HIGH := libedgetpu-high.so.1.0
-+LIB_NAME_MED  := libedgetpu-med.so.1.0
-+LIB_NAME_LOW  := libedgetpu-low.so.1.0
++LIB_NAME_MAX  := libedgetpu-max.so.%%VERSION%%
++LIB_NAME_HIGH := libedgetpu-high.so.%%VERSION%%
++LIB_NAME_MED  := libedgetpu-med.so.%%VERSION%%
++LIB_NAME_LOW  := libedgetpu-low.so.%%VERSION%%
 +
 +LIB_PATH_MAX  := $(LIB_DIR)/$(LIB_NAME_MAX)
 +LIB_PATH_HIGH := $(LIB_DIR)/$(LIB_NAME_HIGH)
