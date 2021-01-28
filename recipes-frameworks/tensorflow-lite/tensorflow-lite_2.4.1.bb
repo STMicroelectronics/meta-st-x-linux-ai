@@ -6,9 +6,12 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
 
-SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.3 "
-SRCREV = "fcc4b966f1265f466e82617020af93670141b009"
+SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.4 "
+SRCREV = "85c8b2a817f95a3e979ecd1ed95bff1dc1335cff"
 S = "${WORKDIR}/git"
+
+# Patch to be applied
+SRC_URI += " file://0001-TFLite-tools-make-remove-test_delegate_providers.cc-.patch "
 
 inherit setuptools3
 
