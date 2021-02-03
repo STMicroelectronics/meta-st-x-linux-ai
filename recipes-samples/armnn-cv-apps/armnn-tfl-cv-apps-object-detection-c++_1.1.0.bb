@@ -17,18 +17,16 @@ S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 
-#Check the version of OpenCV and fill EXTRA_OEMAKE accordingly
-python () {
-    import os.path
-
-    if os.path.isfile(d.getVar('RECIPE_SYSROOT') + '/usr/lib/pkgconfig/opencv4.pc'):
-        d.appendVar('EXTRA_OEMAKE', ' OPENCV_PKGCONFIG=opencv4')
-    else:
-        d.appendVar('EXTRA_OEMAKE', ' OPENCV_PKGCONFIG=opencv')
-}
-
 do_compile() {
-    oe_runmake -C ${S}/tfl-object-detection/src
+    #Check the version of OpenCV and fill OPENCV_VERSION accordingly
+    FILE=${RECIPE_SYSROOT}/usr/lib/pkgconfig/opencv4.pc
+    if [ -f "$FILE" ]; then
+        OPENCV_VERSION=opencv4
+    else
+        OPENCV_VERSION=opencv
+    fi
+
+    oe_runmake OPENCV_PKGCONFIG=${OPENCV_VERSION} -C ${S}/tfl-object-detection/src
 }
 
 do_install() {

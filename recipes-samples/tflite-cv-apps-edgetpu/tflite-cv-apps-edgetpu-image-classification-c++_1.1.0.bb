@@ -20,18 +20,16 @@ do_configure[noexec] = "1"
 
 EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 
-#Check the version of OpenCV and fill EXTRA_OEMAKE accordingly
-python () {
-    import os.path
-
-    if os.path.isfile(d.getVar('RECIPE_SYSROOT') + '/usr/lib/pkgconfig/opencv4.pc'):
-        d.appendVar('EXTRA_OEMAKE', ' OPENCV_PKGCONFIG=opencv4')
-    else:
-        d.appendVar('EXTRA_OEMAKE', ' OPENCV_PKGCONFIG=opencv')
-}
-
 do_compile() {
-    oe_runmake -C ${S}/image-classification/src
+    #Check the version of OpenCV and fill OPENCV_VERSION accordingly
+    FILE=${RECIPE_SYSROOT}/usr/lib/pkgconfig/opencv4.pc
+    if [ -f "$FILE" ]; then
+        OPENCV_VERSION=opencv4
+    else
+        OPENCV_VERSION=opencv
+    fi
+
+    oe_runmake OPENCV_PKGCONFIG=${OPENCV_VERSION} -C ${S}/image-classification/src
 }
 
 do_install() {
