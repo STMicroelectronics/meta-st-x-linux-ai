@@ -14,7 +14,7 @@ SRCREV_armnn = "fa52dfeebeda690399d1d32fbeca1d9c33994deb"
 S = "${WORKDIR}/git"
 
 # Patch to be applied
-SRC_URI += " file://0002-add-a-TfLite-benchmark-test-application.patch "
+SRC_URI += " file://0001-add-a-TfLite-benchmark-test-application.patch "
 
 TENSORFLOW_VERSION="2.3.1"
 SRC_URI += " git://github.com/tensorflow/tensorflow.git;name=tensorflow;branch=r2.3;destsuffix=tensorflow-${TENSORFLOW_VERSION} "
