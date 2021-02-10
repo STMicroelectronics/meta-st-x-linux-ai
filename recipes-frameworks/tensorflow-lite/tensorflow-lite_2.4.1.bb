@@ -17,9 +17,7 @@ inherit setuptools3
 
 DEPENDS = " \
 	coreutils-native \
-	curl-native \
 	gzip-native \
-	unzip-native \
 	swig-native \
 	python3-wheel-native \
 	python3-numpy-native \
@@ -37,6 +35,7 @@ COMPATIBLE_HOST_aarch64_class-target = 'null'
 
 do_configure[noexec] = "1"
 do_unpack[postfuncs] += " download_dependencies "
+do_unpack[depends] += "curl-native:do_populate_sysroot unzip-native:do_populate_sysroot"
 
 download_dependencies(){
 	if [ -n "${http_proxy}" ]; then
