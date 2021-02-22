@@ -79,6 +79,9 @@ do_install(){
 	cd ${S}/tensorflow/lite
 	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/lite
 
+	# schema.fbs
+	cp ${S}/tensorflow/lite/schema/schema*.fbs ${D}${includedir}/tensorflow/lite/schema
+
 	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/minimal         ${D}${prefix}/local/bin/${PN}-${PV}/tools
 	install -m 0555 ${S}/tensorflow/lite/tools/make/gen/${TENSORFLOW_TARGET}_${TENSORFLOW_TARGET_ARCH}/bin/benchmark_model ${D}${prefix}/local/bin/${PN}-${PV}/tools
 
