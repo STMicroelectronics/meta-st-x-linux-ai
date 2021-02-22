@@ -16,10 +16,6 @@ S = "${WORKDIR}/git"
 # Patch to be applied
 SRC_URI += " file://0001-add-a-TfLite-benchmark-test-application.patch "
 
-TENSORFLOW_VERSION="2.3.1"
-SRC_URI += " git://github.com/tensorflow/tensorflow.git;name=tensorflow;branch=r2.3;destsuffix=tensorflow-${TENSORFLOW_VERSION} "
-SRCREV_tensorflow = "fcc4b966f1265f466e82617020af93670141b009"
-
 inherit cmake
 
 DEPENDS = " \
@@ -28,6 +24,7 @@ DEPENDS = " \
 	boost \
 	protobuf \
 	flatbuffers \
+	tensorflow-lite \
 	arm-compute-library \
 "
 
@@ -44,8 +41,8 @@ EXTRA_OECMAKE=" \
 	-DPROFILING=1 \
 	-DBUILD_ARMNN_EXAMPLES=1 \
 	-DBUILD_TF_LITE_PARSER=1 \
-	-DTF_LITE_SCHEMA_INCLUDE_PATH=${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema \
-	-DTF_LITE_GENERATED_PATH=${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema \
+	-DTF_LITE_SCHEMA_INCLUDE_PATH=${RECIPE_SYSROOT}/usr/include/tensorflow/lite/schema \
+	-DTF_LITE_GENERATED_PATH=${RECIPE_SYSROOT}/usr/include/tensorflow/lite/schema \
 "
 
 EXTRA_OECMAKE_append_arm=" \
@@ -106,7 +103,7 @@ do_install() {
 	cp -rf ${S}/include/armnnUtils                                                     ${D}${includedir}
 
 	# install armnn TfLite schema
-	install -m 0644 ${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema/schema.fbs ${D}${includedir}/armnn-tensorflow-lite/schema/
+	install -m 0644 ${RECIPE_SYSROOT}/usr/include/tensorflow/lite/schema/schema.fbs    ${D}${includedir}/armnn-tensorflow-lite/schema/
 
 	# install armnn TfLite examples in the userfs partition
 	install -m 0555 ${WORKDIR}/build/tests/TfLite*                                     ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite
