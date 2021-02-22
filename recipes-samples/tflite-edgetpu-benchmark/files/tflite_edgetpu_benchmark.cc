@@ -93,7 +93,7 @@ void process_args(int argc, char** argv)
  */
 static void int_handler(int dummy)
 {
-	exit(0);
+	exit(-1);
 }
 
 int main(int argc, char** argv)
@@ -107,6 +107,14 @@ int main(int argc, char** argv)
 
 	process_args(argc, argv);
 
+	/*  Check if the Edge TPU is connected */
+	int status = system("lsusb -d 1a6e:");
+	status &= system("lsusb -d 18d1:");
+	if (status) {
+		std::cout << "ERROR: Edge TPU not connected.\n";
+		return -1;
+	}
+
 	config.verbose = false;
 	config.model_name = model_file_str;
 
@@ -114,7 +122,7 @@ int main(int argc, char** argv)
 
 	if (!tfl_wrapper_tpu.IsModelQuantized()) {
 		std::cout << "The model is not quantized! Please quantized it for egde tpu usage...\n";
-		exit(0);
+		return -1;
 	}
 
 	int nn_input_width  = tfl_wrapper_tpu.GetInputWidth();
