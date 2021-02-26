@@ -3,6 +3,7 @@ SYSROOT?=""
 TARGET_BIN = label_tfl_gst_gtk
 
 CXXFLAGS += -Wall $(shell pkg-config --cflags gtk+-3.0 $(OPENCV_PKGCONFIG) gstreamer-plugins-base-1.0)
+CXXFLAGS += -std=c++17
 CXXFLAGS += -I$(SYSROOT)/usr/include/tensorflow/lite/tools/make/downloads/flatbuffers/include
 CXXFLAGS += -I$(SYSROOT)/usr/include/tensorflow/lite/tools/make/downloads/absl
 
