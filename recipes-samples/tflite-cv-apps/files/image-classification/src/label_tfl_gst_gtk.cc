@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include <condition_variable>
 #include <dirent.h>
+#include <filesystem>
 #include <getopt.h>
 #include <glib.h>
 #include <gst/gst.h>
@@ -35,6 +36,7 @@
 #include <iostream>
 #include <iomanip>
 #include <linux/input.h>
+#include <numeric>
 #include <opencv2/opencv.hpp>
 #include <semaphore.h>
 #include <sys/types.h>
@@ -52,6 +54,7 @@ std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
 bool verbose = false;
+bool validation = false;
 float input_mean = 127.5f;
 float input_std = 127.5f;
 bool crop = false;
@@ -99,11 +102,28 @@ typedef struct _CustomData {
 	FramePosition frame_fullscreen_pos;
 	int frame_fullscreen_pos_x;
 	int frame_fullscreen_pos_y;
+	/* For validation purpose */
+	int valid_timeout_id;
+	int valid_draw_count;
+	std::vector<double> valid_inference_time;
+
 } CustomData;
 
 /* Framerate statisitics */
 gdouble display_avg_fps = 0;
 gdouble nn_avg_fps = 0;
+
+/**
+ * In validation mode this function is called when timeout occurs
+ * Exit application if this function is called
+ */
+gint valid_timeout_callback(gpointer data)
+{
+	/* If timeout occurs that means that camera preview and the gtk is not
+	 * behaving as expected */
+	g_print("Timeout: application is not behaving has expected\n");
+	exit(1);
+}
 
 /**
  * This function execute an NN inference
@@ -132,7 +152,7 @@ static gboolean gui_press_event_cb(GtkWidget *widget,
 		    (event->y < EXIT_AREA_HEIGHT))
 			gtk_main_quit();
 	} if (event->button == GDK_BUTTON_PRIMARY) {
-		/* exit if event occurs in the exit area (tof right corner) */
+		/* clasify a new picture */
 		if ((event->x < BRAIN_AREA_WIDTH) &&
 		    (event->y < BRAIN_AREA_HEIGHT))
 			gtk_widget_queue_draw(data->window);
@@ -178,13 +198,14 @@ static void gui_compute_frame_position(GdkWindow *window,
 }
 
 /**
- * This function files in a directory randomly
+ * This function get a file randomly in a directory
  */
-static std::string gui_get_files_in_direcotry_randomly(std::string directory)
+static std::string gui_get_files_in_directory_randomly(std::string directory)
 {
-	std::stringstream file_patch_sstr;
+	std::stringstream file_path_sstr;
 
-	/* Get the list of whan all the file have been used */
+	/* Get the list of all the file ins the directory if the list of the
+	 * file is empty */
 	if (dir_files.size() == 0) {
 		DIR* dirp = opendir(directory.c_str());
 		struct dirent * dp;
@@ -201,10 +222,10 @@ static std::string gui_get_files_in_direcotry_randomly(std::string directory)
 		return "";
 
 	int random = rand() % dir_files.size();
-	file_patch_sstr << directory << dir_files[random];
+	file_path_sstr << directory << dir_files[random];
 	dir_files.erase(dir_files.begin() + random);
 
-	return file_patch_sstr.str();
+	return file_path_sstr.str();
 }
 
 /**
@@ -218,6 +239,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	GdkWindow *window = gtk_widget_get_window(widget);
 	int window_width  = gdk_window_get_width(window);
 	int offset = 0;
+	std::string file;
 
 	if (data->preview_enabled) {
 		/* Camera preview use case */
@@ -252,7 +274,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		cairo_paint(cr);
 
 		/* Select a picture in the directory */
-		std::string file = gui_get_files_in_direcotry_randomly(image_dir_str);
+		file = gui_get_files_in_directory_randomly(image_dir_str);
 
 		/* Read and format the pciture */
 		cairo_surface_t *picture;
@@ -423,6 +445,59 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	cairo_move_to(cr, x, y);
 	cairo_show_text(cr, label_sstr.str().c_str());
 
+	if (validation) {
+		data->valid_inference_time.push_back(results.inference_time);
+
+		/* Reload the timeout */
+		g_source_remove(data->valid_timeout_id);
+		data->valid_timeout_id = g_timeout_add(5000,
+						      valid_timeout_callback,
+						      NULL);
+
+		if (data->preview_enabled) {
+			data->valid_draw_count++;
+
+			if (data->valid_draw_count > 100) {
+				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
+								  data->valid_inference_time.end(), 0.0) /
+					data->valid_inference_time.size();
+				/* Stop the timeout and properly exit the
+				 * application */
+				std::cout << "avg display fps= " << display_avg_fps << std::endl;
+				std::cout << "avg inference fps= " << nn_avg_fps << std::endl;
+				std::cout << "avg inference time= " << avg_inf_time << std::endl;
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			}
+		} else {
+			/* Get the name of the file without extension and underscore */
+			std::string file_name = std::filesystem::path(file).stem();
+			file_name = file_name.substr(0, file_name.find('_'));
+
+			/* Verify that the inference output result matches the file
+			 * name. Else exit the application: validation is failing */
+			std::cout << "name extract from the picture file: "
+				<< std::left  << std::setw(32) << file_name
+				<<  "label: " << label_sstr.str() << std::endl;
+			if (file_name.compare(label_sstr.str()) != 0) {
+				std::cout << "Inference result mismatch the file name\n";
+				exit(1);
+			}
+
+			/* Continue over all files */
+			if (dir_files.size() == 0) {
+				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
+								  data->valid_inference_time.end(), 0.0) /
+					data->valid_inference_time.size();
+				std::cout << "avg inference time= " << avg_inf_time << " ms\n";
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			} else {
+				gtk_widget_queue_draw(data->window);
+			}
+		}
+	}
+
 	return FALSE;
 }
 
@@ -480,7 +555,7 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 		 *  This is mandatory to ensure that wayandsink is take into
 		 *  account before GTK window to be sure that the GTK
 		 *  transparent window will be on top of the camera preview. */
-		g_print("Recieve the first frame\n");
+		g_print("Receive the first frame\n");
 		std::lock_guard<std::mutex> lk(cond_var_m);
 		cond_var.notify_all();
 		first_frame = false;
@@ -739,6 +814,7 @@ static void print_help(int argc, char** argv)
 		"--input_mean <val>:                   model input mean (default is 127.5)\n"
 		"--input_std  <val>:                   model input standard deviation (default is 127.5)\n"
 		"--verbose:                            enable verbose mode\n"
+		"--validation:                         enable the validation mode\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
@@ -753,6 +829,7 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_MEAN   1003
 #define OPT_INPUT_STD    1004
 #define OPT_VERBOSE      1005
+#define OPT_VALIDATION   1006
 void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "m:l:i:v:c:h";
@@ -768,6 +845,7 @@ void process_args(int argc, char** argv)
 		{"input_mean",   required_argument, nullptr, OPT_INPUT_MEAN},
 		{"input_std",    required_argument, nullptr, OPT_INPUT_STD},
 		{"verbose",      no_argument,       nullptr, OPT_VERBOSE},
+		{"validation",   no_argument,       nullptr, OPT_VALIDATION},
 		{"help",         no_argument,       nullptr, 'h'},
 		{nullptr,        no_argument,       nullptr, 0}
 	};
@@ -825,6 +903,10 @@ void process_args(int argc, char** argv)
 			verbose = true;
 			std::cout << "verbose mode enabled" << std::endl;
 			break;
+		case OPT_VALIDATION:
+			validation = true;
+			std::cout << "application started in validation mode" << std::endl;
+			break;
 		case 'h': // -h or --help
 		case '?': // Unrecognized option
 		default:
@@ -880,16 +962,19 @@ int main(int argc, char *argv[])
 		device_sstr << "/dev/video" << video_device_str;
 		if (access(device_sstr.str().c_str(), F_OK) == -1) {
 			g_printerr("ERROR: No camera connected, %s does not exist.\n", device_sstr.str().c_str());
-			return 0;
+			exit(1);
 		}
 	} else {
 		data.preview_enabled = false;
 
 		/* Check if directory is empty */
-		std::string file = gui_get_files_in_direcotry_randomly(image_dir_str);
+		std::string file = gui_get_files_in_directory_randomly(image_dir_str);
 		if (file.empty()) {
 			g_printerr("ERROR: Image directory %s is empty\n", image_dir_str.c_str());
-			return 0;
+			exit(1);
+		} else {
+			/* Reset the dir_file variable */
+			dir_files.erase(dir_files.begin(), dir_files.end());
 		}
 	}
 
@@ -905,7 +990,7 @@ int main(int argc, char *argv[])
 	tfl_wrapper.Initialize(&config);
 
 	if (tfl_wrapper.ReadLabelsFile(config.labels_file_name, &labels, &label_count) != kTfLiteOk)
-		exit(0);
+		exit(1);
 
 	/* Get model input size */
 	data.nn_input_width = tfl_wrapper.GetInputWidth();
@@ -945,10 +1030,19 @@ int main(int argc, char *argv[])
 		/* Create the GStreamer pipeline for camera use case */
 		ret = gst_pipeline_camera_creation(&data);
 		if(ret)
-			return -1;
+			exit(1);
 
 		std::unique_lock<std::mutex> lk(cond_var_m);
 		cond_var.wait(lk);
+	}
+
+	/* Start a timeout timer in validation process to close application if
+	 * timeout occurs */
+	if (validation) {
+		data.valid_draw_count = 0;
+		data.valid_timeout_id = g_timeout_add(10000,
+						      valid_timeout_callback,
+						      NULL);
 	}
 
 	/* Create the GUI */

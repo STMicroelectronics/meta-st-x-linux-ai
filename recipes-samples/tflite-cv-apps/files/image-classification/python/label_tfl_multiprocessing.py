@@ -156,6 +156,10 @@ class NeuralNetwork:
                 int(self._input_details[0]['shape'][3]))
 
     def launch_inference(self, img):
+        """
+        This method launches inference using the invoke call
+        :param img: the image to be inferenced
+        """
         # add N dim
         input_data = np.expand_dims(img, axis=0)
 
@@ -163,21 +167,22 @@ class NeuralNetwork:
             input_data = (np.float32(input_data) - self._input_mean) / self._input_std
 
         self._interpreter.set_tensor(self._input_details[0]['index'], input_data)
-
         self._interpreter.invoke()
 
-    def display_results(self):
-        # display output results
+    def get_results(self):
+        """
+        This method can print and return the top_k results of the inference
+        """
         output_data = self._interpreter.get_tensor(self._output_details[0]['index'])
         results = np.squeeze(output_data)
 
         top_k = results.argsort()[-5:][::-1]
-        for i in top_k:
-            if self._floating_model:
-                print('{0:08.6f}'.format(float(results[i]))+":", self._labels[i])
-            else:
-                print('{0:08.6f}'.format(float(results[i]/255.0))+":", self._labels[i])
-        print("\n")
+        #for i in top_k:
+        #    if self._floating_model:
+        #        print('{0:08.6f}'.format(float(results[i]))+":", self._labels[i])
+        #    else:
+        #        print('{0:08.6f}'.format(float(results[i]/255.0))+":", self._labels[i])
+        #print("\n")
 
         if self._floating_model:
             return (results[top_k[0]], top_k[0])
@@ -294,10 +299,10 @@ def nn_processing(nn,
 
             stop_time = timer()
             inference_time.value = stop_time - start_time
-            print("\nProcessing time = %.3f s" % inference_time.value)
+            #print("\nProcessing time = %.3f s" % inference_time.value)
 
             # display NN inference results
-            accuracy.value, label.value = nn.display_results()
+            accuracy.value, label.value = nn.get_results()
 
             nn_processing_finished.value = True
 
@@ -365,6 +370,17 @@ class MainUIWindow(Gtk.Window):
 
         self.timeout_id = GLib.timeout_add(50, self.on_timeout)
 
+        # initialize the list of the file to be processed (used with the
+        # --image parameter)
+        self.files = []
+
+        # initialize the list of inference/display time to process the average
+        # (used with the --validation parameter)
+        self.valid_inference_time = []
+        self.valid_inference_fps = []
+        self.valid_preview_fps = []
+        self.valid_draw_count = 0
+
     def close(self, button):
         self.destroy()
 
@@ -372,6 +388,7 @@ class MainUIWindow(Gtk.Window):
         self.progressbar.pulse()
         return True
 
+    # Updating the labels and the inference infos displayed on the GUI interface - camera input
     def update_label_preview(self, label, accuracy, inference_time, display_fps, grab_fps, inference_fps):
         str_accuracy = str("{0:.0f}".format(accuracy))
         str_inference_time = str("{0:0.1f}".format(inference_time))
@@ -389,6 +406,25 @@ class MainUIWindow(Gtk.Window):
                               "<span font='15' color='#002052FF'><b>accuracy:       %s&#37;\n\n</b></span>"
                               "<span font='15' color='#002052FF'><b>%s</b></span>"
                               % (str_grab_fps, str_inference_fps, str_inference_time, str_accuracy, label))
+
+        if args.validation:
+            # reload the timeout
+            GLib.source_remove(self.valid_timeout_id)
+            self.valid_timeout_id = GLib.timeout_add(5000,
+                                                     self.valid_timeout_callback)
+
+            self.valid_draw_count = self.valid_draw_count + 1
+            # stop the application after 100 draws
+            if self.valid_draw_count > 100:
+                avg_prev_fps = sum(self.valid_preview_fps) / len(self.valid_preview_fps)
+                avg_inf_fps = sum(self.valid_inference_fps) / len(self.valid_inference_fps)
+                avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+                print("avg display fps= " + str(avg_prev_fps))
+                print("avg inference fps= " + str(avg_inf_fps))
+                print("avg inference time= " + str(avg_inf_time) + " ms")
+                GLib.source_remove(self.valid_timeout_id)
+                self.destroy()
+                os._exit(0)
 
     def update_label_still(self, label, accuracy, inference_time):
         str_accuracy = str("{0:.2f}".format(accuracy))
@@ -430,9 +466,16 @@ class MainUIWindow(Gtk.Window):
         """
         Returns a random filename, chosen among the files of the given path.
         """
-        files = os.listdir(path)
-        index = random.randrange(0, len(files))
-        return files[index]
+        if len(self.files) == 0:
+            self.files = os.listdir(path)
+
+        if len(self.files) == 0:
+            return '';
+
+        index = random.randrange(0, len(self.files))
+        file_path = self.files[index]
+        self.files.pop(index)
+        return file_path
 
     # GTK camera preview function
     def camera_preview(self):
@@ -470,6 +513,11 @@ class MainUIWindow(Gtk.Window):
         display_fps = self.preview_fps
         grab_fps = self.grabbing_fps.value
 
+        if args.validation:
+            self.valid_preview_fps.append(round(self.preview_fps))
+            self.valid_inference_fps.append(round(self.nn_inference_fps.value))
+            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+
         self.update_label_preview(str(label), accuracy, inference_time, display_fps, grab_fps, inference_fps)
 
         # update the preview frame
@@ -479,11 +527,13 @@ class MainUIWindow(Gtk.Window):
 
     # GTK still picture function
     def still_picture(self, button):
-        #input("Press Enter to process new inference...")
+        return self.process_picture()
+
+    def process_picture(self):
         self.nn_processing_finished.value = False
         # get randomly a picture in the directory
         rfile = self.getRandomFile(args.image)
-        print("Picture ", args.image + "/" + rfile)
+        #print("Picture ", args.image + "/" + rfile)
         img = Image.open(args.image + "/" + rfile)
 
         # display the picture in the screen
@@ -507,9 +557,56 @@ class MainUIWindow(Gtk.Window):
 
         self.update_label_still(str(label), accuracy, inference_time)
 
+        if args.validation:
+            # get file name
+            file_name = os.path.basename(rfile)
+            # remove the extension
+            file_name = os.path.splitext(file_name)[0]
+            # remove eventual '_'
+            file_name = file_name.rsplit('_')[0]
+            # store the inference time in a list so that we can compute the
+            # average later on
+            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+            print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
+            if file_name != str(label):
+                print("Inference result mismatch the file name")
+                os._exit(1);
+
         return True
 
+    def validation_picture(self):
+        # reload the timeout
+        GLib.source_remove(self.valid_timeout_id)
+        self.valid_timeout_id = GLib.timeout_add(5000,
+                                                 self.valid_timeout_callback)
+
+        # validation mode activated
+        self.process_picture()
+
+        # process all the file
+        if len(self.files) == 0:
+            avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+            print("avg inference time= " + str(avg_inf_time) + " ms")
+            GLib.source_remove(self.valid_timeout_id)
+            self.destroy()
+            os._exit(0)
+
+        return True
+
+    def valid_timeout_callback(self):
+        # if timeout occurs that means that camera preview and the gtk is not
+        # behaving as expected */
+        print("Timeout: camera preview and/or gtk is not behaving has expected\n");
+        self.destroy()
+        os._exit(1)
+
     def main(self, args):
+        # start a timeout timer in validation process to close application if
+        # timeout occurs
+        if args.validation:
+            self.valid_timeout_id = GLib.timeout_add(35000,
+                                                     self.valid_timeout_callback)
+
         if self.enable_camera_preview:
             #variable to compute preview framerate
             self.loop_count = 1
@@ -540,6 +637,16 @@ class MainUIWindow(Gtk.Window):
             # launch capture process
             self.preview_process.daemon = True
             self.preview_process.start()
+        else:
+            # still picture
+            # Check if image directory is empty
+            rfile = self.getRandomFile(args.image)
+            if rfile == '':
+                print("ERROR: Image directory " + rfile + "is empty")
+                os._exit(1)
+            else:
+                # reset the self.files variable 
+                self.files = []
 
         # initialize NeuralNetwork object
         self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
@@ -603,11 +710,13 @@ class MainUIWindow(Gtk.Window):
             GLib.source_remove(self.timeout_id)
             self.progressbar.hide()
 
-            if not self.enable_camera_preview:
+            if not args.validation:
                 self.button = Gtk.Button.new_with_label("Next inference")
                 self.vbox.pack_start(self.button, False, False, 15)
                 self.button.connect("clicked", self.still_picture)
                 self.button.show_all()
+            else:
+                GLib.idle_add(self.validation_picture)
 
 def destroy_window(gtkobject):
     gtkobject.terminate()
@@ -628,6 +737,7 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--label_file", default="", help="name of file containing labels")
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
+    parser.add_argument("--validation", action='store_true', help="enable the validation mode")
     args = parser.parse_args()
 
     set_start_method("spawn")
