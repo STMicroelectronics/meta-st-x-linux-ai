@@ -9,12 +9,16 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=3e14a924c16f7d828b8335a59da64074"
 
-SRC_URI = " git://github.com/ARM-software/armnn;name=armnn;branch=branches/armnn_20_11;protocol=https"
-SRCREV_armnn = "fa52dfeebeda690399d1d32fbeca1d9c33994deb"
+SRC_URI = " git://github.com/ARM-software/armnn;name=armnn;branch=branches/armnn_21_02;protocol=https"
+SRCREV_armnn = "175ed68c8a22e623183c5e8fba4b65ca6d38b858"
 S = "${WORKDIR}/git"
 
 # Patch to be applied
-SRC_URI += " file://0001-add-a-TfLite-benchmark-test-application.patch "
+SRC_URI += " file://0001-This-application-allow-to-benchmark-tflite-models-by.patch "
+
+TENSORFLOW_VERSION="2.3.1"
+SRC_URI += " git://github.com/tensorflow/tensorflow.git;name=tensorflow;branch=r2.3;destsuffix=tensorflow-${TENSORFLOW_VERSION} "
+SRCREV_tensorflow = "fcc4b966f1265f466e82617020af93670141b009"
 
 inherit cmake
 
@@ -24,7 +28,6 @@ DEPENDS = " \
 	boost \
 	protobuf \
 	flatbuffers \
-	tensorflow-lite \
 	arm-compute-library \
 "
 
@@ -41,8 +44,8 @@ EXTRA_OECMAKE=" \
 	-DPROFILING=1 \
 	-DBUILD_ARMNN_EXAMPLES=1 \
 	-DBUILD_TF_LITE_PARSER=1 \
-	-DTF_LITE_SCHEMA_INCLUDE_PATH=${RECIPE_SYSROOT}/usr/include/tensorflow/lite/schema \
-	-DTF_LITE_GENERATED_PATH=${RECIPE_SYSROOT}/usr/include/tensorflow/lite/schema \
+	-DTF_LITE_SCHEMA_INCLUDE_PATH=${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema \
+	-DTF_LITE_GENERATED_PATH=${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema \
 "
 
 EXTRA_OECMAKE_append_arm=" \
@@ -103,7 +106,7 @@ do_install() {
 	cp -rf ${S}/include/armnnUtils                                                     ${D}${includedir}
 
 	# install armnn TfLite schema
-	install -m 0644 ${RECIPE_SYSROOT}/usr/include/tensorflow/lite/schema/schema.fbs    ${D}${includedir}/armnn-tensorflow-lite/schema/
+	install -m 0644 ${WORKDIR}/tensorflow-${TENSORFLOW_VERSION}/tensorflow/lite/schema/schema.fbs ${D}${includedir}/armnn-tensorflow-lite/schema/
 
 	# install armnn TfLite examples in the userfs partition
 	install -m 0555 ${WORKDIR}/build/tests/TfLite*                                     ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/tensorflow-lite

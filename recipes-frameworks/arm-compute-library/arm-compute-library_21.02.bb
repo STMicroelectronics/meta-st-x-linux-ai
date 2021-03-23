@@ -7,11 +7,14 @@ SUMMARY = "Arm Compute Library (ACL)"
 HOMEPAGE = "https://developer.arm.com/ip-products/processors/machine-learning/compute-library"
 LICENSE = "MIT"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=a700d9de43fc22e998001a63c3feb1d2"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=9598101cf48c5f479cfda9f3fc6fc566"
 
 SRC_URI = " git://github.com/ARM-software/ComputeLibrary;protocol=https"
-SRCREV = "49b8f9080cf2a24da986b6f156c7418ee3d28478"
+SRCREV = "7dcb9fadb98cad05fca72de3273311d570d98b4e"
 S = "${WORKDIR}/git"
+
+# Patch to be applied
+SRC_URI += " file://0001-fix-noexcept-warning-issue-with-Yocto-cross-compile.patch "
 
 inherit scons
 
