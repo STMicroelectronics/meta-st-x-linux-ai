@@ -26,12 +26,56 @@ import subprocess
 import signal
 import os
 import random
+import json
 import ctypes
 from multiprocessing import Array
 from threading import Thread
 import tflite_runtime.interpreter as tflite
 
 char_text_width = 6
+
+class VideoFrameCapture:
+    """
+    Class that handles video capture from device
+    """
+    def __init__(self, device=0, width=320, height=240, fps=15):
+        """
+        :param device: device index or video filename
+        :param width:  width of the requested frame
+        :param height: heigh of the requested frame
+        :param fps:    framerate of the camera
+        """
+        self.cap = cv2.VideoCapture(device)
+        assert self.cap.isOpened()
+        ret = self.cap.set(cv2.CAP_PROP_FPS, fps)
+        ret = self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        ret = self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        (self.grabbed, self.frame) = self.cap.read()
+        # Variable to control when the camera is stopped
+        self.stopped = False
+
+    def start(self):
+        # Start the thread that reads frames from the video cap
+        Thread(target=self.update,args=()).start()
+        return self
+
+    def update(self):
+        # Keep looping indefinitely until the thread is stopped
+        while True:
+            # Stop the thread if the camera is stopped
+            if self.stopped:
+                self.cap.release()
+                return
+            # Otherwise, grab the next frame from the cap
+            (self.grabbed, self.frame) = self.cap.read()
+
+    def read(self):
+        # Return the most recent captured frame
+        return self.frame
+
+    def stop(self):
+        # Indicate that the camera and thread should be stopped
+        self.stopped = True
 
 class NeuralNetwork:
     """
@@ -65,7 +109,7 @@ class NeuralNetwork:
         self._interpreter = tflite.Interpreter(self._model_file,
                                                experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
         self._interpreter.allocate_tensors()
-        self._input_details  = self._interpreter.get_input_details()
+        self._input_details = self._interpreter.get_input_details()
         self._output_details = self._interpreter.get_output_details()
 
         # check the type of the input tensor
@@ -76,11 +120,11 @@ class NeuralNetwork:
         self._labels = load_labels(self._label_file)
 
     def __getstate__(self):
-        return (self._model_file, self._label_file, self._floating_model,
+        return (self._model_file, self._label_file,
                 self._input_details, self._output_details, self._labels)
 
     def __setstate__(self, state):
-        self._model_file, self._label_file, self._floating_model, \
+        self._model_file, self._label_file, \
                 self._input_details, self._output_details, self._labels = state
 
         self._interpreter = tflite.Interpreter(self._model_file,
@@ -101,12 +145,13 @@ class NeuralNetwork:
 
     def launch_inference(self, img):
         """
-        :param img: the image to be inferenced
         This method launches inference using the invoke call
+        :param img: the image to be inferenced
         """
+        # add N dim
         input_data = np.expand_dims(img, axis=0)
+
         self._interpreter.set_tensor(self._input_details[0]['index'], input_data)
-        start = time.perf_counter()
         self._interpreter.invoke()
 
     def get_results(self):
@@ -115,49 +160,9 @@ class NeuralNetwork:
         classes   = self._interpreter.get_tensor(self._output_details[1]['index'])
         scores    = self._interpreter.get_tensor(self._output_details[2]['index'])
         nb_detect = self._interpreter.get_tensor(self._output_details[3]['index'])
+
         return (locations, classes, scores)
 
-
-class FrameCapture:
-    """Camera class that controls video caping"""
-    def __init__(self,_frame_width, _frame_height,_frame_rate, _device_addr):
-        """
-        :param frame_width : The width of the captured frame
-        :param frame_height: The height of the captured frame
-        :param frame_rate  : The frame_rate of the video capture
-        :param device_addr : The address of the camera device
-        """
-        self.cap = cv2.VideoCapture(_device_addr)
-        assert self.cap.isOpened()
-        ret = self.cap.set(cv2.CAP_PROP_FPS, _frame_rate)
-        ret = self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,_frame_width)
-        ret = self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,_frame_height)
-        (self.grabbed, self.frame) = self.cap.read()
-        # Variable to control when the camera is stopped
-        self.stopped = False
-
-    def start(self):
-        # Start the thread that reads frames from the video cap
-        Thread(target=self.update,args=()).start()
-        return self
-
-    def update(self):
-        # Keep looping indefinitely until the thread is stopped
-        while True:
-            # Stop the thread if the camera is stopped
-            if self.stopped:
-                self.cap.release()
-                return
-            # Otherwise, grab the next frame from the cap
-            (self.grabbed, self.frame) = self.cap.read()
-
-    def read(self):
-        # Return the most recent captured frame
-        return self.frame
-
-    def stop(self):
-        # Indicate that the camera and thread should be stopped
-        self.stopped = True
 
 class MainUIWindow(Gtk.Window):
     def __init__(self, args):
@@ -220,6 +225,16 @@ class MainUIWindow(Gtk.Window):
 
         self.timeout_id = GLib.timeout_add(50, self.on_timeout)
 
+        # initialize the list of the file to be processed (used with the
+        # --image parameter)
+        self.files = []
+
+        # initialize the list of inference/display time to process the average
+        # (used with the --validation parameter)
+        self.valid_inference_time = []
+        self.valid_inference_fps = []
+        self.valid_draw_count = 0
+
     def close(self, button):
         self.destroy()
 
@@ -227,7 +242,8 @@ class MainUIWindow(Gtk.Window):
         self.progressbar.pulse()
         return True
 
-    def update_preview(self, inference_time, inference_fps):
+    # Updating the labels and the inference infos displayed on the GUI interface - camera input
+    def update_label_preview(self, inference_time, inference_fps):
         str_inference_time = str("{0:0.1f}".format(inference_time))
         str_inference_fps = str("{0:.1f}".format(inference_fps))
 
@@ -235,47 +251,115 @@ class MainUIWindow(Gtk.Window):
                               "<span font='15' color='#002052FF'><b>inference time: %sms\n</b></span>"
                               % (str_inference_fps, str_inference_time))
 
-    def update_still(self, inference_time):
+        if args.validation:
+            # reload the timeout
+            GLib.source_remove(self.valid_timeout_id)
+            self.valid_timeout_id = GLib.timeout_add(5000,
+                                                     self.valid_timeout_callback)
+
+            self.valid_draw_count = self.valid_draw_count + 1
+            # stop the application after 50 draws
+            if self.valid_draw_count > 50:
+                avg_inf_fps = sum(self.valid_inference_fps) / len(self.valid_inference_fps)
+                avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+                print("avg inference fps= " + str(avg_inf_fps))
+                print("avg inference time= " + str(avg_inf_time) + " ms")
+                GLib.source_remove(self.valid_timeout_id)
+                self.destroy()
+                os._exit(0)
+
+    def update_label_still(self, inference_time):
         str_inference_time = str("{0:0.1f}".format(inference_time))
 
         self.label.set_markup("<span font='15' color='#002052FF'><b>inference time: %sms\n</b></span>"
                               % (str_inference_time))
 
-    def update_frame(self, frame, labels):
+    def get_object_location_y0(self, idx):
+        if idx < 10:
+            return round(float(self.result_locations[0][idx][0]), 9)
+        return 0
+
+    def get_object_location_x0(self, idx):
+        if idx < 10:
+            return round(float(self.result_locations[0][idx][1]), 9)
+        return 0
+
+    def get_object_location_y1(self, idx):
+        if idx < 10:
+            return round(float(self.result_locations[0][idx][2]), 9)
+        return 0
+
+    def get_object_location_x1(self, idx):
+        if idx < 10:
+            return round(float(self.result_locations[0][idx][3]), 9)
+        return 0
+
+    def get_label(self, idx):
+        labels = self.nn.get_labels()
+        if idx < 10:
+            return labels[int(self.result_classes[0][idx])]
+        return 0
+
+
+    def update_frame(self, frame):
         img = Image.fromarray(frame)
         draw = ImageDraw.Draw(img)
 
-        if self.result_scores[0][0] > 0.5:
-            y0 = int(self.result_locations[0][0][0] * frame.shape[0])
-            y1 = int(self.result_locations[0][0][2] * frame.shape[0])
-            x1 = int(self.result_locations[0][0][3] * frame.shape[1])
-            x0 = int(self.result_locations[0][0][1] * frame.shape[1])
-            label = labels[int(self.result_classes[0][0])]
+        # draw rectangle around the 5 first detected object with a score greater
+        # than 60%
+        if self.result_scores[0][0] > 0.60:
+            y0 = int(self.get_object_location_y0(0) * frame.shape[0])
+            x0 = int(self.get_object_location_x0(0) * frame.shape[1])
+            y1 = int(self.get_object_location_y1(0) * frame.shape[0])
+            x1 = int(self.get_object_location_x1(0) * frame.shape[1])
+            label = self.get_label(0)
             accuracy = self.result_scores[0][0] * 100
             draw.rectangle([(x0, y0), (x1, y1)], outline=(0,0,255))
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (0,0,255))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
-        if self.result_scores[0][1] > 0.5:
-            y0 = int(self.result_locations[0][1][0] * frame.shape[0])
-            x0 = int(self.result_locations[0][1][1] * frame.shape[1])
-            y1 = int(self.result_locations[0][1][2] * frame.shape[0])
-            x1 = int(self.result_locations[0][1][3] * frame.shape[1])
-            label = labels[int(self.result_classes[0][1])]
+        if self.result_scores[0][1] > 0.60:
+            y0 = int(self.get_object_location_y0(1) * frame.shape[0])
+            x0 = int(self.get_object_location_x0(1) * frame.shape[1])
+            y1 = int(self.get_object_location_y1(1) * frame.shape[0])
+            x1 = int(self.get_object_location_x1(1) * frame.shape[1])
+            label = self.get_label(1)
             accuracy = self.result_scores[0][1] * 100
             draw.rectangle([(x0, y0), (x1, y1)], outline=(255,0,0))
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (255,0,0))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
-        if self.result_scores[0][2] > 0.5:
-            y0 = int(self.result_locations[0][2][0] * frame.shape[0])
-            x0 = int(self.result_locations[0][2][1] * frame.shape[1])
-            y1 = int(self.result_locations[0][2][2] * frame.shape[0])
-            x1 = int(self.result_locations[0][2][3] * frame.shape[1])
-            label = labels[int(self.result_classes[0][2])]
+        if self.result_scores[0][2] > 0.60:
+            y0 = int(self.get_object_location_y0(2) * frame.shape[0])
+            x0 = int(self.get_object_location_x0(2) * frame.shape[1])
+            y1 = int(self.get_object_location_y1(2) * frame.shape[0])
+            x1 = int(self.get_object_location_x1(2) * frame.shape[1])
+            label = self.get_label(2)
             accuracy = self.result_scores[0][2] * 100
             draw.rectangle([(x0, y0), (x1, y1)], outline=(0,255,0))
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (0,255,0))
+            draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
+
+        if self.result_scores[0][3] > 0.60:
+            y0 = int(self.get_object_location_y0(3) * frame.shape[0])
+            x0 = int(self.get_object_location_x0(3) * frame.shape[1])
+            y1 = int(self.get_object_location_y1(3) * frame.shape[0])
+            x1 = int(self.get_object_location_x1(3) * frame.shape[1])
+            label = self.get_label(3)
+            accuracy = self.result_scores[0][3] * 100
+            draw.rectangle([(x0, y0), (x1, y1)], outline=(255,255,0))
+            draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (255,255,0))
+            draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
+
+        if self.result_scores[0][4] > 0.60:
+            y0 = int(self.get_object_location_y0(4) * frame.shape[0])
+            x0 = int(self.get_object_location_x0(4) * frame.shape[1])
+            y1 = int(self.get_object_location_y1(4) * frame.shape[0])
+            x1 = int(self.get_object_location_x1(4) * frame.shape[1])
+            label = self.get_label(4)
+            accuracy = self.result_scores[0][4] * 100
+            draw.rectangle([(x0, y0), (x1, y1)], outline=(0,255,255))
+            draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (0,255,255))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
         data = img.tobytes()
@@ -295,44 +379,46 @@ class MainUIWindow(Gtk.Window):
 
     # get random file in a directory
     def getRandomFile(self, path):
-        # Returns a random filename, chosen among the files of the given path.
-        files = os.listdir(path)
-        index = random.randrange(0, len(files))
-        return files[index]
-
-    # GTK still picture function
-    def inference_picture(self, button):
         """
-        This method runs an inference on an input picture after getting the signal
-        of the pressed button "Next Inference"
+        Returns a random filename, chosen among the files of the given path.
         """
-        GLib.source_remove(self.timeout_id)
-        self.progressbar.hide()
+        if len(self.files) == 0:
+            self.files = os.listdir(path)
 
-        # get randomly a picture in the directory
-        rfile = self.getRandomFile(args.image)
-        print("Picture: ", args.image + "/" + rfile)
-        img = Image.open(args.image + "/" + rfile)
+        if len(self.files) == 0:
+            return '';
 
-        #Resize the preview frame
-        prev_frame = cv2.resize(np.array(img), (self.picture_width, self.picture_height))
+        # remove .json file
+        item_to_remove = []
+        for item in self.files:
+            if item.endswith(".json"):
+                item_to_remove.append(item)
 
-        #Resize the frame to fit in the model interpreter
-        nn_frame = cv2.resize(prev_frame, (self.input_shape[0], self.input_shape[1]))
+        for item in item_to_remove:
+            self.files.remove(item)
 
-         #Run the inference and compute its time
-        start = time.perf_counter()
-        self.nn.launch_inference(nn_frame)
-        inference_time = time.perf_counter() - start
-        print('Inference time : %.8fms' % (inference_time * 1000))
+        index = random.randrange(0, len(self.files))
+        file_path = self.files[index]
+        self.files.pop(index)
+        return file_path
 
-        #Display the results on the GUI interface
-        self.result_locations[:, :, :], self.result_classes[:, :], self.result_scores[:, :] = self.nn.get_results()
-        inference_time = inference_time * 1000
-        self.update_still(inference_time)
-        self.update_frame(prev_frame, self.labels)
-        return True
+    def load_valid_results_from_json_file(self, json_file):
+        json_file = json_file + '.json'
+        name = []
+        x0 = []
+        y0 = []
+        x1 = []
+        y1 = []
+        with open(args.image + "/" + json_file) as json_file:
+            data = json.load(json_file)
+            for obj in data['objects_info']:
+                name.append(obj['name'])
+                x0.append(obj['x0'])
+                y0.append(obj['y0'])
+                x1.append(obj['x1'])
+                y1.append(obj['y1'])
 
+        return name, x0, y0, x1, y1
 
     # GTK camera preview function
     def inference_camera(self):
@@ -353,7 +439,7 @@ class MainUIWindow(Gtk.Window):
         # Run the inference
         start = time.perf_counter()
         self.nn.launch_inference(img)
-        self.inference_time  = time.perf_counter() - start
+        self.inference_time = time.perf_counter() - start
 
         #Computing the inference FPS to get inference performances
         self.loop_time  = loop_stop - self.loop_start
@@ -370,17 +456,136 @@ class MainUIWindow(Gtk.Window):
         #print("Inference fps %.5f" % self.inference_fps)
         inference_time = self.inference_time * 1000
         inference_fps  = self.inference_fps
-        self.update_preview(inference_time, inference_fps)
-        self.update_frame(frame_crop, self.labels)
+
+        if args.validation:
+            self.valid_inference_fps.append(round(inference_fps))
+            self.valid_inference_time.append(round(inference_time, 4))
+
+        self.update_label_preview(inference_time, inference_fps)
+        self.update_frame(frame_crop)
 
         return True
 
+    # GTK still picture function
+    def inference_still_picture(self, button):
+        """
+        This method runs an inference on an input picture after getting the signal
+        of the pressed button "Next Inference"
+        """
+        return self.process_picture()
+
+    def process_picture(self):
+        # get randomly a picture in the directory
+        rfile = self.getRandomFile(args.image)
+        #print("Picture ", args.image + "/" + rfile)
+        img = Image.open(args.image + "/" + rfile)
+
+        # display the picture in the screen
+        prev_frame = cv2.resize(np.array(img), (self.picture_width, self.picture_height))
+
+        #Resize the frame to fit in the model interpreter
+        nn_frame = cv2.resize(np.array(img), (self.input_shape[0], self.input_shape[1]))
+
+         #Run the inference and compute its time
+        start = time.perf_counter()
+        self.nn.launch_inference(nn_frame)
+        inference_time = time.perf_counter() - start
+
+        #Display the results on the GUI interface
+        self.result_locations[:, :, :], self.result_classes[:, :], self.result_scores[:, :] = self.nn.get_results()
+        inference_time = inference_time * 1000
+        self.update_label_still(inference_time)
+        self.update_frame(prev_frame)
+
+        if args.validation:
+            #  get file path without extension
+            file_name_no_ext = os.path.splitext(rfile)[0]
+
+            print("\nInput file: " + args.image + "/" + rfile)
+
+            # retreive associated JSON file information
+            expected_label, expected_x0, expected_y0, expected_x1, expected_y1 = self.load_valid_results_from_json_file(file_name_no_ext)
+
+            # count number of object above 60% and compare it with he expected
+            # validation result
+            count = 0
+            for i in range(0, 5):
+                if self.result_scores[0][i] > 0.60:
+                    count = count + 1
+
+            expected_count = len(expected_label)
+            print("\texpect %s objects. Object detection inference found %s objects"
+                  % (expected_count, count))
+            if count != expected_count:
+                print("Inference result not aligned with the expected validation result\n")
+                self.destroy()
+                os._exit(1)
+
+            for i in range(0, count):
+                label = self.get_label(i)
+                x0 = self.get_object_location_x0(i)
+                y0 = self.get_object_location_y0(i)
+                x1 = self.get_object_location_x1(i)
+                y1 = self.get_object_location_y1(i)
+
+                print("\t{0:12} (x0 y0 x1 y1) {1:12}{2:12}{3:12}{4:12}  expected result: {5:12} (x0 y0 x1 y1) {6:12}{7:12}{8:12}{9:12}".format(label, x0, y0, x1, y1, expected_label[i], expected_x0[i], expected_y0[i], expected_x1[i], expected_y1[i]))
+                if expected_label[i] != label:
+                    print("Inference result not aligned with the expected validation result\n")
+                    self.destroy()
+                    os._exit(1)
+
+                error_epsilon = 0.02
+                if abs(x0 - float(expected_x0[i])) > error_epsilon or \
+                   abs(y0 - float(expected_y0[i])) > error_epsilon or \
+                   abs(x1 - float(expected_x1[i])) > error_epsilon or \
+                   abs(y1 - float(expected_y1[i])) > error_epsilon:
+                    print("Inference result not aligned with the expected validation result\n")
+                    self.destroy()
+                    os._exit(1)
+
+            # store the inference time in a list so that we can compute the
+            # average later on
+            self.valid_inference_time.append(round(inference_time, 4))
+
+        return True
+
+    def validation_picture(self):
+        # reload the timeout
+        GLib.source_remove(self.valid_timeout_id)
+        self.valid_timeout_id = GLib.timeout_add(5000,
+                                                 self.valid_timeout_callback)
+
+        # validation mode activated
+        self.process_picture()
+
+        # process all the file
+        if len(self.files) == 0:
+            avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+            print("\navg inference time= " + str(avg_inf_time) + " ms")
+            GLib.source_remove(self.valid_timeout_id)
+            self.destroy()
+            os._exit(0)
+
+        return True
+
+    def valid_timeout_callback(self):
+        # if timeout occurs that means that camera preview and the gtk is not
+        # behaving as expected */
+        print("Timeout: camera preview and/or gtk is not behaving has expected\n");
+        self.destroy()
+        os._exit(1)
 
     def main(self, args):
         self.nn                     = NeuralNetwork(args.model_file, args.label_file, args.perf)
         self.input_shape            = self.nn.get_img_size()
         self.labels                 = self.nn.get_labels()
         self.frame_rate             = 150
+
+       # start a timeout timer in validation process to close application if
+        # timeout occurs
+        if args.validation:
+            self.valid_timeout_id = GLib.timeout_add(35000,
+                                                     self.valid_timeout_callback)
 
         if self.nn._floating_model:
             print("The model is not quantized! Please quantized it for egde tpu usage...")
@@ -412,7 +617,7 @@ class MainUIWindow(Gtk.Window):
             self.inference_time     = 0
 
             # initialize VideoFrameCapture object
-            self.video_stream = FrameCapture(args.frame_width, args.frame_height, args.framerate, args.video_device)
+            self.video_stream = VideoFrameCapture(int(args.video_device), float(args.frame_width), float(args.frame_height), float(args.framerate))
             self.video_stream.start()
 
             #Get displayed frame dimensions
@@ -426,14 +631,20 @@ class MainUIWindow(Gtk.Window):
             GLib.idle_add(self.inference_camera)
 
         else :
+            # hidde the progress bar
+            GLib.source_remove(self.timeout_id)
+            self.progressbar.hide()
+
             print("Running Inferences on picture input")
             print("Warning: First inference might take a long time to be ran because of \n the time that takes the EdgeTPU to load the model to its RAM Memory ")
 
-            self.button = Gtk.Button.new_with_label("Next inference")
-            self.vbox.pack_start(self.button, False, False, 15)
-            self.button.show_all()
-            self.button.connect("clicked", self.inference_picture)
-
+            if not args.validation:
+                self.button = Gtk.Button.new_with_label("Next inference")
+                self.vbox.pack_start(self.button, False, False, 15)
+                self.button.connect("clicked", self.inference_still_picture)
+                self.button.show_all()
+            else:
+                GLib.idle_add(self.validation_picture)
 
 def destroy_window(gtkobject):
     gtkobject.terminate()
@@ -459,7 +670,7 @@ if __name__ == '__main__':
     if not edge_tpu:
         print("Edge TPU is not plugged!")
         print("Please connect the Edge TPU and try again.")
-        exit()
+        os._exit(1)
 
     #Tensorflow Lite NN intitalisation
     parser = argparse.ArgumentParser()
@@ -471,6 +682,7 @@ if __name__ == '__main__':
     parser.add_argument("-m", "--model_file", default="detect_edgetpu.tflite", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="labels.txt", help="name of file containing labels")
     parser.add_argument("-p", "--perf", default='high', choices= ['max', 'high', 'med', 'low'], help="Select the performance of the Coral EdgeTPU")
+    parser.add_argument("--validation", action='store_true', help="enable the validation mode")
     args = parser.parse_args()
 
     try:

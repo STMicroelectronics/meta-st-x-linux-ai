@@ -3,8 +3,10 @@ SYSROOT?=""
 TARGET_BIN = objdetect_tfl_gst_gtk
 
 CXXFLAGS += -Wall $(shell pkg-config --cflags gtk+-3.0 $(OPENCV_PKGCONFIG) gstreamer-plugins-base-1.0)
+CXXFLAGS += -std=c++17
 CXXFLAGS += -I$(SYSROOT)/usr/include/tensorflow/lite/tools/make/downloads/flatbuffers/include
 CXXFLAGS += -I$(SYSROOT)/usr/include/tensorflow/lite/tools/make/downloads/absl
+CXXFLAGS += -I$(SYSROOT)/usr/include/rapidjson
 
 LDFLAGS  = $(shell pkg-config --libs gtk+-3.0 gstreamer-plugins-base-1.0)
 LDFLAGS += -lpthread -ldl -lopencv_core -lopencv_imgproc -lopencv_imgcodecs

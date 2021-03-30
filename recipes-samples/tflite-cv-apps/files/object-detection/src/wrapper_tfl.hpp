@@ -73,7 +73,6 @@ namespace wrapper_tfl {
 		bool                                     m_verbose;
 		bool                                     m_inputFloating;
 		bool                                     m_allow_fp16;
-		bool                                     m_accel;
 		float                                    m_inputMean;
 		float                                    m_inputStd;
 		float                                    m_inferenceTime;
@@ -87,7 +86,6 @@ namespace wrapper_tfl {
 		{
 			m_inputFloating = false;
 			m_allow_fp16 = false;
-			m_accel = false;
 			m_inferenceTime = 0;
 			m_verbose = conf->verbose;
 			m_inputMean = conf->input_mean;
@@ -125,7 +123,6 @@ namespace wrapper_tfl {
 				LOG(INFO) << "Floating point Tensorflow Lite Model\n";
 			}
 
-			interpreter->UseNNAPI(m_accel);
 			interpreter->SetAllowFp16PrecisionForFp32(m_allow_fp16);
 
 			if (m_numberOfThreads != -1) {
@@ -138,7 +135,6 @@ namespace wrapper_tfl {
 
 		void DisplaySettings()
 		{
-			LOG(INFO) << "accel             " << m_accel << "\n";
 			LOG(INFO) << "input_floating    " << m_inputFloating << "\n";
 			LOG(INFO) << "allow_fp16        " << m_allow_fp16 << "\n";
 			LOG(INFO) << "input_mean        " << m_inputMean << "\n";
