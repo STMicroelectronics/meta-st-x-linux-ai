@@ -213,7 +213,7 @@ namespace wrapper_armnn_tfl {
 			auto output_size = GetOutputSize(1);
 
 			// the outputs are already sort by descending order
-			for (int i = 0; i < output_size; i++) {
+			for (unsigned int i = 0; i < output_size; i++) {
 				results->score[i]       = scores[i];
 				results->index[i]       = (int)classes[i];
 				results->location[i].y0 = locations[(i * 4) + 0];

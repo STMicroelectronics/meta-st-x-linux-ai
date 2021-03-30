@@ -570,6 +570,7 @@ class MainUIWindow(Gtk.Window):
             print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
             if file_name != str(label):
                 print("Inference result mismatch the file name")
+                self.destroy()
                 os._exit(1);
 
         return True
@@ -643,9 +644,10 @@ class MainUIWindow(Gtk.Window):
             rfile = self.getRandomFile(args.image)
             if rfile == '':
                 print("ERROR: Image directory " + rfile + "is empty")
+                self.destroy()
                 os._exit(1)
             else:
-                # reset the self.files variable 
+                # reset the self.files variable
                 self.files = []
 
         # initialize NeuralNetwork object

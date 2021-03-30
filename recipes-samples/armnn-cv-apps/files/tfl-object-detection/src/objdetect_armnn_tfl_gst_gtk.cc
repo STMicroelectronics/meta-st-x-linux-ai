@@ -28,6 +28,7 @@
 #include <cairo.h>
 #include <condition_variable>
 #include <dirent.h>
+#include <filesystem>
 #include <getopt.h>
 #include <glib.h>
 #include <gst/gst.h>
@@ -35,10 +36,14 @@
 #include <iostream>
 #include <iomanip>
 #include <linux/input.h>
+#include <numeric>
 #include <opencv2/opencv.hpp>
 #include <semaphore.h>
 #include <sys/types.h>
 #include <thread>
+
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
 
 #include "wrapper_armnn_tfl.hpp"
 
@@ -53,6 +58,7 @@ std::string video_device_str  = "0";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
+bool validation = false;
 float input_mean = 127.5f;
 float input_std = 127.5f;
 bool crop = false;
@@ -101,11 +107,75 @@ typedef struct _CustomData {
 	FramePosition frame_fullscreen_pos;
 	int frame_fullscreen_pos_x;
 	int frame_fullscreen_pos_y;
+	/* For validation purpose */
+	int valid_timeout_id;
+	int valid_draw_count;
+	std::vector<double> valid_inference_time;
+
 } CustomData;
 
 /* Framerate statisitics */
 gdouble display_avg_fps = 0;
 gdouble nn_avg_fps = 0;
+
+/* Structure that contains validation information */
+typedef struct _ValidObjectInfo {
+	std::string name;
+	struct wrapper_armnn_tfl::ObjDetect_Location location;
+} ValidObjectInfo;
+
+typedef struct _ValidInfo {
+	/* The gstreamer pipeline */
+	std::string file_name;
+	std::vector<ValidObjectInfo> objects_info;
+} ValidInfo;
+
+static int load_valid_results_from_json_file(std::string file_name, std::vector<ValidObjectInfo> *objects_info)
+{
+	std::stringstream json_file_sstr;
+	json_file_sstr << file_name << ".json";
+
+	FILE* fp = fopen(json_file_sstr.str().c_str(), "r");
+	if (fp == NULL)
+		return -1;
+
+	char readBuffer[65536];
+	rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+
+	rapidjson::Document json_value;
+	json_value.ParseStream(is);
+
+	if(json_value.HasMember("objects_info"))
+	{
+		const rapidjson::Value& obj_info_array = json_value["objects_info"];
+		for (unsigned int i = 0; i < obj_info_array.Size(); i++) {
+			ValidObjectInfo valid_obj_info;
+			valid_obj_info.name = obj_info_array[i]["name"].GetString();
+			valid_obj_info.location.x0 = std::stof(obj_info_array[i]["x0"].GetString());
+			valid_obj_info.location.y0 = std::stof(obj_info_array[i]["y0"].GetString());
+			valid_obj_info.location.x1 = std::stof(obj_info_array[i]["x1"].GetString());
+			valid_obj_info.location.y1 = std::stof(obj_info_array[i]["y1"].GetString());
+			objects_info->push_back(valid_obj_info);
+		}
+	}
+
+	fclose(fp);
+
+	return 0;
+}
+
+
+/**
+ * In validation mode this function is called when timeout occurs
+ * Exit application if this function is called
+ */
+gint valid_timeout_callback(gpointer data)
+{
+	/* If timeout occurs that means that camera preview and the gtk is not
+	 * behaving as expected */
+	g_print("Timeout: application is not behaving has expected\n");
+	exit(1);
+}
 
 /**
  * This function execute an NN inference
@@ -134,7 +204,7 @@ static gboolean gui_press_event_cb(GtkWidget *widget,
 		    (event->y < EXIT_AREA_HEIGHT))
 			gtk_main_quit();
 	} if (event->button == GDK_BUTTON_PRIMARY) {
-		/* exit if event occurs in the exit area (tof right corner) */
+		/* object detect on a new picture */
 		if ((event->x < BRAIN_AREA_WIDTH) &&
 		    (event->y < BRAIN_AREA_HEIGHT))
 			gtk_widget_queue_draw(data->window);
@@ -180,19 +250,21 @@ static void gui_compute_frame_position(GdkWindow *window,
 }
 
 /**
- * This function files in a directory randomly
+ * This function get a file randomly in a directory
  */
-static std::string gui_get_files_in_direcotry_randomly(std::string directory)
+static std::string gui_get_files_in_directory_randomly(std::string directory)
 {
-	std::stringstream file_patch_sstr;
+	std::stringstream file_path_sstr;
 
-	/* Get the list of whan all the file have been used */
+	/* Get the list of all the file in the directory if the list of the
+	 * file is empty */
 	if (dir_files.size() == 0) {
 		DIR* dirp = opendir(directory.c_str());
 		struct dirent * dp;
 		while ((dp = readdir(dirp)) != NULL) {
-			if ((strcmp(dp->d_name, ".") !=0) &&
-			    (strcmp(dp->d_name, "..") != 0))
+			if ((strcmp(dp->d_name, ".") != 0) &&
+			    (strcmp(dp->d_name, "..") != 0) &&
+			    (strstr(dp->d_name, ".json") == 0))
 				dir_files.push_back(dp->d_name);
 		}
 		closedir(dirp);
@@ -203,10 +275,10 @@ static std::string gui_get_files_in_direcotry_randomly(std::string directory)
 		return "";
 
 	int random = rand() % dir_files.size();
-	file_patch_sstr << directory << dir_files[random];
+	file_path_sstr << directory << dir_files[random];
 	dir_files.erase(dir_files.begin() + random);
 
-	return file_patch_sstr.str();
+	return file_path_sstr.str();
 }
 
 /**
@@ -219,6 +291,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 {
 	GdkWindow *window = gtk_widget_get_window(widget);
 	int window_width  = gdk_window_get_width(window);
+	std::string file;
 
 	if (data->preview_enabled) {
 		/* Camera preview use case */
@@ -253,7 +326,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		cairo_paint(cr);
 
 		/* Select a picture in the directory */
-		std::string file = gui_get_files_in_direcotry_randomly(image_dir_str);
+		file = gui_get_files_in_directory_randomly(image_dir_str);
 
 		/* Read and format the pciture */
 		cairo_surface_t *picture;
@@ -393,7 +466,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	}
 
 	/* Draw bounding box of the 5 first detected object if the score is
-	 * above 50% */
+	 * above 60% */
 	if (!data->preview_enabled) {
 		/* Translate to the frame position */
 		cairo_translate(cr,
@@ -421,7 +494,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		default:
 			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
 		}
-		if (results.score[i] > 0.5) {
+		if (results.score[i] > 0.60) {
 			std::stringstream info_sstr;
 			info_sstr << labels[results.index[i]] << " " << std::fixed << std::setprecision(1) << results.score[i] * 100 << "%";
 			float x      = data->frame_fullscreen_pos.width  * results.location[i].x0;
@@ -432,6 +505,116 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			cairo_stroke(cr);
 			cairo_move_to(cr, int(x) + 2, int(y) + 22);
 			cairo_show_text(cr, info_sstr.str().c_str());
+		}
+	}
+
+	if (validation) {
+		data->valid_inference_time.push_back(results.inference_time);
+
+		/* Reload the timeout */
+		g_source_remove(data->valid_timeout_id);
+		data->valid_timeout_id = g_timeout_add(5000,
+						      valid_timeout_callback,
+						      NULL);
+
+		if (data->preview_enabled) {
+			data->valid_draw_count++;
+
+			if (data->valid_draw_count > 25) {
+				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
+								  data->valid_inference_time.end(), 0.0) /
+					data->valid_inference_time.size();
+				/* Stop the timeout and properly exit the
+				 * application */
+				std::cout << "avg display fps= " << display_avg_fps << std::endl;
+				std::cout << "avg inference fps= " << nn_avg_fps << std::endl;
+				std::cout << "avg inference time= " << avg_inf_time << std::endl;
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			}
+		} else {
+			std::stringstream label_sstr;
+
+			std::cout << "\nInput file: " << file <<std::endl;
+
+			/* Get the name of the file without extension */
+			file = file.substr(0, file.find('.'));
+			std::vector<ValidObjectInfo> objects_info;
+
+			/* Load associated JSON file information */
+			int ret = load_valid_results_from_json_file(file, &objects_info);
+			if(ret) {
+				std::cout << "JSON file reading is failing (" << file << ".json)\n";
+				exit(1);
+			}
+
+			/* Count number of object above 60% and compare it
+			 * with he expected validation result */
+			unsigned int count = 0;
+			for (int i = 0; i < 5 ; i++) {
+				if (results.score[i] > 0.60) {
+					count ++;
+				}
+			}
+
+			std::cout << "\texpect " << objects_info.size() << " objects. Object detection inference found " << count << " objects." << std::endl;
+			if (count != objects_info.size()) {
+				std::cout << "Inference result not aligned with the expected validation result\n";
+				exit(1);
+			}
+
+			for (unsigned int i = 0; i < objects_info.size(); i++) {
+				std::cout << "\t"
+					<< std::left  << std::setw(12)
+					<< labels[results.index[i]]
+					<< " (x0 y0 x1 y1) "
+					<< std::left  << std::setw(12)
+					<< results.location[i].x0
+					<< std::left  << std::setw(12)
+					<< results.location[i].y0
+					<< std::left  << std::setw(12)
+					<< results.location[i].x1
+					<< std::left  << std::setw(12)
+					<< results.location[i].y1
+					<< "  expected result: "
+					<< std::left  << std::setw(12)
+					<< objects_info[i].name
+					<< " (x0 y0 x1 y1) "
+					<< std::left  << std::setw(12)
+					<< objects_info[i].location.x0
+					<< std::left  << std::setw(12)
+					<< objects_info[i].location.y0
+					<< std::left  << std::setw(12)
+					<< objects_info[i].location.x1
+					<< objects_info[i].location.y1 << std::endl;
+
+				if (objects_info[i].name.compare(labels[results.index[i]]) != 0) {
+
+					std::cout << "Inference result not aligned with the expected validation result\n";
+					exit(1);
+				}
+
+				float error_epsilon = 0.02;
+				if ((fabs(results.location[i].x0 - objects_info[i].location.x0) > error_epsilon) ||
+				    (fabs(results.location[i].y0 - objects_info[i].location.y0) > error_epsilon) ||
+				    (fabs(results.location[i].x1 - objects_info[i].location.x1) > error_epsilon) ||
+				    (fabs(results.location[i].y1 - objects_info[i].location.y1) > error_epsilon)) {
+					std::cout << "Inference result not aligned with the expected validation result\n";
+					exit(1);
+				}
+			}
+
+			/* Continue over all files */
+			if (dir_files.size() == 0) {
+				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
+								  data->valid_inference_time.end(), 0.0) /
+					data->valid_inference_time.size();
+				std::cout << "\navg inference time= " << avg_inf_time << " ms\n";
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			} else {
+				gtk_widget_queue_draw(data->window);
+			}
 		}
 	}
 
@@ -492,7 +675,7 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 		 *  This is mandatory to ensure that wayandsink is take into
 		 *  account before GTK window to be sure that the GTK
 		 *  transparent window will be on top of the camera preview. */
-		g_print("Recieve the first frame\n");
+		g_print("Receive the first frame\n");
 		std::lock_guard<std::mutex> lk(cond_var_m);
 		cond_var.notify_all();
 		first_frame = false;
@@ -751,6 +934,7 @@ static void print_help(int argc, char** argv)
 		"--framerate <val>:                    framerate of the camera (default is 15fps)\n"
 		"--input_mean <val>:                   model input mean (default is 127.5)\n"
 		"--input_std  <val>:                   model input standard deviation (default is 127.5)\n"
+		"--validation:                         enable the validation mode\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
@@ -764,6 +948,7 @@ static void print_help(int argc, char** argv)
 #define OPT_FRAMERATE    1002
 #define OPT_INPUT_MEAN   1003
 #define OPT_INPUT_STD    1004
+#define OPT_VALIDATION   1005
 void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "m:l:b:i:v:c:h";
@@ -779,6 +964,7 @@ void process_args(int argc, char** argv)
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
 		{"input_mean",   required_argument, nullptr, OPT_INPUT_MEAN},
 		{"input_std",    required_argument, nullptr, OPT_INPUT_STD},
+		{"validation",   no_argument,       nullptr, OPT_VALIDATION},
 		{"help",         no_argument,       nullptr, 'h'},
 		{nullptr,        no_argument,       nullptr, 0}
 	};
@@ -846,6 +1032,10 @@ void process_args(int argc, char** argv)
 			input_std = std::stof(optarg);
 			std::cout << "input standard deviation set to: " << input_std << std::endl;
 			break;
+		case OPT_VALIDATION:
+			validation = true;
+			std::cout << "application started in validation mode" << std::endl;
+			break;
 		case 'h': // -h or --help
 		case '?': // Unrecognized option
 		default:
@@ -901,16 +1091,19 @@ int main(int argc, char *argv[])
 		device_sstr << "/dev/video" << video_device_str;
 		if (access(device_sstr.str().c_str(), F_OK) == -1) {
 			g_printerr("ERROR: No camera connected, %s does not exist.\n", device_sstr.str().c_str());
-			return 0;
+			exit(1);
 		}
 	} else {
 		data.preview_enabled = false;
 
 		/* Check if directory is empty */
-		std::string file = gui_get_files_in_direcotry_randomly(image_dir_str);
+		std::string file = gui_get_files_in_directory_randomly(image_dir_str);
 		if (file.empty()) {
 			g_printerr("ERROR: Image directory %s is empty\n", image_dir_str.c_str());
-			return 0;
+			exit(1);
+		} else {
+			/* Reset the dir_file variable */
+			dir_files.erase(dir_files.begin(), dir_files.end());
 		}
 	}
 
@@ -925,7 +1118,7 @@ int main(int argc, char *argv[])
 	tfl_wrapper.Initialize(&config);
 
 	if (tfl_wrapper.ReadLabelsFile(config.labels_file_name, &labels, &label_count) != armnn::Status::Success)
-		exit(0);
+		exit(1);
 
 	/* Get model input size */
 	data.nn_input_width = tfl_wrapper.GetInputWidth();
@@ -965,10 +1158,19 @@ int main(int argc, char *argv[])
 		/* Create the GStreamer pipeline for camera use case */
 		ret = gst_pipeline_camera_creation(&data);
 		if(ret)
-			return -1;
+			exit(1);
 
 		std::unique_lock<std::mutex> lk(cond_var_m);
 		cond_var.wait(lk);
+	}
+
+	/* Start a timeout timer in validation process to close application if
+	 * timeout occurs */
+	if (validation) {
+		data.valid_draw_count = 0;
+		data.valid_timeout_id = g_timeout_add(10000,
+						      valid_timeout_callback,
+						      NULL);
 	}
 
 	/* Create the GUI */

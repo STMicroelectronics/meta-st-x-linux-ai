@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0e
 
 inherit pkgconfig
 
-DEPENDS += "armnn gtk+3 opencv gstreamer1.0"
+DEPENDS += "armnn gtk+3 opencv gstreamer1.0 rapidjson"
 
 SRC_URI  = " file://tfl-object-detection/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/armNN_tflite_C++.png;subdir=${BPN}-${PV} "
