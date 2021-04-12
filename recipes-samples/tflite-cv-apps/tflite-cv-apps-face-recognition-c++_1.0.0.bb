@@ -5,7 +5,7 @@ LIC_FILES_CHKSUM  = "file://face-recognition/src/LICENSE;md5=ca84d10417d1f3861af
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite-staticdev gtk+3 opencv gstreamer1.0"
+DEPENDS += "tensorflow-lite-staticdev gtk+3 opencv gstreamer1.0 rapidjson"
 
 SRC_URI  = " file://face-recognition/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_C++.png;subdir=${BPN}-${PV} "

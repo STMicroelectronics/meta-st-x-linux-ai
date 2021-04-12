@@ -36,6 +36,7 @@
 #include <iostream>
 #include <iomanip>
 #include <linux/input.h>
+#include <numeric>
 #include <opencv2/opencv.hpp>
 #include <semaphore.h>
 #include <stdio.h>
@@ -43,16 +44,21 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
 #include "libfacedetect_tfl.h"
 #include "libfacereco_tfl.h"
 
 /* Application parameters */
 std::vector<std::string> dir_files;
 std::string image_dir_str;
+std::string database_dir_str;
 std::string video_device_str  = "0";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
+bool validation = false;
 int reco_simultaneous_face = 1;
 float reco_threshold = 0.70;
 int max_db_faces = 200;
@@ -72,8 +78,8 @@ std::mutex mtx;
 
 bool gtk_main_started = false;
 
-#define DATABASE_DIRECTORY    "/usr/local/demo-ai/computer-vision/tflite-face-recognition/database/"
-#define CSS_DIRECTORY         "/usr/local/demo-ai/computer-vision/tflite-face-recognition/bin/resources/"
+#define DEFAULT_DATABASE_DIRECTORY "/usr/local/demo-ai/computer-vision/tflite-face-recognition/database/"
+#define CSS_DIRECTORY              "/usr/local/demo-ai/computer-vision/tflite-face-recognition/bin/resources/"
 
 #define MAX_HISTORY_THUMBNAILS  11 /* for 720p display */
 #define FACE_THUMBNAIL_SIZE     100
@@ -166,11 +172,62 @@ typedef struct _CustomData {
 	cairo_surface_t *picture;
 	cv::Mat pict_bgra_resized;
 	std::string pict_file;
+	/* For validation purpose */
+	int valid_timeout_id;
+	int valid_draw_count;
+	std::vector<double> valid_fd_inference_time;
+	std::vector<double> valid_fr_inference_time;
 } CustomData;
 
 /* Framerate statisitics */
 gdouble display_avg_fps = 0;
 gdouble nn_avg_fps = 0;
+
+/* Structure that contains validation information */
+typedef struct _ValidFaceInfo {
+	std::string name;
+	Bbox bbox;
+} ValidFaceInfo;
+
+typedef struct _ValidInfo {
+	/* The gstreamer pipeline */
+	std::string file_name;
+	std::vector<ValidFaceInfo> faces_info;
+} ValidInfo;
+
+static int load_valid_results_from_json_file(std::string file_name, std::vector<ValidFaceInfo> *faces_info)
+{
+	std::stringstream json_file_sstr;
+	json_file_sstr << file_name << ".json";
+
+	FILE* fp = fopen(json_file_sstr.str().c_str(), "r");
+	if (fp == NULL)
+		return -1;
+
+	char readBuffer[65536];
+	rapidjson::FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+
+	rapidjson::Document json_value;
+	json_value.ParseStream(is);
+
+	if(json_value.HasMember("faces_info"))
+	{
+		const rapidjson::Value& obj_info_array = json_value["faces_info"];
+		for (unsigned int i = 0; i < obj_info_array.Size(); i++) {
+			ValidFaceInfo valid_obj_info;
+			valid_obj_info.name = obj_info_array[i]["name"].GetString();
+			valid_obj_info.bbox.top_left.x = std::stof(obj_info_array[i]["top_left_x"].GetString());
+			valid_obj_info.bbox.top_left.y = std::stof(obj_info_array[i]["top_left_y"].GetString());
+			valid_obj_info.bbox.bot_right.x = std::stof(obj_info_array[i]["bot_right_x"].GetString());
+			valid_obj_info.bbox.bot_right.y = std::stof(obj_info_array[i]["bot_right_y"].GetString());
+			faces_info->push_back(valid_obj_info);
+		}
+	}
+
+	fclose(fp);
+
+	return 0;
+}
 
 /**
  * This function execute the face detect NN inference
@@ -196,6 +253,18 @@ static float nn_fd_inference(const cv::Mat& img,
 	}
 	mtx.unlock();
 	return ret;
+}
+
+/**
+ * In validation mode this function is called when timeout occurs
+ * Exit application if this function is called
+ */
+gint valid_timeout_callback(gpointer data)
+{
+	/* If timeout occurs that means that camera preview and the gtk is not
+	 * behaving as expected */
+	g_print("Timeout: application is not behaving has expected\n");
+	exit(1);
 }
 
 /**
@@ -332,13 +401,13 @@ static void initialize_face_database(CustomData *data)
 {
 	std::vector<std::string> files;
 	/* Get the list of all the files */
-	DIR* dirp = opendir(DATABASE_DIRECTORY);
+	DIR* dirp = opendir(database_dir_str.c_str());
 
 	/* Create the directory if it does not exist */
 	if (dirp == NULL) {
-		mkdir(DATABASE_DIRECTORY,
+		mkdir(database_dir_str.c_str(),
 		      S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-		dirp = opendir(DATABASE_DIRECTORY);
+		dirp = opendir(database_dir_str.c_str());
 	}
 
 	struct dirent * dp;
@@ -346,7 +415,7 @@ static void initialize_face_database(CustomData *data)
 		if ((strcmp(dp->d_name, ".") !=0) &&
 		    (strcmp(dp->d_name, "..") != 0)) {
 			std::stringstream file_path_sstr;
-			file_path_sstr << DATABASE_DIRECTORY << dp->d_name;
+			file_path_sstr << database_dir_str << dp->d_name;
 			files.push_back(file_path_sstr.str());
 		}
 	}
@@ -360,7 +429,7 @@ static void initialize_face_database(CustomData *data)
 		return;
 
 	for (unsigned int i = 0 ; i < files.size() ; i++) {
-		register_new_face_from_file(DATABASE_DIRECTORY,
+		register_new_face_from_file(database_dir_str.c_str(),
 					    files[i], data);
 	}
 }
@@ -414,7 +483,7 @@ static void gui_register_new_face(int index,
 			     cv::COLOR_RGB2BGRA);
 
 		std::stringstream tmp_sstr;
-		tmp_sstr << DATABASE_DIRECTORY << "tmp.png";
+		tmp_sstr << database_dir_str << "tmp.png";
 		cv::imwrite(tmp_sstr.str().c_str(), face_bgra);
 	} else {
 		LOG(INFO) << "You reach the maximum number of faces to be registered!\n";
@@ -432,7 +501,7 @@ static bool gui_finalize_face_registering(std::string label,
 					  CustomData *data)
 {
 	std::stringstream file_name_sstr;
-	file_name_sstr << DATABASE_DIRECTORY << label << ".png";
+	file_name_sstr << database_dir_str << label << ".png";
 
 	/* Check if the label already exists */
 	if (access(file_name_sstr.str().c_str(), 0) == 0) {
@@ -450,10 +519,10 @@ static bool gui_finalize_face_registering(std::string label,
 	/* rename the temporary file into the final name with the label
 	 * information label.png */
 	std::stringstream tmp_sstr;
-	tmp_sstr << DATABASE_DIRECTORY << "tmp.png";
+	tmp_sstr << database_dir_str << "tmp.png";
 	rename(tmp_sstr.str().c_str(), file_name_sstr.str().c_str());
 
-	register_new_face_from_file(DATABASE_DIRECTORY,
+	register_new_face_from_file(database_dir_str.c_str(),
 				    file_name_sstr.str(), data);
 
 	return true;
@@ -551,19 +620,21 @@ static void gui_compute_history_thumbnail_position(GdkWindow *window,
 }
 
 /**
- * This function files in a directory randomly
+ * This function get a file randomly in a directory
  */
-static std::string gui_get_files_in_direcotry_randomly(std::string directory)
+static std::string gui_get_files_in_directory_randomly(std::string directory)
 {
 	std::stringstream file_path_sstr;
 
-	/* Get the list of whan all the file have been used */
+	/* Get the list of all the file in the directory if the list of the
+	 * file is empty */
 	if (dir_files.size() == 0) {
 		DIR* dirp = opendir(directory.c_str());
 		struct dirent * dp;
 		while ((dp = readdir(dirp)) != NULL) {
-			if ((strcmp(dp->d_name, ".") !=0) &&
-			    (strcmp(dp->d_name, "..") != 0))
+			if ((strcmp(dp->d_name, ".") != 0) &&
+			    (strcmp(dp->d_name, "..") != 0) &&
+			    (strstr(dp->d_name, ".json") == 0))
 				dir_files.push_back(dp->d_name);
 		}
 		closedir(dirp);
@@ -608,9 +679,6 @@ static void gui_still_picture_processing(std::string file,
 	/* expand the color space before displaying the frame */
 	cv::cvtColor(img_bgr_resized, data->pict_bgra_resized, cv::COLOR_BGR2BGRA);
 
-	/* Save a reference on the frame */
-	cv::cvtColor(img_bgr_resized, data->img_rgb, cv::COLOR_BGR2RGB);
-
 	/* Generate the cairo surface */
 	int stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24,
 						   data->frame_fullscreen_pos.width);
@@ -622,6 +690,11 @@ static void gui_still_picture_processing(std::string file,
 							    stride);
 
 	/* Execute the face detect inference */
+	/* Resize input picture size to VGA resolution */
+	cv::resize(img_bgr, img_bgr, cv::Size(640, 480));
+	/* Save a reference on the frame */
+	cv::cvtColor(img_bgr, data->img_rgb, cv::COLOR_BGR2RGB);
+
 	fd_inference_time = nn_fd_inference(data->img_rgb, data);
 	fr_inference_time = 0;
 
@@ -793,13 +866,22 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			gui_compute_history_thumbnail_position(window, data);
 			initialize_face_database(data);
 
-			/* Display the first picture */
-			/* Select a picture in the directory */
-			data->pict_file = gui_get_files_in_direcotry_randomly(image_dir_str);
-			gui_still_picture_processing(data->pict_file, data);
+			if (!validation) {
+				/* Display the first picture */
+				/* Select a picture in the directory */
+				data->pict_file = gui_get_files_in_directory_randomly(image_dir_str);
+				gui_still_picture_processing(data->pict_file, data);
+			}
 
 			first_call = false;
 			return FALSE;
+		}
+
+		if (validation) {
+			/* In validation mode, select the new picture when
+			 * this gui_draw_cb callback is called */
+			data->pict_file = gui_get_files_in_directory_randomly(image_dir_str);
+			gui_still_picture_processing(data->pict_file, data);
 		}
 
 		/* Set the black background */
@@ -942,6 +1024,118 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		}
 	}
 
+	if (validation) {
+		data->valid_fd_inference_time.push_back(fd_inference_time);
+		data->valid_fr_inference_time.push_back(fr_inference_time);
+
+		/* Reload the timeout */
+		g_source_remove(data->valid_timeout_id);
+		data->valid_timeout_id = g_timeout_add(5000,
+						      valid_timeout_callback,
+						      NULL);
+
+		if (data->preview_enabled) {
+			data->valid_draw_count++;
+
+			if (data->valid_draw_count > 25) {
+				auto avg_fd_inf_time = std::accumulate(data->valid_fd_inference_time.begin(),
+								  data->valid_fd_inference_time.end(), 0.0) /
+					data->valid_fd_inference_time.size();
+				auto avg_fr_inf_time = std::accumulate(data->valid_fr_inference_time.begin(),
+								  data->valid_fr_inference_time.end(), 0.0) /
+					data->valid_fr_inference_time.size();
+				/* Stop the timeout and properly exit the
+				 * application */
+				std::cout << "avg display fps= " << display_avg_fps << std::endl;
+				std::cout << "avg inference fps= " << nn_avg_fps << std::endl;
+				std::cout << "avg fd inference time= " << avg_fd_inf_time << std::endl;
+				std::cout << "avg fr inference time= " << avg_fr_inf_time << std::endl;
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			}
+		} else {
+			std::stringstream label_sstr;
+
+			std::cout << "\nInput file: " << data->pict_file <<std::endl;
+
+			/* Get the name of the file without extension */
+			std::string file = data->pict_file.substr(0, data->pict_file.find('.'));
+			std::vector<ValidFaceInfo> faces_info;
+
+			/* Load associated JSON file information */
+			int ret = load_valid_results_from_json_file(file, &faces_info);
+			if(ret) {
+				std::cout << "JSON file reading is failing (" << file << ".json)\n";
+				exit(1);
+			}
+
+			/* Compare the number of detected face and the expected
+			 * validation result */
+			std::cout << "\texpect " << faces_info.size() << " faces. Face recognition inference found " << data->detected_faces.size() << " faces." << std::endl;
+			if (data->detected_faces.size() != faces_info.size()) {
+				std::cout << "Inference result not aligned with the expected validation result\n";
+				exit(1);
+			}
+
+			for (unsigned int i = 0; i < faces_info.size(); i++) {
+				std::cout << "\t"
+					<< std::left  << std::setw(12)
+					<< data->detected_faces[i].label
+					<< " (x0 y0 x1 y1) "
+					<< std::left  << std::setw(12)
+					<< data->detected_faces[i].bbox.top_left.x
+					<< std::left  << std::setw(12)
+					<< data->detected_faces[i].bbox.top_left.y
+					<< std::left  << std::setw(12)
+					<< data->detected_faces[i].bbox.bot_right.x
+					<< std::left  << std::setw(12)
+					<< data->detected_faces[i].bbox.bot_right.y
+					<< "  expected result: "
+					<< std::left  << std::setw(12)
+					<< faces_info[i].name
+					<< " (x0 y0 x1 y1) "
+					<< std::left  << std::setw(12)
+					<< faces_info[i].bbox.top_left.x
+					<< std::left  << std::setw(12)
+					<< faces_info[i].bbox.top_left.y
+					<< std::left  << std::setw(12)
+					<< faces_info[i].bbox.bot_right.x
+					<< faces_info[i].bbox.bot_right.y << std::endl;
+
+				if (faces_info[i].name.compare(data->detected_faces[i].label) != 0) {
+
+					std::cout << "Inference result not aligned with the expected validation result\n";
+					exit(1);
+				}
+
+				float error_epsilon = 0.02;
+				if ((fabs(data->detected_faces[i].bbox.top_left.x - faces_info[i].bbox.top_left.x) > error_epsilon) ||
+				    (fabs(data->detected_faces[i].bbox.top_left.y - faces_info[i].bbox.top_left.y) > error_epsilon) ||
+				    (fabs(data->detected_faces[i].bbox.bot_right.x - faces_info[i].bbox.bot_right.x) > error_epsilon) ||
+				    (fabs(data->detected_faces[i].bbox.bot_right.y - faces_info[i].bbox.bot_right.y) > error_epsilon)) {
+					std::cout << "Inference result not aligned with the expected validation result\n";
+					exit(1);
+				}
+			}
+
+			/* Continue over all files */
+			if (dir_files.size() == 0) {
+				auto avg_fd_inf_time = std::accumulate(data->valid_fd_inference_time.begin(),
+								  data->valid_fd_inference_time.end(), 0.0) /
+					data->valid_fd_inference_time.size();
+				auto avg_fr_inf_time = std::accumulate(data->valid_fr_inference_time.begin(),
+								  data->valid_fr_inference_time.end(), 0.0) /
+					data->valid_fr_inference_time.size();
+				std::cout << "avg fd inference time= " << avg_fd_inf_time << std::endl;
+				std::cout << "avg fr inference time= " << avg_fr_inf_time << std::endl;
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			} else {
+				gtk_widget_queue_draw(data->window);
+			}
+		}
+	}
+
 	return FALSE;
 }
 
@@ -1034,7 +1228,7 @@ static gboolean gui_press_event_cb(GtkWidget *widget,
 		    (event->y < BRAIN_AREA_HEIGHT)) {
 			if (!data->preview_enabled) {
 				/* Select a picture in the directory */
-				data->pict_file = gui_get_files_in_direcotry_randomly(image_dir_str);
+				data->pict_file = gui_get_files_in_directory_randomly(image_dir_str);
 				gui_still_picture_processing(data->pict_file, data);
 				gtk_widget_queue_draw(data->window);
 				goto end;
@@ -1202,7 +1396,7 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 		 *  This is mandatory to ensure that waylandsink is take into
 		 *  account before GTK window to be sure that the GTK
 		 *  transparent window will be on top of the camera preview. */
-		g_print("Recieve the first frame\n");
+		g_print("Receive the first frame\n");
 		std::lock_guard<std::mutex> lk(cond_var_m);
 		cond_var.notify_all();
 		first_frame = false;
@@ -1465,14 +1659,16 @@ static void print_help(int argc, char** argv)
 		"Usage: " << argv[0] << " [option]\n"
 		"\n"
 		"--reco_simultaneous_faces <val>:      number of faces that can be recognized simultaneously (default is 1)\n"
-		"--reco_threshold <val>:               face recognition threshold for face similarity (default is 0.70 = 70%)\n"
-		"--max_db_faces <val>:                 maximum number of faces to be stored in the database (default is 200)\n"
-		"-i --image <directory path>:          image directory with images to be classified\n"
-		"-v --video_device <n>:                video device (default /dev/video0)\n"
-		"--frame_width  <val>:                 width of the camera frame (default is 640 pixels)\n"
-		"--frame_height <val>:                 height of the camera frame (default is 480 pixels)\n"
-		"--framerate <val>:                    frame rate of the camera (default is 15 fps)\n"
-		"--help:                               show this help\n";
+		"--reco_threshold <val>:          face recognition threshold for face similarity (default is 0.70 = 70%)\n"
+		"--max_db_faces <val>:            maximum number of faces to be stored in the database (default is 200)\n"
+		"-d --database <directory path>:  provide the directory where the face recognition database is stored (else default location is used)\n"
+		"-i --image <directory path>:     image directory with images to be classified\n"
+		"-v --video_device <n>:           video device (default /dev/video0)\n"
+		"--frame_width  <val>:            width of the camera frame (default is 640 pixels)\n"
+		"--frame_height <val>:            height of the camera frame (default is 480 pixels)\n"
+		"--framerate <val>:               frame rate of the camera (default is 15 fps)\n"
+		"--validation:                    enable the validation mode\n"
+		"--help:                          show this help\n";
 	exit(1);
 }
 
@@ -1485,18 +1681,21 @@ static void print_help(int argc, char** argv)
 #define OPT_FRAME_WIDTH            1003
 #define OPT_FRAME_HEIGHT           1004
 #define OPT_FRAMERATE              1005
+#define OPT_VALIDATION             1006
 void process_args(int argc, char** argv)
 {
-	const char* const short_opts = "i:v:h";
+	const char* const short_opts = "d:i:v:h";
 	const option long_opts[] = {
 		{"reco_simultaneous_faces", required_argument, nullptr, OPT_FACE_RECO_SIM_FACE},
 		{"reco_threshold",          required_argument, nullptr, OPT_FACE_RECO_THRESHOLD},
 		{"max_db_faces",            required_argument, nullptr, OPT_FACE_RECO_MAX_DB_FACES},
+		{"database",                required_argument, nullptr, 'd'},
 		{"image",                   required_argument, nullptr, 'i'},
 		{"video_device",            required_argument, nullptr, 'v'},
 		{"frame_width",             required_argument, nullptr, OPT_FRAME_WIDTH},
 		{"frame_height",            required_argument, nullptr, OPT_FRAME_HEIGHT},
 		{"framerate",               required_argument, nullptr, OPT_FRAMERATE},
+		{"validation",              no_argument,       nullptr, OPT_VALIDATION},
 		{"help",                    no_argument,       nullptr, 'h'},
 		{nullptr,                   no_argument,       nullptr, 0}
 	};
@@ -1525,6 +1724,11 @@ void process_args(int argc, char** argv)
 			std::cout << "maximum number of faces in the database set to: "
 				<< max_db_faces << std::endl;
 			break;
+		case 'd':
+			database_dir_str = std::string(optarg);
+			std::cout << "database directory set to: "
+				<< database_dir_str << std::endl;
+			break;
 		case 'i':
 			image_dir_str = std::string(optarg);
 			std::cout << "image directory set to: "
@@ -1549,6 +1753,10 @@ void process_args(int argc, char** argv)
 			camera_fps_str = std::string(optarg);
 			std::cout << "camera framerate set to: "
 				<< camera_fps_str << std::endl;
+			break;
+		case OPT_VALIDATION:
+			validation = true;
+			std::cout << "application started in validation mode" << std::endl;
 			break;
 		case 'h': /* -h or --help */
 		case '?': /* Unrecognized option */
@@ -1576,7 +1784,6 @@ static void int_handler(int dummy)
 int main(int argc, char *argv[])
 {
 	CustomData data;
-	int ret;
 
 	/* Catch CTRL + C signal */
 	signal(SIGINT, int_handler);
@@ -1591,6 +1798,8 @@ int main(int argc, char *argv[])
 	data.max_simultaneous_face = reco_simultaneous_face;
 	data.face_reco_threshold = reco_threshold;
 	data.max_db_faces = max_db_faces;
+	if (database_dir_str.empty())
+		database_dir_str = DEFAULT_DATABASE_DIRECTORY;
 
 	/* If image_dir is set by the user, test data picture are used instead
 	 * of camera frames */
@@ -1604,16 +1813,19 @@ int main(int argc, char *argv[])
 		device_sstr << "/dev/video" << video_device_str;
 		if (access(device_sstr.str().c_str(), F_OK) == -1) {
 			g_printerr("ERROR: No camera connected, %s does not exist.\n", device_sstr.str().c_str());
-			return 0;
+			exit(1);
 		}
 	} else {
 		data.preview_enabled = false;
 
 		/* Check if directory is empty */
-		std::string file = gui_get_files_in_direcotry_randomly(image_dir_str);
+		std::string file = gui_get_files_in_directory_randomly(image_dir_str);
 		if (file.empty()) {
 			g_printerr("ERROR: Image directory %s is empty\n", image_dir_str.c_str());
-			return 0;
+			exit(1);
+		} else {
+			/* Reset the dir_file variable */
+			dir_files.erase(dir_files.begin(), dir_files.end());
 		}
 	}
 
@@ -1636,12 +1848,23 @@ int main(int argc, char *argv[])
 		gst_init(&argc, &argv);
 
 		/* Create the GStreamer pipeline for camera use case */
-		ret = gst_pipeline_camera_creation(&data);
+		int ret = gst_pipeline_camera_creation(&data);
 		if(ret)
-			return -1;
+			exit(1);
 
+		auto now = std::chrono::system_clock::now();
+		auto delay = std::chrono::milliseconds(5000);
 		std::unique_lock<std::mutex> lk(cond_var_m);
-		cond_var.wait(lk);
+		cond_var.wait_until(lk, now + delay);
+	}
+
+	/* Start a timeout timer in validation process to close application if
+	 * timeout occurs */
+	if (validation) {
+		data.valid_draw_count = 0;
+		data.valid_timeout_id = g_timeout_add(10000,
+						      valid_timeout_callback,
+						      NULL);
 	}
 
 	if (data.preview_enabled) {
