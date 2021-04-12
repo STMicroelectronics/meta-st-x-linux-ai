@@ -750,11 +750,12 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		cairo_paint(cr);
 
 		if (first_call) {
+			data->window_width = gdk_window_get_width(window);
+			data->window_height = gdk_window_get_height(window);
+
 			/* set font size according to the display size */
 			gui_load_css(data);
 
-			data->window_width = gdk_window_get_width(window);
-			data->window_height = gdk_window_get_height(window);
 			/* Calculating the position of the preview in fullscreen
 			 * mode. This position is compute automaticaly by the
 			 * waylandsink gstreamer element and is it is not
@@ -780,11 +781,12 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		 * return immediatly the first time it is called in a still
 		 * picture context */
 		if (first_call) {
+			data->window_width = gdk_window_get_width(window);
+			data->window_height = gdk_window_get_height(window);
+
 			/* set font size according to the display size */
 			gui_load_css(data);
 
-			data->window_width = gdk_window_get_width(window);
-			data->window_height = gdk_window_get_height(window);
 			/* Calulating the face thumbnail position and size
 			 * according to the remaining space left at the right
 			 * and left of the preview area. */
