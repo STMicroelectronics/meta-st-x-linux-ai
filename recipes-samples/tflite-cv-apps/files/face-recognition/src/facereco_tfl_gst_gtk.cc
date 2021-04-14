@@ -59,7 +59,7 @@ std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
 bool validation = false;
-int reco_simultaneous_face = 1;
+bool reco_simultaneous_face = false;
 float reco_threshold = 0.70;
 int max_db_faces = 200;
 
@@ -166,7 +166,7 @@ typedef struct _CustomData {
 	std::vector<RegisteredFace> registered_faces;
 	std::vector<DetectedFace> detected_faces;
 	/* Face reco parameters */
-	int max_simultaneous_face;
+	bool multiple_faces;
 	float face_reco_threshold;
 	/* Still picture */
 	cairo_surface_t *picture;
@@ -1658,7 +1658,7 @@ static void print_help(int argc, char** argv)
 	std::cout <<
 		"Usage: " << argv[0] << " [option]\n"
 		"\n"
-		"--reco_simultaneous_faces <val>:      number of faces that can be recognized simultaneously (default is 1)\n"
+		"--reco_simultaneous_faces:       enable multiple face recognition (default is single face recognition)\n"
 		"--reco_threshold <val>:          face recognition threshold for face similarity (default is 0.70 = 70%)\n"
 		"--max_db_faces <val>:            maximum number of faces to be stored in the database (default is 200)\n"
 		"-d --database <directory path>:  provide the directory where the face recognition database is stored (else default location is used)\n"
@@ -1686,7 +1686,7 @@ void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "d:i:v:h";
 	const option long_opts[] = {
-		{"reco_simultaneous_faces", required_argument, nullptr, OPT_FACE_RECO_SIM_FACE},
+		{"reco_simultaneous_faces", no_argument,       nullptr, OPT_FACE_RECO_SIM_FACE},
 		{"reco_threshold",          required_argument, nullptr, OPT_FACE_RECO_THRESHOLD},
 		{"max_db_faces",            required_argument, nullptr, OPT_FACE_RECO_MAX_DB_FACES},
 		{"database",                required_argument, nullptr, 'd'},
@@ -1710,9 +1710,9 @@ void process_args(int argc, char** argv)
 		switch (opt)
 		{
 		case OPT_FACE_RECO_SIM_FACE:
-			reco_simultaneous_face = std::stoi(optarg);
-			std::cout << "simultaneous face recognized set to: "
-				<< reco_simultaneous_face << std::endl;
+			reco_simultaneous_face = true;
+			std::cout << "enable simultaneous face recognition"
+				<< std::endl;
 			break;
 		case OPT_FACE_RECO_THRESHOLD:
 			reco_threshold = std::stof(optarg);
@@ -1795,7 +1795,7 @@ int main(int argc, char *argv[])
 	/* Initialize our data structure */
 	data.pipeline = NULL;
 	data.window = NULL;
-	data.max_simultaneous_face = reco_simultaneous_face;
+	data.multiple_faces = reco_simultaneous_face;
 	data.face_reco_threshold = reco_threshold;
 	data.max_db_faces = max_db_faces;
 	if (database_dir_str.empty())
@@ -1830,7 +1830,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Face detect library initialization */
-	libfacedetect_tfl.Initialize(data.max_simultaneous_face,
+	libfacedetect_tfl.Initialize(data.multiple_faces,
 				     2 /*number_of_threads*/);
 
 	/* Face reco library initialization */

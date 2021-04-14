@@ -57,7 +57,7 @@ private:
 
 public:
 	Tfl_facedetect();
-	void Initialize(int number_of_faces, int number_of_threads);
+	void Initialize(bool multiple_faces, int number_of_threads);
 	float FindFaces(const cv::Mat& img, uint8_t* nb_faces);
 	Bbox GetDetectedFaceBbox(uint32_t detected_face_idx);
 	cv::Mat GetDetectedFaceImage(cv::Mat img, uint32_t detected_face_idx, cv::Size output_size);
