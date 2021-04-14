@@ -1032,8 +1032,10 @@ int main(int argc, char *argv[])
 		if(ret)
 			exit(1);
 
+		auto now = std::chrono::system_clock::now();
+		auto delay = std::chrono::milliseconds(5000);
 		std::unique_lock<std::mutex> lk(cond_var_m);
-		cond_var.wait(lk);
+		cond_var.wait_until(lk, now + delay);
 	}
 
 	/* Start a timeout timer in validation process to close application if
