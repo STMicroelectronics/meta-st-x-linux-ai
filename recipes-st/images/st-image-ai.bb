@@ -1,12 +1,9 @@
 require recipes-st/images/st-image-weston.bb
 
-SUMMARY = "OpenSTLinux Artificial Inteligence image based on weston image"
+SUMMARY = "OpenSTLinux Artificial Inteligence for Computer Vision image based on weston image"
 
 IMAGE_AI_PART = "   \
-    python3-tensorflow-lite \
-    libedgetpu \
-    armnn \
-    armnn-tensorflow-lite \
+    packagegroup-x-linux-ai \
 "
 
 #
