@@ -4,14 +4,11 @@ SUMMARY = "TensorFlow Lite Python interpreter and C++ Library"
 HOMEPAGE = "https://www.tensorflow.org/lite"
 LICENSE = "Apache-2.0"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=64a34301f8e355f57ec992c2af3e5157"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=5131e32d71a4eb06326ea1772d0de6fd"
 
-SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.4 "
-SRCREV = "85c8b2a817f95a3e979ecd1ed95bff1dc1335cff"
+SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.5 "
+SRCREV = "a4dfb8d1a71385bd6d122e4f27f86dcebb96712d"
 S = "${WORKDIR}/git"
-
-# Patch to be applied
-SRC_URI += " file://0001-TFLite-tools-make-remove-test_delegate_providers.cc-.patch "
 
 inherit setuptools3
 
