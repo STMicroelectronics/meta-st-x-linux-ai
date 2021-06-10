@@ -10,11 +10,8 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9598101cf48c5f479cfda9f3fc6fc566"
 
 SRC_URI = " git://github.com/ARM-software/ComputeLibrary;protocol=https"
-SRCREV = "7dcb9fadb98cad05fca72de3273311d570d98b4e"
+SRCREV = "f7399fd616cc8ccedfae668da3023e589a7ef558"
 S = "${WORKDIR}/git"
-
-# Patch to be applied
-SRC_URI += " file://0001-fix-noexcept-warning-issue-with-Yocto-cross-compile.patch "
 
 inherit scons
 
@@ -53,9 +50,6 @@ do_install() {
 	rm ${D}${prefix}/local/bin/${PN}-${PV}/tools/examples/*.o
 
 	install -m 0555 ${S}/build/tests/arm_compute_benchmark  ${D}${prefix}/local/bin/${PN}-${PV}/tools
-	install -m 0555 ${S}/build/tests/benchmark_graph*       ${D}${prefix}/local/bin/${PN}-${PV}/tools
-	install -m 0555 ${S}/build/tests/benchmark_neon*        ${D}${prefix}/local/bin/${PN}-${PV}/tools
-	rm ${D}${prefix}/local/bin/${PN}-${PV}/tools/*.o
 
 	# install include files
 	cp -rf ${S}/arm_compute                                 ${D}${includedir}/${BPN}
