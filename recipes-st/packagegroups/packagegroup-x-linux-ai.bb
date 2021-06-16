@@ -52,8 +52,6 @@ RDEPENDS_packagegroup-x-linux-ai-armnn-tflite = "\
     armnn-tensorflow-lite \
     armnn-tensorflow-lite-examples \
     armnn-tools \
-    python3-tensorflow-lite \
-    tensorflow-lite-tools \
     armnn-tfl-cv-apps-image-classification-c++ \
     armnn-tfl-cv-apps-object-detection-c++ \
 "
