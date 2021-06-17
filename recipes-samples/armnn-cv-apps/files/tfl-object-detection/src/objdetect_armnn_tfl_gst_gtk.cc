@@ -538,7 +538,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			std::cout << "\nInput file: " << file <<std::endl;
 
 			/* Get the name of the file without extension */
-			file = file.substr(0, file.find('.'));
+			file = file.substr(0, file.find_last_of('.'));
 			std::vector<ValidObjectInfo> objects_info;
 
 			/* Load associated JSON file information */
