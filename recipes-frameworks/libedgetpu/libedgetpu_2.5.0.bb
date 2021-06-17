@@ -3,7 +3,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 
 SRC_URI = "git://github.com/google-coral/libedgetpu.git "
-SRCREV = "14eee1a076aa1af7ec1ae3c752be79ae2604a708"
+SRCREV = "efb73cc94dac29dc590a243109d4654c223e008c"
 S = "${WORKDIR}/git"
 
 # Patch to be applied

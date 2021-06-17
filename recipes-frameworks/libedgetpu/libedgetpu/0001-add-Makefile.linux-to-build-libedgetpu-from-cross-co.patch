@@ -1,4 +1,4 @@
-From 97001d201b8422bbc4e15a9bc676c5f8833c3b25 Mon Sep 17 00:00:00 2001
+From 186d1b63999a57800f5708622816d4708201f97f Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 22 Dec 2020 18:07:44 +0100
 Subject: [PATCH 1/1] add Makefile.linux to build libedgetpu from cross
@@ -12,17 +12,19 @@ configurations:
 - libedgetpu_low.so.1.0
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+
+%% original patch: 0001-add-Makefile.linux-to-build-libedgetpu-from-cross-co.patch
 ---
- Makefile.linux | 198 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 198 insertions(+)
+ Makefile.linux | 206 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 206 insertions(+)
  create mode 100644 Makefile.linux
 
 diff --git a/Makefile.linux b/Makefile.linux
 new file mode 100644
-index 0000000..18c9f99
+index 0000000..ea893cd
 --- /dev/null
 +++ b/Makefile.linux
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,206 @@
 +# Copyright 2020 STMicroelectronics
 +#
 +# Licensed under the Apache License, Version 2.0 (the "License");
@@ -131,7 +133,7 @@ index 0000000..18c9f99
 +LIBEDGETPU_SRCS += \
 +	$(SRC_DIR)/port/shared_mutex.cc \
 +	$(SRC_DIR)/port/blocking_counter.cc \
-+	$(SRC_DIR)/port/timer_linux.cc
++	$(SRC_DIR)/port/timer_portable.cc
 +#port/default
 +LIBEDGETPU_SRCS += \
 +	$(SRC_DIR)/port/default/stringprintf.cc
@@ -152,33 +154,41 @@ index 0000000..18c9f99
 +CXXFLAGS += $(LIBEDGETPU_EXTRA_CXXFLAGS)
 +CXXFLAGS += $(INCLUDES)
 +
-+#Mimic the Bazel build --define darwinn_portable=1
-+CXXFLAGS += -DDARWINN_PORT_DEFAULT
-+
-+ABSL_LDFLAGS  = -Wl,--whole-archive -labsl_base -labsl_debugging_internal \
-+	-labsl_demangle_internal -labsl_flags -labsl_flags_config \
-+	-labsl_flags_handle -labsl_flags_internal -labsl_flags_registry \
-+	-labsl_flags_marshalling -labsl_graphcycles_internal -labsl_int128 \
-+	-labsl_malloc_internal -labsl_spinlock_wait -labsl_stacktrace \
-+	-labsl_str_format_internal -labsl_strings -labsl_strings_internal \
-+	-labsl_symbolize -labsl_synchronization -labsl_throw_delegate \
-+	-labsl_time -labsl_time_zone -Wl,--no-whole-archive
-+
-+TFLITE_LDFLAGS =  -Wl,--whole-archive -ltensorflow-lite -Wl,--no-whole-archive
++ABSL_LDFLAGS  = \
++	-labsl_flags \
++	-labsl_flags_marshalling \
++	-labsl_hashtablez_sampler \
++	-labsl_str_format_internal \
++	-labsl_throw_delegate \
++	-labsl_synchronization \
++	-labsl_time \
++	-labsl_time_zone \
++	-labsl_int128 \
++	-labsl_symbolize \
++	-labsl_base \
++	-labsl_debugging_internal \
++	-labsl_dynamic_annotations \
++	-labsl_malloc_internal \
++	-labsl_spinlock_wait \
++	-labsl_demangle_internal \
++	-labsl_hash \
++	-labsl_flags_registry \
++	-labsl_flags_handle \
++	-labsl_flags_config \
++	-labsl_flags_internal \
++	-labsl_strings \
++	-labsl_graphcycles_internal \
++	-labsl_stacktrace
 +
 +#Linker Flags
 +LDFLAGS  = -L${SYSROOT}/lib
 +LDFLAGS += -L${SYSROOT}/usr/lib
 +LDFLAGS += -lpthread -lusb-1.0 $(ABSL_LDFLAGS) $(TFLITE_LDFLAGS)
 +
-+# VAB to check the linker file
-+LIBEDGETPU_LINKER_FILE := $(SRC_DIR)/tflite/public/libedgetpu.lds
-+#LDFLAGS  += -T $(LIBEDGETPU_LINKER_FILE)
-+
-+LIB_NAME_MAX  := libedgetpu-max.so.%%VERSION%%
-+LIB_NAME_HIGH := libedgetpu-high.so.%%VERSION%%
-+LIB_NAME_MED  := libedgetpu-med.so.%%VERSION%%
-+LIB_NAME_LOW  := libedgetpu-low.so.%%VERSION%%
++LIB_NAME_MAX  := libedgetpu-max.so.2.5.0
++LIB_NAME_HIGH := libedgetpu-high.so.2.5.0
++LIB_NAME_MED  := libedgetpu-med.so.2.5.0
++LIB_NAME_LOW  := libedgetpu-low.so.2.5.0
 +
 +LIB_PATH_MAX  := $(LIB_DIR)/$(LIB_NAME_MAX)
 +LIB_PATH_HIGH := $(LIB_DIR)/$(LIB_NAME_HIGH)
@@ -193,7 +203,7 @@ index 0000000..18c9f99
 +
 +$(LIB_PATH_MAX): $(LIBEDGETPU_OBJS_MAX)
 +	@mkdir -p $(dir $@)
-+	$(CXX) -shared $(LDFLAGS) $^ -o $@ -Wl,-soname,$(LIB_NAME_MAX)
++	$(CXX) -shared $^ -o $@ $(LDFLAGS) -Wl,-soname,$(LIB_NAME_MAX)
 +
 +$(OBJ_DIR_HIGH)%.o: %.cc
 +	@mkdir -p $(dir $@)
@@ -201,7 +211,7 @@ index 0000000..18c9f99
 +
 +$(LIB_PATH_HIGH): $(LIBEDGETPU_OBJS_HIGH)
 +	@mkdir -p $(dir $@)
-+	$(CXX) -shared $(LDFLAGS) $^ -o $@ -Wl,-soname,$(LIB_NAME_HIGH)
++	$(CXX) -shared $^ -o $@ $(LDFLAGS) -Wl,-soname,$(LIB_NAME_HIGH)
 +
 +$(OBJ_DIR_MED)%.o: %.cc
 +	@mkdir -p $(dir $@)
@@ -209,7 +219,7 @@ index 0000000..18c9f99
 +
 +$(LIB_PATH_MED): $(LIBEDGETPU_OBJS_MED)
 +	@mkdir -p $(dir $@)
-+	$(CXX) -shared $(LDFLAGS) $^ -o $@ -Wl,-soname,$(LIB_NAME_MED)
++	$(CXX) -shared $^ -o $@ $(LDFLAGS) -Wl,-soname,$(LIB_NAME_MED)
 +
 +$(OBJ_DIR_LOW)%.o: %.cc
 +	@mkdir -p $(dir $@)
@@ -217,7 +227,7 @@ index 0000000..18c9f99
 +
 +$(LIB_PATH_LOW): $(LIBEDGETPU_OBJS_LOW)
 +	@mkdir -p $(dir $@)
-+	$(CXX) -shared $(LDFLAGS) $^ -o $@ -Wl,-soname,$(LIB_NAME_LOW)
++	$(CXX) -shared $^ -o $@ $(LDFLAGS) -Wl,-soname,$(LIB_NAME_LOW)
 +
 +clean:
 +	rm -rf $(BUILD_DIR)
