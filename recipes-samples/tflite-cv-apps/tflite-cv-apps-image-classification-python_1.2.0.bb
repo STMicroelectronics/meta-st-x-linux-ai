@@ -5,9 +5,6 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec
 
 SRC_URI  = " file://image-classification/python;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_Python.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80_next_inference.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/close_50x50_pink.png;subdir=${BPN}-${PV} "
 
 S = "${WORKDIR}/${BPN}-${PV}"
 

@@ -9,9 +9,14 @@ DEPENDS += "armnn gtk+3 opencv gstreamer1.0"
 
 SRC_URI  = " file://tfl-image-classification/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/armNN_tflite_C++.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80_next_inference.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/ST7079_AI_neural_pink_65x80.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/close_50x50_pink.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_next_inference_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_next_inference_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_next_inference_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/exit_25x25.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/exit_50x50.png;subdir=${BPN}-${PV} "
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
