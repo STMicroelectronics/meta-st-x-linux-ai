@@ -75,6 +75,18 @@ std::mutex cond_var_m;
 
 bool gtk_main_started = false;
 
+#define RESOURCES_DIRECTORY        "/usr/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources/"
+
+/* UI parameters (values will depends on display size) */
+int ui_cairo_font_size = 20;
+int ui_cairo_font_spacing = 4;
+int ui_icon_exit_width = 50;
+int ui_icon_exit_height = 50;
+int ui_icon_st_width = 65;
+int ui_icon_st_height = 80;
+double box_line_width = 1.0;
+int ui_weston_panel_thickness = 32;
+
 typedef struct _FramePosition {
 	int x;
 	int y;
@@ -88,8 +100,11 @@ typedef struct _CustomData {
 	GstElement *pipeline;
 	/* The GTK window widget */
 	GtkWidget *window;
-	/* Cairo brain icon pointer */
-	cairo_surface_t *brain_icon;
+	/* window resolution */
+	int window_width;
+	int window_height;
+	/* Cairo ST icon pointer */
+	cairo_surface_t *st_icon;
 	/* Cairo exit icon pointer */
 	cairo_surface_t *exit_icon;
 	/* Preview camera enable (else still picture use case) */
@@ -183,12 +198,22 @@ static void nn_inference(uint8_t *img)
 }
 
 /**
+ * This function display text is a black stroke and a white fill color
+ */
+void gui_display_outlined_text(cairo_t *cr,
+			       const char* text)
+{
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_text_path(cr, text);
+	cairo_fill_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 0.5);
+	cairo_stroke(cr);
+}
+
+/**
  * This function is called when a click or touch event is recieved
  */
-#define EXIT_AREA_WIDTH   50
-#define EXIT_AREA_HEIGHT  50
-#define BRAIN_AREA_WIDTH  75
-#define BRAIN_AREA_HEIGHT 80
 static gboolean gui_press_event_cb(GtkWidget *widget,
 				   GdkEventButton *event,
 				   CustomData *data)
@@ -197,13 +222,13 @@ static gboolean gui_press_event_cb(GtkWidget *widget,
 
 	if (event->button == GDK_BUTTON_PRIMARY) {
 		/* exit if event occurs in the exit area (tof right corner) */
-		if ((event->x > (draw_area_width - EXIT_AREA_WIDTH)) &&
-		    (event->y < EXIT_AREA_HEIGHT))
+		if ((event->x > (draw_area_width - ui_icon_exit_width)) &&
+		    (event->y < ui_icon_st_height))
 			gtk_main_quit();
-	} if (event->button == GDK_BUTTON_PRIMARY) {
-		/* object detect on a new picture */
-		if ((event->x < BRAIN_AREA_WIDTH) &&
-		    (event->y < BRAIN_AREA_HEIGHT))
+
+		/* clasify a new picture */
+		if ((event->x < ui_icon_st_width) &&
+		    (event->y < ui_icon_st_height))
 			gtk_widget_queue_draw(data->window);
 	}
 
@@ -211,23 +236,73 @@ static gboolean gui_press_event_cb(GtkWidget *widget,
 }
 
 /**
+ * This function is an helper to set UI variable according to the display size
+ */
+static void gui_set_ui_parameters(CustomData *data)
+{
+	int window_height = data->window_height;
+
+	if (window_height <= 272) {
+		/* Display 480x272 */
+		ui_cairo_font_size = 15;
+		ui_cairo_font_spacing = 5;
+		ui_icon_exit_width = 25;
+		ui_icon_exit_height = 25;
+		ui_icon_st_width = 42;
+		ui_icon_st_height = 52;
+		box_line_width = 2.0;
+		ui_weston_panel_thickness = 32;
+	} else if (window_height <= 480) {
+		/* Display 800x480 */
+		ui_cairo_font_size = 20;
+		ui_cairo_font_spacing = 10;
+		ui_icon_exit_width = 50;
+		ui_icon_exit_height = 50;
+		ui_icon_st_width = 65;
+		ui_icon_st_height = 80;
+		box_line_width = 2.0;
+		ui_weston_panel_thickness = 32;
+	} else {
+		ui_cairo_font_size = 25;
+		ui_cairo_font_spacing = 10;
+		ui_icon_exit_width = 50;
+		ui_icon_exit_height = 50;
+		ui_icon_st_width = 130;
+		ui_icon_st_height = 160;
+		box_line_width = 2.0;
+		ui_weston_panel_thickness = 32;
+	}
+
+	/* set the icons */
+	std::stringstream st_icon_sstr;
+	st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
+	if (!data->preview_enabled)
+		st_icon_sstr << "next_inference_";
+	st_icon_sstr << ui_icon_st_width << "x" << ui_icon_st_height << ".png";
+	data->st_icon = cairo_image_surface_create_from_png(st_icon_sstr.str().c_str());
+
+	std::stringstream exit_icon_sstr;
+	exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
+	exit_icon_sstr << ui_icon_exit_width << "x" << ui_icon_exit_height << ".png";
+	data->exit_icon = cairo_image_surface_create_from_png(exit_icon_sstr.str().c_str());
+}
+
+/**
  * This function is an helper to get frame position on the display
  */
-#define WESTON_PANEL_THICKNESS 32
-static void gui_compute_frame_position(GdkWindow *window,
-				       CustomData *data)
+static void gui_compute_frame_position(CustomData *data)
 {
-	int window_width;
-	int window_height;
+	int window_width = data->window_width;
+	int window_height = data->window_height;
 	int offset_x = 0;
 	int offset_y = 0;
 
-	window_width  = gdk_window_get_width(window);
 	if (data->preview_enabled) {
-		window_height = gdk_window_get_height(window) + WESTON_PANEL_THICKNESS;
+		window_height += ui_weston_panel_thickness;
 	} else {
-		window_height = gdk_window_get_height(window) - BRAIN_AREA_HEIGHT;
-		offset_y = BRAIN_AREA_HEIGHT;
+		/* Twoo lines of text are displayed */
+		window_height -= ui_cairo_font_size * 2 + ui_cairo_font_spacing;
+		offset_y = ui_cairo_font_size * 2 + ui_cairo_font_spacing;
 	}
 
 	float width_ratio   = (float)window_width / (float)data->frame_width;
@@ -287,8 +362,15 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			    CustomData *data)
 {
 	GdkWindow *window = gtk_widget_get_window(widget);
-	int window_width  = gdk_window_get_width(window);
 	std::string file;
+
+	/* Get display information and set UI variable accordingly */
+	if (first_call) {
+		data->window_width = gdk_window_get_width(window);
+		data->window_height = gdk_window_get_height(window);
+
+		gui_set_ui_parameters(data);
+	}
 
 	if (data->preview_enabled) {
 		/* Camera preview use case */
@@ -303,7 +385,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			 * mode. This position is compute automaticaly by the
 			 * waylandsink gstreamer element and is it is not
 			 * exposed. Thus we need to calculate it by our own. */
-			gui_compute_frame_position(window, data);
+			gui_compute_frame_position(data);
 			first_call = false;
 		}
 	} else {
@@ -335,7 +417,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 		data->frame_height = img_bgra.size().height;
 
 		/* Get final frame position and dimension and resize it */
-		gui_compute_frame_position(window, data);
+		gui_compute_frame_position(data);
 		cv::Size size(data->frame_fullscreen_pos.width, data->frame_fullscreen_pos.height);
 		cv::resize(img_bgra, img_bgra_resized, size);
 
@@ -384,26 +466,26 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << results.inference_time;
 	inference_time_sstr << std::right << std::setw(2) << "ms";
 
-	/* Draw the brain icon at the top left corner */
-	cairo_set_source_surface(cr, data->brain_icon, 5, 5);
+	/* Draw the ST icon at the top left corner */
+	cairo_set_source_surface(cr, data->st_icon, 0, 0);
 	cairo_paint(cr);
 
 	/* Draw the exit icon at the top right corner */
-	cairo_set_source_surface(cr, data->exit_icon, window_width - EXIT_AREA_WIDTH, 0);
+	cairo_set_source_surface(cr, data->exit_icon, data->window_width - ui_icon_exit_width, 0);
 	cairo_paint(cr);
 
 	if (data->preview_enabled) {
 		/* Translate to the preview position taking into account the
-		 * brain icon to not overlap it. */
+		 * ST icon to not overlap it. */
 		if (data->frame_fullscreen_pos.x == 0)
 			cairo_translate(cr,
 					0,
 					std::max(data->frame_fullscreen_pos.y,
-						 BRAIN_AREA_HEIGHT));
+						 ui_icon_st_height));
 		else
 			cairo_translate(cr,
 					std::max(data->frame_fullscreen_pos.x,
-						 BRAIN_AREA_WIDTH),
+						 ui_icon_st_width),
 					0);
 
 		if (crop) {
@@ -431,32 +513,31 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			cairo_stroke(cr);
 		}
 	} else {
-		cairo_translate(cr, BRAIN_AREA_WIDTH, 0);
+		cairo_translate(cr, ui_icon_st_width, 0);
 	}
 
 	/* Display inference result */
 	cairo_select_font_face (cr, "monospace",
 				CAIRO_FONT_SLANT_NORMAL,
 				CAIRO_FONT_WEIGHT_BOLD);
-	cairo_set_font_size (cr, 20);
-	cairo_set_source_rgb (cr, 0.83, 0.0, 0.48);
+	cairo_set_font_size (cr, ui_cairo_font_size);
 
 	if (data->preview_enabled) {
 		/* Camera preview use case */
-		cairo_move_to(cr, 2, 20);
-		cairo_show_text(cr, information_sstr.str().c_str());
-		cairo_move_to(cr, 2, 40);
-		cairo_show_text(cr, display_fps_sstr.str().c_str());
-		cairo_move_to(cr, 2, 60);
-		cairo_show_text(cr, inference_fps_sstr.str().c_str());
-		cairo_move_to(cr, 2, 80);
-		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_move_to(cr, 2, ui_cairo_font_size);
+		gui_display_outlined_text(cr, information_sstr.str().c_str());
+		cairo_move_to(cr, 2, ui_cairo_font_size * 2);
+		gui_display_outlined_text(cr, display_fps_sstr.str().c_str());
+		cairo_move_to(cr, 2, ui_cairo_font_size * 3);
+		gui_display_outlined_text(cr, inference_fps_sstr.str().c_str());
+		cairo_move_to(cr, 2, ui_cairo_font_size * 4);
+		gui_display_outlined_text(cr, inference_time_sstr.str().c_str());
 	} else {
 		/* Still picture use case */
-		cairo_move_to(cr, 2, 30);
-		cairo_show_text(cr, information_sstr.str().c_str());
-		cairo_move_to(cr, 2, 50);
-		cairo_show_text(cr, inference_time_sstr.str().c_str());
+		cairo_move_to(cr, 2, ui_cairo_font_size);
+		gui_display_outlined_text(cr, information_sstr.str().c_str());
+		cairo_move_to(cr, 2, ui_cairo_font_size * 2);
+		gui_display_outlined_text(cr, inference_time_sstr.str().c_str());
 	}
 
 	/* Draw bounding box of the 5 first detected object if the score is
@@ -464,7 +545,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	if (!data->preview_enabled) {
 		/* Translate to the frame position */
 		cairo_translate(cr,
-				data->frame_fullscreen_pos.x - BRAIN_AREA_WIDTH,
+				data->frame_fullscreen_pos.x - ui_icon_st_width,
 				data->frame_fullscreen_pos.y);
 	}
 
@@ -495,9 +576,10 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			float y      = data->frame_fullscreen_pos.height * results.location[i].y0;
 			float width  = data->frame_fullscreen_pos.width  * (results.location[i].x1 - results.location[i].x0);
 			float height = data->frame_fullscreen_pos.height * (results.location[i].y1 - results.location[i].y0);
+			cairo_set_line_width(cr, box_line_width);
 			cairo_rectangle(cr, int(x), int(y), int(width), int(height));
 			cairo_stroke(cr);
-			cairo_move_to(cr, int(x) + 2, int(y) + 22);
+			cairo_move_to(cr, int(x) + 2, int(y) - (ui_cairo_font_size / 2));
 			cairo_show_text(cr, info_sstr.str().c_str());
 		}
 	}
@@ -623,16 +705,12 @@ static void gui_create(CustomData *data)
 {
 	GtkWidget *drawing_area;
 
-	if (data->preview_enabled)
-		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources/ST7079_AI_neural_pink_65x80.png");
-	else
-		data->brain_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources/ST7079_AI_neural_pink_65x80_next_inference.png");
-	data->exit_icon = cairo_image_surface_create_from_png("/usr/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources/close_50x50_pink.png");
-
 	/* Create the window */
 	data->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	g_signal_connect(G_OBJECT(data->window), "delete-event", G_CALLBACK (gtk_main_quit), NULL);
-	g_signal_connect(G_OBJECT(data->window), "destroy", G_CALLBACK (gtk_main_quit), NULL);
+	g_signal_connect(G_OBJECT(data->window), "delete-event",
+			 G_CALLBACK (gtk_main_quit), NULL);
+	g_signal_connect(G_OBJECT(data->window), "destroy",
+			 G_CALLBACK (gtk_main_quit), NULL);
 	/* Remove title bar */
 	gtk_window_set_decorated(GTK_WINDOW (data->window), FALSE);
 	/* Tell GTK that we want to draw the background ourself */
@@ -1178,7 +1256,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Clean cairo surfaces */
-	cairo_surface_destroy(data.brain_icon);
+	cairo_surface_destroy(data.st_icon);
 	cairo_surface_destroy(data.exit_icon);
 
 	return 0;
