@@ -742,7 +742,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 {
 	GstStateChangeReturn ret;
 	GstElement *pipeline, *source, *dispsink, *tee, *scale, *framerate;
-	GstElement *queue1, *queue2, *convert, *appsink, *framecrop;
+	GstElement *queue1, *queue2, *convert, *convert2, *appsink, *framecrop;
 	GstElement *fpsmeasure1, *fpsmeasure2;
 	GstBus *bus;
 
@@ -756,6 +756,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	queue1      = gst_element_factory_make("queue",          "queue-1");
 	queue2      = gst_element_factory_make("queue",          "queue-2");
 	convert     = gst_element_factory_make("videoconvert",   "video-convert");
+	convert2    = gst_element_factory_make("videoconvert",   "video-convert-wayland");
 	framecrop   = gst_element_factory_make("videocrop",      "videocrop");
 	scale       = gst_element_factory_make("videoscale",     "videoscale");
 	dispsink    = gst_element_factory_make("waylandsink",    "display-sink");
@@ -765,7 +766,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	fpsmeasure2 = gst_element_factory_make("fpsdisplaysink", "fps-measure2");
 
 
-	if (!pipeline || !source || !tee || !queue1 || !queue2 || !convert ||
+	if (!pipeline || !source || !tee || !queue1 || !queue2 || !convert || !convert2 ||
 	    !scale || !dispsink || !appsink || !framerate || !fpsmeasure1 ||
 	    !fpsmeasure2 || !framecrop) {
 		g_printerr("One element could not be created. Exiting.\n");
@@ -776,7 +777,6 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	std::stringstream device_sstr;
 	device_sstr << "/dev/video" << video_device_str;
 	g_object_set(G_OBJECT(source), "device", device_sstr.str().c_str(), NULL);
-
 	/* Configure the display sink element */
 	g_object_set(G_OBJECT(dispsink), "fullscreen", true, NULL);
 
@@ -825,7 +825,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 
 	/* Add all elements into the pipeline */
 	gst_bin_add_many(GST_BIN(pipeline),
-			 source, framerate, tee, convert, queue1, queue2, scale,
+			 source, framerate, tee, convert, convert2, queue1, queue2, scale,
 			 framecrop, fpsmeasure1, fpsmeasure2, NULL);
 
 	/* Link the elements together */
@@ -845,7 +845,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		g_error("Failed to link elements (4)");
 		return -2;
 	}
-	if (!gst_element_link_many(tee, queue1, fpsmeasure1, NULL)) {
+	if (!gst_element_link_many(tee, queue1, convert2, fpsmeasure1, NULL)) {
 		g_error("Failed to link elements (5)");
 		return -2;
 	}
