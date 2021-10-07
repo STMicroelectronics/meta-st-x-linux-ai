@@ -1197,6 +1197,13 @@ int main(int argc, char *argv[])
 
 	process_args(argc, argv);
 
+	/* Get number of CPU cores available */
+	uint8_t nb_cpu_cores = 1;
+	const auto processor_count = std::thread::hardware_concurrency();
+	std::cout << processor_count << " cpu core(s) available\n";
+	if (processor_count)
+		nb_cpu_cores = (uint8_t)processor_count;
+
 	/* Initialize our data structure */
 	data.pipeline = NULL;
 	data.window = NULL;
@@ -1235,7 +1242,7 @@ int main(int argc, char *argv[])
 	config.labels_file_name = labels_file_str;
 	config.input_mean = input_mean;
 	config.input_std = input_std;
-	config.number_of_threads = 2;
+	config.number_of_threads = nb_cpu_cores;
 	config.number_of_results = 5;
 
 	tfl_wrapper.Initialize(&config);
