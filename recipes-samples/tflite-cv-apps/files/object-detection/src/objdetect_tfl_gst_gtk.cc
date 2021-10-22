@@ -47,6 +47,8 @@
 
 #include "wrapper_tfl.hpp"
 
+#define MAX_PRINTED_BOXES 5
+
 /* Application parameters */
 std::vector<std::string> dir_files;
 std::string model_file_str;
@@ -67,7 +69,7 @@ cv::Rect cropRect(0, 0, 0, 0);
 wrapper_tfl::Tfl_Wrapper tfl_wrapper;
 
 struct wrapper_tfl::Config config;
-struct wrapper_tfl::ObjDetect_Results results;
+wrapper_tfl::Frame_Results results;
 std::vector<std::string> labels;
 
 /* Synchronization variables */
@@ -124,7 +126,6 @@ typedef struct _CustomData {
 	int valid_timeout_id;
 	int valid_draw_count;
 	std::vector<double> valid_inference_time;
-
 } CustomData;
 
 /* Framerate statisitics */
@@ -158,8 +159,7 @@ static int load_valid_results_from_json_file(std::string file_name, std::vector<
 	rapidjson::Document json_value;
 	json_value.ParseStream(is);
 
-	if(json_value.HasMember("objects_info"))
-	{
+	if(json_value.HasMember("objects_info")) {
 		const rapidjson::Value& obj_info_array = json_value["objects_info"];
 		for (unsigned int i = 0; i < obj_info_array.Size(); i++) {
 			ValidObjectInfo valid_obj_info;
@@ -447,7 +447,6 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 
 		nn_inference(img_nn.data);
 	}
-
 	std::stringstream information_sstr;
 	if (tfl_wrapper.IsModelQuantized())
 		information_sstr << std::left  << "quant model ";
@@ -465,9 +464,13 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 	inference_fps_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << nn_avg_fps;
 	inference_fps_sstr << std::right << std::setw(3) << "fps";
 
+	float inf_time = 0;
+	if (results.vect_ObjDetect_Results.size() != 0)
+		inf_time = results.inference_time;
+
 	std::stringstream inference_time_sstr;
 	inference_time_sstr << std::left  << std::setw(11) << "inf. time:";
-	inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << results.inference_time;
+	inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << inf_time;
 	inference_time_sstr << std::right << std::setw(2) << "ms";
 
 	/* Draw the ST icon at the top left corner */
@@ -553,38 +556,77 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 				data->frame_fullscreen_pos.y);
 	}
 
-	for (int i = 0; i < 5 ; i++) {
-		switch (i) {
-		case 0:
-			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-			break;
-		case 1:
-			cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
-			break;
-		case 2:
-			cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
-			break;
-		case 3:
-			cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
-			break;
-		case 4:
-			cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
-			break;
-		default:
-			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-		}
-		if (results.score[i] > 0.60) {
-			std::stringstream info_sstr;
-			info_sstr << labels[results.index[i]] << " " << std::fixed << std::setprecision(1) << results.score[i] * 100 << "%";
-			float x      = data->frame_fullscreen_pos.width  * results.location[i].x0;
-			float y      = data->frame_fullscreen_pos.height * results.location[i].y0;
-			float width  = data->frame_fullscreen_pos.width  * (results.location[i].x1 - results.location[i].x0);
-			float height = data->frame_fullscreen_pos.height * (results.location[i].y1 - results.location[i].y0);
-			cairo_set_line_width(cr, box_line_width);
-			cairo_rectangle(cr, int(x), int(y), int(width), int(height));
-			cairo_stroke(cr);
-			cairo_move_to(cr, int(x) + 2, int(y) - (ui_cairo_font_size / 2));
-			cairo_show_text(cr, info_sstr.str().c_str());
+	if (results.vect_ObjDetect_Results.size() != 0){
+		if (results.vect_ObjDetect_Results.size() >= MAX_PRINTED_BOXES){
+			for (int i = 0; i < MAX_PRINTED_BOXES ; i++) {
+				switch (i) {
+				case 0:
+					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+					break;
+				case 1:
+					cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
+					break;
+				case 2:
+					cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+					break;
+				case 3:
+					cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
+					break;
+				case 4:
+					cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
+					break;
+				default:
+					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+				}
+				if (results.vect_ObjDetect_Results[i].score > 0.60) {
+					std::stringstream info_sstr;
+					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
+					float x      = data->frame_fullscreen_pos.width  * results.vect_ObjDetect_Results[i].location.x0;
+					float y      = data->frame_fullscreen_pos.height * results.vect_ObjDetect_Results[i].location.y0;
+					float width  = data->frame_fullscreen_pos.width  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
+					float height = data->frame_fullscreen_pos.height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
+					cairo_set_line_width(cr, box_line_width);
+					cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+					cairo_stroke(cr);
+					cairo_move_to(cr, int(x) + 2, int(y) - (ui_cairo_font_size / 2));
+					cairo_show_text(cr, info_sstr.str().c_str());
+				}
+			}
+		} else {
+			for (int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
+				switch (i) {
+				case 0:
+					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+					break;
+				case 1:
+					cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
+					break;
+				case 2:
+					cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+					break;
+				case 3:
+					cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
+					break;
+				case 4:
+					cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
+					break;
+				default:
+					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+				}
+				if (results.vect_ObjDetect_Results[i].score > 0.60) {
+					std::stringstream info_sstr;
+					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
+					float x      = data->frame_fullscreen_pos.width  * results.vect_ObjDetect_Results[i].location.x0;
+					float y      = data->frame_fullscreen_pos.height * results.vect_ObjDetect_Results[i].location.y0;
+					float width  = data->frame_fullscreen_pos.width  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
+					float height = data->frame_fullscreen_pos.height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
+					cairo_set_line_width(cr, box_line_width);
+					cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+					cairo_stroke(cr);
+					cairo_move_to(cr, int(x) + 2, int(y) - (ui_cairo_font_size / 2));
+					cairo_show_text(cr, info_sstr.str().c_str());
+				}
+			}
 		}
 	}
 
@@ -631,9 +673,15 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			/* Count number of object above 60% and compare it
 			 * with he expected validation result */
 			unsigned int count = 0;
-			for (int i = 0; i < 5 ; i++) {
-				if (results.score[i] > 0.60) {
-					count ++;
+			if (results.vect_ObjDetect_Results.size() >= MAX_PRINTED_BOXES ) {
+				for (int i = 0; i < MAX_PRINTED_BOXES ; i++) {
+					if (results.vect_ObjDetect_Results[i].score > 0.60)
+						count ++;
+				}
+			} else {
+				for (int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
+					if (results.vect_ObjDetect_Results[i].score > 0.60)
+						count ++;
 				}
 			}
 
@@ -646,16 +694,16 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			for (unsigned int i = 0; i < objects_info.size(); i++) {
 				std::cout << "\t"
 					<< std::left  << std::setw(12)
-					<< labels[results.index[i]]
+					<< labels[results.vect_ObjDetect_Results[i].classe]
 					<< " (x0 y0 x1 y1) "
 					<< std::left  << std::setw(12)
-					<< results.location[i].x0
+					<< results.vect_ObjDetect_Results[i].location.x0
 					<< std::left  << std::setw(12)
-					<< results.location[i].y0
+					<< results.vect_ObjDetect_Results[i].location.y0
 					<< std::left  << std::setw(12)
-					<< results.location[i].x1
+					<< results.vect_ObjDetect_Results[i].location.x1
 					<< std::left  << std::setw(12)
-					<< results.location[i].y1
+					<< results.vect_ObjDetect_Results[i].location.y1
 					<< "  expected result: "
 					<< std::left  << std::setw(12)
 					<< objects_info[i].name
@@ -668,17 +716,17 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 					<< objects_info[i].location.x1
 					<< objects_info[i].location.y1 << std::endl;
 
-				if (objects_info[i].name.compare(labels[results.index[i]]) != 0) {
+				if (objects_info[i].name.compare(labels[results.vect_ObjDetect_Results[i].classe]) != 0) {
 
 					std::cout << "Inference result not aligned with the expected validation result\n";
 					exit(1);
 				}
 
 				float error_epsilon = 0.02;
-				if ((fabs(results.location[i].x0 - objects_info[i].location.x0) > error_epsilon) ||
-				    (fabs(results.location[i].y0 - objects_info[i].location.y0) > error_epsilon) ||
-				    (fabs(results.location[i].x1 - objects_info[i].location.x1) > error_epsilon) ||
-				    (fabs(results.location[i].y1 - objects_info[i].location.y1) > error_epsilon)) {
+				if ((fabs(results.vect_ObjDetect_Results[i].location.x0 - objects_info[i].location.x0) > error_epsilon) ||
+				    (fabs(results.vect_ObjDetect_Results[i].location.y0 - objects_info[i].location.y0) > error_epsilon) ||
+				    (fabs(results.vect_ObjDetect_Results[i].location.x1 - objects_info[i].location.x1) > error_epsilon) ||
+				    (fabs(results.vect_ObjDetect_Results[i].location.y1 - objects_info[i].location.y1) > error_epsilon)) {
 					std::cout << "Inference result not aligned with the expected validation result\n";
 					exit(1);
 				}
@@ -1046,15 +1094,13 @@ void process_args(int argc, char** argv)
 		{nullptr,        no_argument,       nullptr, 0}
 	};
 
-	while (true)
-	{
+	while (true) {
 		const auto opt = getopt_long(argc, argv, short_opts, long_opts, nullptr);
 
 		if (-1 == opt)
 			break;
 
-		switch (opt)
-		{
+		switch (opt) {
 		case 'm':
 			model_file_str = std::string(optarg);
 			std::cout << "model file set to: " << model_file_str << std::endl;

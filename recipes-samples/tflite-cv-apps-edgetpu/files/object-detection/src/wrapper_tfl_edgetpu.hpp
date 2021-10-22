@@ -44,7 +44,7 @@
 namespace wrapper_tfl {
 
 	double get_ms(struct timeval t) { return (t.tv_sec * 1000 + t.tv_usec / 1000); }
-
+	bool first_call = true;
 	struct Config {
 		bool verbose;
 		float input_mean = 127.5f;
@@ -59,9 +59,13 @@ namespace wrapper_tfl {
 	};
 
 	struct ObjDetect_Results {
-		float score[10];
-		int index[10];
-		struct ObjDetect_Location location[10];
+		int classe;
+		float score;
+		ObjDetect_Location location;
+	};
+
+	struct Frame_Results {
+		std::vector<ObjDetect_Results> vect_ObjDetect_Results;
 		float inference_time;
 	};
 
@@ -199,7 +203,7 @@ namespace wrapper_tfl {
 			return output_dims->data[output_dims->size - 1];
 		}
 
-		void RunInference(uint8_t* img, ObjDetect_Results* results)
+		void RunInference(uint8_t* img, Frame_Results* results)
 		{
 			if (m_inputFloating)
 				RunInference<float>(img, results);
@@ -208,7 +212,7 @@ namespace wrapper_tfl {
 		}
 
 		template <class T>
-		void RunInference(uint8_t* img, ObjDetect_Results* results)
+		void RunInference(uint8_t* img, Frame_Results* results)
 		{
 			int input_height = GetInputHeight();
 			int input_width = GetInputWidth();
@@ -255,16 +259,36 @@ namespace wrapper_tfl {
 			// output tensor 1 that represente the classes
 			auto output_size = GetOutputSize(1);
 
+			// creation of an ObjDetect_Results struct to store values
+			// of detected object the frame
+			ObjDetect_Results Obj_detected;
+
 			// the outputs are already sort by descending order
-			for (unsigned int i = 0; i < output_size; i++) {
-				results->score[i]       = scores[i];
-				results->index[i]       = (int)classes[i];
-				results->location[i].y0 = locations[(i * 4) + 0];
-				results->location[i].x0 = locations[(i * 4) + 1];
-				results->location[i].y1 = locations[(i * 4) + 2];
-				results->location[i].x1 = locations[(i * 4) + 3];
+			if (first_call) {
+				for (unsigned int i = 0; i < output_size; i++) {
+					Obj_detected.classe =(int)classes[i];
+					Obj_detected.score = scores[i];
+					Obj_detected.location.y0 = locations[(i * 4) + 0];
+					Obj_detected.location.x0 = locations[(i * 4) + 1];
+					Obj_detected.location.y1 = locations[(i * 4) + 2];
+					Obj_detected.location.x1 = locations[(i * 4) + 3];
+					results->vect_ObjDetect_Results.push_back(Obj_detected);
+				}
+				results->inference_time = m_inferenceTime;
+			} else {
+				for (unsigned int i = 0; i < output_size; i++) {
+					results->vect_ObjDetect_Results.erase(results->vect_ObjDetect_Results.begin()+i);
+					Obj_detected.classe =(int)classes[i];
+					Obj_detected.score = scores[i];
+					Obj_detected.location.y0 = locations[(i * 4) + 0];
+					Obj_detected.location.x0 = locations[(i * 4) + 1];
+					Obj_detected.location.y1 = locations[(i * 4) + 2];
+					Obj_detected.location.x1 = locations[(i * 4) + 3];
+					results->vect_ObjDetect_Results.insert(results->vect_ObjDetect_Results.begin()+i,Obj_detected);
+				}
+				results->inference_time = m_inferenceTime;
 			}
-			results->inference_time = m_inferenceTime;
+			first_call = false;
 		}
 
 		// Takes a file name, and loads a list of labels from it, one per line, and

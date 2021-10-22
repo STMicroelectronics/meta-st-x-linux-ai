@@ -240,7 +240,8 @@ def nn_processing(nn,
                   classes,
                   scores,
                   synchro_event,
-                  inference_fps):
+                  inference_fps,
+                  args):
     """
     Function keeps capturing frames until process is killed (terminated)
     :param nn_image: shared numpy array for multiprocessing
@@ -258,13 +259,13 @@ def nn_processing(nn,
 
     # define shared variables
     result_locations = np.ctypeslib.as_array(locations.get_obj())
-    result_locations = result_locations.reshape(1, 10, 4)
+    result_locations = result_locations.reshape(1, args.maximum_detection, 4)
 
     result_classes = np.ctypeslib.as_array(classes.get_obj())
-    result_classes = result_classes.reshape(1, 10)
+    result_classes = result_classes.reshape(1, args.maximum_detection)
 
     result_scores = np.ctypeslib.as_array(scores.get_obj())
-    result_scores = result_scores.reshape(1, 10)
+    result_scores = result_scores.reshape(1, args.maximum_detection)
 
     shape = nn.get_img_size()
 
@@ -429,33 +430,33 @@ class MainUIWindow(Gtk.Window):
                               % (str_inference_time))
 
     def get_object_location_y0(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.nn_result_locations[0][idx][0]), 9)
         return 0
 
     def get_object_location_x0(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.nn_result_locations[0][idx][1]), 9)
         return 0
 
     def get_object_location_y1(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.nn_result_locations[0][idx][2]), 9)
         return 0
 
     def get_object_location_x1(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.nn_result_locations[0][idx][3]), 9)
         return 0
 
     def get_label(self, idx):
         labels = self.nn.get_labels()
-        if idx < 10:
+        if idx < args.maximum_detection:
             return labels[int(self.nn_result_classes[0][idx])]
         return 0
 
 
-    def update_frame(self, frame):
+    def update_frame(self, frame, args):
         img = Image.fromarray(frame)
         draw = ImageDraw.Draw(img)
 
@@ -620,7 +621,7 @@ class MainUIWindow(Gtk.Window):
         self.update_label_preview(inference_time, display_fps, grab_fps, inference_fps)
 
         # update the preview frame
-        self.update_frame(frame_crop_RGB)
+        self.update_frame(frame_crop_RGB,args)
 
         return True
 
@@ -651,7 +652,7 @@ class MainUIWindow(Gtk.Window):
         self.update_label_still(inference_time)
 
         # update the preview frame
-        self.update_frame(prev_frame)
+        self.update_frame(prev_frame, args)
 
         if args.validation:
             #  get file path without extension
@@ -798,17 +799,17 @@ class MainUIWindow(Gtk.Window):
         self.nn_inference_time = Value('f', 0)
         self.nn_inference_fps = Value('f', 0.0)
 
-        self.nn_result_locations_shared_array = Array(ctypes.c_float, 1 * 10 * 4)
+        self.nn_result_locations_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection * 4)
         self.nn_result_locations = np.ctypeslib.as_array(self.nn_result_locations_shared_array.get_obj())
-        self.nn_result_locations = self.nn_result_locations.reshape(1, 10, 4)
+        self.nn_result_locations = self.nn_result_locations.reshape(1, args.maximum_detection, 4)
 
-        self.nn_result_classes_shared_array = Array(ctypes.c_float, 1 * 10)
+        self.nn_result_classes_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection)
         self.nn_result_classes = np.ctypeslib.as_array(self.nn_result_classes_shared_array.get_obj())
-        self.nn_result_classes = self.nn_result_classes.reshape(1, 10)
+        self.nn_result_classes = self.nn_result_classes.reshape(1, args.maximum_detection)
 
-        self.nn_result_scores_shared_array = Array(ctypes.c_float, 1 * 10)
+        self.nn_result_scores_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection)
         self.nn_result_scores = np.ctypeslib.as_array(self.nn_result_scores_shared_array.get_obj())
-        self.nn_result_scores = self.nn_result_scores.reshape(1, 10)
+        self.nn_result_scores = self.nn_result_scores.reshape(1, args.maximum_detection)
 
         # start processes which run in parallel
         self.nn_synchro_event = Event()
@@ -822,7 +823,8 @@ class MainUIWindow(Gtk.Window):
                                         self.nn_result_classes_shared_array,
                                         self.nn_result_scores_shared_array,
                                         self.nn_synchro_event,
-                                        self.nn_inference_fps))
+                                        self.nn_inference_fps,
+                                        args))
         # launch nn process
         self.nn_process.daemon = True
         self.nn_process.start()
@@ -881,6 +883,7 @@ if __name__ == '__main__':
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
+    parser.add_argument("--maximum_detection", default=10, type=int, help="Adjust the maximum number of object detected in a frame accordingly to your NN model (default is 10)")
     args = parser.parse_args()
 
     set_start_method("spawn")

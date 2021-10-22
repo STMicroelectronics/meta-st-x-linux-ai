@@ -275,33 +275,33 @@ class MainUIWindow(Gtk.Window):
                               % (str_inference_time))
 
     def get_object_location_y0(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.result_locations[0][idx][0]), 9)
         return 0
 
     def get_object_location_x0(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.result_locations[0][idx][1]), 9)
         return 0
 
     def get_object_location_y1(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.result_locations[0][idx][2]), 9)
         return 0
 
     def get_object_location_x1(self, idx):
-        if idx < 10:
+        if idx < args.maximum_detection:
             return round(float(self.result_locations[0][idx][3]), 9)
         return 0
 
     def get_label(self, idx):
         labels = self.nn.get_labels()
-        if idx < 10:
+        if idx < args.maximum_detection:
             return labels[int(self.result_classes[0][idx])]
         return 0
 
 
-    def update_frame(self, frame):
+    def update_frame(self, frame, args):
         img = Image.fromarray(frame)
         draw = ImageDraw.Draw(img)
 
@@ -462,7 +462,7 @@ class MainUIWindow(Gtk.Window):
             self.valid_inference_time.append(round(inference_time, 4))
 
         self.update_label_preview(inference_time, inference_fps)
-        self.update_frame(frame_crop)
+        self.update_frame(frame_crop, args)
 
         return True
 
@@ -495,7 +495,7 @@ class MainUIWindow(Gtk.Window):
         self.result_locations[:, :, :], self.result_classes[:, :], self.result_scores[:, :] = self.nn.get_results()
         inference_time = inference_time * 1000
         self.update_label_still(inference_time)
-        self.update_frame(prev_frame)
+        self.update_frame(prev_frame, args)
 
         if args.validation:
             #  get file path without extension
@@ -593,17 +593,17 @@ class MainUIWindow(Gtk.Window):
 
         Gtk.HeaderBar.set_subtitle(self.headerbar, "quant model " + os.path.basename(args.model_file))
 
-        self.result_locations_shared_array = Array(ctypes.c_float, 1 * 10 * 4)
+        self.result_locations_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection * 4)
         self.result_locations = np.ctypeslib.as_array(self.result_locations_shared_array.get_obj())
-        self.result_locations = self.result_locations.reshape(1, 10, 4)
+        self.result_locations = self.result_locations.reshape(1, args.maximum_detection, 4)
 
-        self.result_classes_shared_array = Array(ctypes.c_float, 1 * 10)
+        self.result_classes_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection)
         self.result_classes = np.ctypeslib.as_array(self.result_classes_shared_array.get_obj())
-        self.result_classes = self.result_classes.reshape(1, 10)
+        self.result_classes = self.result_classes.reshape(1, args.maximum_detection)
 
-        self.result_scores_shared_array = Array(ctypes.c_float, 1 * 10)
+        self.result_scores_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection)
         self.result_scores = np.ctypeslib.as_array(self.result_scores_shared_array.get_obj())
-        self.result_scores = self.result_scores.reshape(1, 10)
+        self.result_scores = self.result_scores.reshape(1, args.maximum_detection)
 
         if self.enable_camera_preview:
             print("Running Inferences on camera input")
@@ -683,6 +683,7 @@ if __name__ == '__main__':
     parser.add_argument("-l", "--label_file", default="labels.txt", help="name of file containing labels")
     parser.add_argument("-p", "--perf", default='high', choices= ['max', 'high', 'med', 'low'], help="Select the performance of the Coral EdgeTPU")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
+    parser.add_argument("--maximum_detection", default=10, type=int, help="Adjust the maximum number of object detected in a frame accordingly to your NN model (default is 10)")
     args = parser.parse_args()
 
     try:
