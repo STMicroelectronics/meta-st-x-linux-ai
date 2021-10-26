@@ -4,10 +4,10 @@ SUMMARY = "TensorFlow Lite Python interpreter and C++ Library"
 HOMEPAGE = "https://www.tensorflow.org/lite"
 LICENSE = "Apache-2.0"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=5131e32d71a4eb06326ea1772d0de6fd"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=c7e17cca1ef4230861fb7868e96c387e"
 
-SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.5 "
-SRCREV = "a4dfb8d1a71385bd6d122e4f27f86dcebb96712d"
+SRC_URI = " git://github.com/tensorflow/tensorflow.git;branch=r2.6 "
+SRCREV = "3c25d95e51e27a5dbcb859ab215ef1897740a53b"
 S = "${WORKDIR}/git"
 
 inherit setuptools3
