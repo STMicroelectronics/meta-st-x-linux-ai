@@ -58,6 +58,7 @@ std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
 std::string model_file_str;
 std::string labels_file_str;
+float threshold = 0.60;
 bool verbose = false;
 bool validation = false;
 bool crop = false;
@@ -574,7 +575,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 				default:
 					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
 				}
-				if (results.vect_ObjDetect_Results[i].score > 0.60) {
+				if (results.vect_ObjDetect_Results[i].score > threshold) {
 					std::stringstream info_sstr;
 					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
 					float x      = data->frame_fullscreen_pos.width  * results.vect_ObjDetect_Results[i].location.x0;
@@ -609,7 +610,8 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 				default:
 					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
 				}
-				if (results.vect_ObjDetect_Results[i].score > 0.60) {
+				if (results.vect_ObjDetect_Results[i].score > threshold)
+				{
 					std::stringstream info_sstr;
 					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
 					float x      = data->frame_fullscreen_pos.width  * results.vect_ObjDetect_Results[i].location.x0;
@@ -669,14 +671,15 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 			/* Count number of object above 60% and compare it
 			 * with he expected validation result */
 			unsigned int count = 0;
+
 			if (results.vect_ObjDetect_Results.size() >= MAX_PRINTED_BOXES ) {
 				for (int i = 0; i < MAX_PRINTED_BOXES ; i++) {
-					if (results.vect_ObjDetect_Results[i].score > 0.60)
+					if (results.vect_ObjDetect_Results[i].score > threshold)
 						count ++;
 				}
 			} else {
 				for (int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
-					if (results.vect_ObjDetect_Results[i].score > 0.60)
+					if (results.vect_ObjDetect_Results[i].score > threshold)
 						count ++;
 				}
 			}
@@ -1052,6 +1055,7 @@ static void print_help(int argc, char** argv)
 		"--framerate <val>:                    framerate of the camera (default is 15fps)\n"
 		"--verbose:                            enable verbose mode\n"
 		"--validation:                         enable the validation mode\n"
+		"-t --threshold                        threshold of accuracy above which the boxes are displayed (default 0.60)\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
@@ -1067,7 +1071,7 @@ static void print_help(int argc, char** argv)
 #define OPT_VALIDATION   1004
 void process_args(int argc, char** argv)
 {
-	const char* const short_opts = "m:l:i:v:c:h";
+	const char* const short_opts = "m:l:i:v:c:t:h";
 	const option long_opts[] = {
 		{"model_file",   required_argument, nullptr, 'm'},
 		{"label_file",   required_argument, nullptr, 'l'},
@@ -1079,6 +1083,7 @@ void process_args(int argc, char** argv)
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
 		{"verbose",      no_argument,       nullptr, OPT_VERBOSE},
 		{"validation",   no_argument,       nullptr, OPT_VALIDATION},
+		{"threshold",    required_argument, nullptr, 't'},
 		{"help",         no_argument,       nullptr, 'h'},
 		{nullptr,        no_argument,       nullptr, 0}
 	};
@@ -1130,6 +1135,10 @@ void process_args(int argc, char** argv)
 		case OPT_VALIDATION:
 			validation = true;
 			std::cout << "application started in validation mode" << std::endl;
+			break;
+		case 't':
+			threshold = std::stof(optarg);
+			std::cout << "threshold value set to: " << threshold << std::endl;
 			break;
 		case 'h': // -h or --help
 		case '?': // Unrecognized option

@@ -307,7 +307,7 @@ class MainUIWindow(Gtk.Window):
 
         # draw rectangle around the 5 first detected object with a score greater
         # than 60%
-        if self.result_scores[0][0] > 0.60:
+        if self.result_scores[0][0] > args.threshold:
             y0 = int(self.get_object_location_y0(0) * frame.shape[0])
             x0 = int(self.get_object_location_x0(0) * frame.shape[1])
             y1 = int(self.get_object_location_y1(0) * frame.shape[0])
@@ -318,7 +318,7 @@ class MainUIWindow(Gtk.Window):
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (0,0,255))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
-        if self.result_scores[0][1] > 0.60:
+        if self.result_scores[0][1] > args.threshold:
             y0 = int(self.get_object_location_y0(1) * frame.shape[0])
             x0 = int(self.get_object_location_x0(1) * frame.shape[1])
             y1 = int(self.get_object_location_y1(1) * frame.shape[0])
@@ -329,7 +329,7 @@ class MainUIWindow(Gtk.Window):
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (255,0,0))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
-        if self.result_scores[0][2] > 0.60:
+        if self.result_scores[0][2] > args.threshold:
             y0 = int(self.get_object_location_y0(2) * frame.shape[0])
             x0 = int(self.get_object_location_x0(2) * frame.shape[1])
             y1 = int(self.get_object_location_y1(2) * frame.shape[0])
@@ -340,7 +340,7 @@ class MainUIWindow(Gtk.Window):
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (0,255,0))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
-        if self.result_scores[0][3] > 0.60:
+        if self.result_scores[0][3] > args.threshold:
             y0 = int(self.get_object_location_y0(3) * frame.shape[0])
             x0 = int(self.get_object_location_x0(3) * frame.shape[1])
             y1 = int(self.get_object_location_y1(3) * frame.shape[0])
@@ -351,7 +351,7 @@ class MainUIWindow(Gtk.Window):
             draw.rectangle([(x0, y0), (x0 + ((len(label) + 4) * char_text_width), y0 + 14)], (255,255,0))
             draw.text((x0 + 2, y0 + 2), label + " " + str(int(accuracy)) + "%", (255,255,255))
 
-        if self.result_scores[0][4] > 0.60:
+        if self.result_scores[0][4] > args.threshold:
             y0 = int(self.get_object_location_y0(4) * frame.shape[0])
             x0 = int(self.get_object_location_x0(4) * frame.shape[1])
             y1 = int(self.get_object_location_y1(4) * frame.shape[0])
@@ -510,7 +510,7 @@ class MainUIWindow(Gtk.Window):
             # validation result
             count = 0
             for i in range(0, 5):
-                if self.result_scores[0][i] > 0.60:
+                if self.result_scores[0][i] > args.treshold:
                     count = count + 1
 
             expected_count = len(expected_label)
@@ -684,6 +684,7 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--perf", default='high', choices= ['max', 'high', 'med', 'low'], help="Select the performance of the Coral EdgeTPU")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
     parser.add_argument("--maximum_detection", default=10, type=int, help="Adjust the maximum number of object detected in a frame accordingly to your NN model (default is 10)")
+    parser.add_argument("--threshold", default=0.60, type=float, help="threshold of accuracy above which the boxes are displayed (default 0.60)")
     args = parser.parse_args()
 
     try:
