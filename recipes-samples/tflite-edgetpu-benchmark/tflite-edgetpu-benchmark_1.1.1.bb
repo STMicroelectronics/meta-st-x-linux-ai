@@ -4,7 +4,7 @@ LICENSE = "BSD-3-Clause & Apache-2.0"
 LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
 LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-DEPENDS += "tensorflow-lite-staticdev libedgetpu"
+DEPENDS += "tensorflow-lite libedgetpu"
 
 SRC_URI  = " file://tflite_edgetpu_benchmark.cc;subdir=${BPN}-${PV} "
 SRC_URI += " file://wrapper_tfl_edgetpu.hpp;subdir=${BPN}-${PV} "

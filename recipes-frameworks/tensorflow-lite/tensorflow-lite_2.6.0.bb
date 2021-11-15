@@ -89,7 +89,7 @@ do_install(){
 }
 
 PACKAGES_remove = "${PN}"
-RDEPENDS_${PN}-dev = ""
+RDEPENDS_${PN}-dev = "${PN}-staticdev"
 
 PACKAGES += "${PN}-tools python3-${PN}"
 
@@ -99,4 +99,4 @@ FILES_python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
 
 RDEPENDS_python3-${PN} += " python3-ctypes python3-numpy "
 
-PROVIDES += " tensorflow-lite-staticdev python3-tensorflow-lite "
+PROVIDES += " ${PN}-staticdev python3-${PN} "
