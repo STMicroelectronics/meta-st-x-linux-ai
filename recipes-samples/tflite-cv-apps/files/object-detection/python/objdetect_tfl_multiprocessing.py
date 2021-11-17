@@ -667,7 +667,7 @@ class MainUIWindow(Gtk.Window):
             # validation result
             count = 0
             for i in range(0, 5):
-                if self.nn_result_scores[0][i] > args.treshold:
+                if self.nn_result_scores[0][i] > args.threshold:
                     count = count + 1
 
             expected_count = len(expected_label)
