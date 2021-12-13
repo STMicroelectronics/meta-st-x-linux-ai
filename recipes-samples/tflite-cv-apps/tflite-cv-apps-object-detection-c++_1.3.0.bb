@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite gtk+3 opencv gstreamer1.0 rapidjson"
+DEPENDS += "tensorflow-lite gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
 
 SRC_URI  = " file://object-detection/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_C++.png;subdir=${BPN}-${PV} "
@@ -51,6 +51,8 @@ do_install() {
     # install application binaries and launcher scripts
     install -m 0755 ${S}/object-detection/src/*_gtk	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin
     install -m 0755 ${S}/object-detection/src/*.sh	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin
+    install -m 0755 ${S}/object-detection/src/*.css	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/bin/resources
+
 }
 
 PACKAGES_remove = "${PN}-dev"

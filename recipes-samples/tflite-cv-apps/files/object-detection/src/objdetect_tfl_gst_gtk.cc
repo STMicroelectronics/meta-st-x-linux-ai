@@ -25,25 +25,23 @@
  *     http://www.opensource.org/licenses/BSD-3-Clause
  */
 
-#include <cairo.h>
-#include <condition_variable>
-#include <dirent.h>
 #include <filesystem>
 #include <getopt.h>
 #include <glib.h>
-#include <gst/gst.h>
 #include <gtk/gtk.h>
-#include <iostream>
-#include <iomanip>
-#include <linux/input.h>
 #include <numeric>
 #include <opencv2/opencv.hpp>
-#include <semaphore.h>
-#include <sys/types.h>
 #include <thread>
-
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
+#include <gst/video/videooverlay.h>
+#include <wayland/wayland.h>
+
+#ifdef GDK_WINDOWING_WAYLAND
+#include <gdk/gdkwayland.h>
+#else
+#error "Wayland is not supported in GTK+"
+#endif
 
 #include "wrapper_tfl.hpp"
 
@@ -67,29 +65,15 @@ bool crop = false;
 cv::Rect cropRect(0, 0, 0, 0);
 
 /* TensorFlow Lite variables */
-wrapper_tfl::Tfl_Wrapper tfl_wrapper;
-
+struct wrapper_tfl::Tfl_Wrapper tfl_wrapper;
 struct wrapper_tfl::Config config;
 wrapper_tfl::Frame_Results results;
 std::vector<std::string> labels;
 
-/* Synchronization variables */
-std::condition_variable cond_var;
-std::mutex cond_var_m;
-
 bool gtk_main_started = false;
+bool exit_application = false;
 
-#define RESOURCES_DIRECTORY        "/usr/local/demo-ai/computer-vision/tflite-object-detection/bin/resources/"
-
-/* UI parameters (values will depends on display size) */
-int ui_cairo_font_size = 20;
-int ui_cairo_font_spacing = 4;
-int ui_icon_exit_width = 50;
-int ui_icon_exit_height = 50;
-int ui_icon_st_width = 65;
-int ui_icon_st_height = 80;
-double box_line_width = 1.0;
-int ui_weston_panel_thickness = 32;
+#define RESOURCES_DIRECTORY  "/usr/local/demo-ai/computer-vision/tflite-object-detection/bin/resources/"
 
 typedef struct _FramePosition {
 	int x;
@@ -102,31 +86,76 @@ typedef struct _FramePosition {
 typedef struct _CustomData {
 	/* The gstreamer pipeline */
 	GstElement *pipeline;
+
 	/* The GTK window widget */
-	GtkWidget *window;
+	GtkWidget *window_main;
+	GtkWidget *window_overlay;
+
+	/* The drawing area where the camera stream is shown */
+	GtkWidget *video;
+	GstVideoOverlay *video_overlay;
+	GtkAllocation video_allocation;
+
+	/* Text widget to display info about
+	 * - either the display framerate, and the inference time
+	 * - in fps or ms of the model
+	 */
+	GtkWidget *info_disp_fps;
+	GtkWidget *info_inf_fps;
+	GtkWidget *info_inf_time;
+	GtkWidget *info_box_main;
+	GtkWidget *info_box_ov;
+	GtkWidget *exit_box_main;
+	GtkWidget *exit_box_ov;
+
 	/* window resolution */
 	int window_width;
 	int window_height;
-	/* Cairo ST icon pointer */
-	cairo_surface_t *st_icon;
-	/* Cairo exit icon pointer */
-	cairo_surface_t *exit_icon;
+
+	/* UI parameters (values will depends on display size) */
+	int ui_cairo_font_size;
+	double ui_box_line_width;
+	int ui_weston_panel_thickness;
+
+	/* ST icon widget */
+	GtkWidget *st_icon_main;
+	GtkWidget *st_icon_ov;
+
+	/* exit icon widget */
+	GtkWidget *exit_icon_main;
+	GtkWidget *exit_icon_ov;
+
 	/* Preview camera enable (else still picture use case) */
 	bool preview_enabled;
+
 	/* NN input size */
 	int nn_input_width;
 	int nn_input_height;
+
 	/* Frame resolution (still picture or camera) */
 	int frame_width;
 	int frame_height;
-	/* Frame position in fullscreen mode */
-	FramePosition frame_fullscreen_pos;
-	int frame_fullscreen_pos_x;
-	int frame_fullscreen_pos_y;
+
+	/* Frame resolution and scaling factor */
+	float x_scale;
+	float y_scale;
+
+	/* drawing area resolution */
+	int widget_draw_width;
+	int widget_draw_height;
+
 	/* For validation purpose */
 	int valid_timeout_id;
 	int valid_draw_count;
 	std::vector<double> valid_inference_time;
+	std::string file;
+
+	/* Display frame position */
+	FramePosition frame_disp_pos;
+
+	/*  Still picture variables */
+	bool new_inference;
+	cv::Mat img_to_display;
 } CustomData;
 
 /* Framerate statisitics */
@@ -145,7 +174,35 @@ typedef struct _ValidInfo {
 	std::vector<ValidObjectInfo> objects_info;
 } ValidInfo;
 
-static int load_valid_results_from_json_file(std::string file_name, std::vector<ValidObjectInfo> *objects_info)
+/**
+ * This function is called when the ST icon image is clicked
+ */
+static gboolean st_icon_cb(GtkWidget *event_box,
+			   GdkEventButton *event,
+			   CustomData *data)
+{
+	if (!data->preview_enabled){
+		g_print("ST icon clicked: new inference trigged\n");
+		data->new_inference = true;
+	}
+	return TRUE;
+}
+
+/**
+ * This function is called when the exit icon image is clicked
+ */
+
+static gboolean exit_icon_cb(GtkWidget *event_box,
+			     GdkEventButton *event,
+			     CustomData *data)
+{
+	g_print("Exit icon clicked: exit\n");
+	gtk_main_quit();
+	return TRUE;
+}
+
+static int load_valid_results_from_json_file(std::string file_name,
+					     std::vector<ValidObjectInfo> *objects_info)
 {
 	std::stringstream json_file_sstr;
 	json_file_sstr << file_name << ".json";
@@ -178,7 +235,6 @@ static int load_valid_results_from_json_file(std::string file_name, std::vector<
 	return 0;
 }
 
-
 /**
  * In validation mode this function is called when timeout occurs
  * Exit application if this function is called
@@ -200,133 +256,35 @@ static void nn_inference(uint8_t *img)
 }
 
 /**
- * This function display text is a black stroke and a white fill color
- */
-void gui_display_outlined_text(cairo_t *cr,
-			       const char* text)
-{
-	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-	cairo_text_path(cr, text);
-	cairo_fill_preserve(cr);
-	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
-	cairo_set_line_width(cr, 0.5);
-	cairo_stroke(cr);
-}
-
-/**
- * This function is called when a click or touch event is recieved
- */
-static gboolean gui_press_event_cb(GtkWidget *widget,
-				   GdkEventButton *event,
-				   CustomData *data)
-{
-	gdouble draw_area_width  = (gdouble)gdk_window_get_width(event->window);
-
-	if (event->button == GDK_BUTTON_PRIMARY) {
-		/* exit if event occurs in the exit area (tof right corner) */
-		if ((event->x > (draw_area_width - ui_icon_exit_width)) &&
-		    (event->y < ui_icon_st_height))
-			gtk_main_quit();
-
-		/* clasify a new picture */
-		if ((event->x < ui_icon_st_width) &&
-		    (event->y < ui_icon_st_height))
-			gtk_widget_queue_draw(data->window);
-	}
-
-	return TRUE;
-}
-
-/**
- * This function is an helper to set UI variable according to the display size
- */
-static void gui_set_ui_parameters(CustomData *data)
-{
-	int window_height = data->window_height;
-
-	if (window_height <= 272) {
-		/* Display 480x272 */
-		ui_cairo_font_size = 15;
-		ui_cairo_font_spacing = 5;
-		ui_icon_exit_width = 25;
-		ui_icon_exit_height = 25;
-		ui_icon_st_width = 42;
-		ui_icon_st_height = 52;
-		box_line_width = 2.0;
-		ui_weston_panel_thickness = 32;
-	} else if (window_height <= 480) {
-		/* Display 800x480 */
-		ui_cairo_font_size = 20;
-		ui_cairo_font_spacing = 10;
-		ui_icon_exit_width = 50;
-		ui_icon_exit_height = 50;
-		ui_icon_st_width = 65;
-		ui_icon_st_height = 80;
-		box_line_width = 2.0;
-		ui_weston_panel_thickness = 32;
-	} else {
-		ui_cairo_font_size = 25;
-		ui_cairo_font_spacing = 10;
-		ui_icon_exit_width = 50;
-		ui_icon_exit_height = 50;
-		ui_icon_st_width = 130;
-		ui_icon_st_height = 160;
-		box_line_width = 2.0;
-		ui_weston_panel_thickness = 32;
-	}
-
-	/* set the icons */
-	std::stringstream st_icon_sstr;
-	st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
-	if (!data->preview_enabled)
-		st_icon_sstr << "next_inference_";
-	st_icon_sstr << ui_icon_st_width << "x" << ui_icon_st_height << ".png";
-	data->st_icon = cairo_image_surface_create_from_png(st_icon_sstr.str().c_str());
-
-	std::stringstream exit_icon_sstr;
-	exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
-	exit_icon_sstr << ui_icon_exit_width << "x" << ui_icon_exit_height << ".png";
-	data->exit_icon = cairo_image_surface_create_from_png(exit_icon_sstr.str().c_str());
-}
-
-/**
  * This function is an helper to get frame position on the display
  */
-static void gui_compute_frame_position(CustomData *data)
+static void compute_frame_position(CustomData *data)
 {
-	int window_width = data->window_width;
-	int window_height = data->window_height;
+	int window_width = data->widget_draw_width;
+	int window_height = data->widget_draw_height;
 	int offset_x = 0;
 	int offset_y = 0;
-
-	if (data->preview_enabled) {
-		window_height += ui_weston_panel_thickness;
-	} else {
-		/* Twoo lines of text are displayed */
-		window_height -= ui_cairo_font_size * 2 + ui_cairo_font_spacing;
-		offset_y = ui_cairo_font_size * 2 + ui_cairo_font_spacing;
-	}
 
 	float width_ratio   = (float)window_width / (float)data->frame_width;
 	float height_ratio  = (float)window_height / (float)data->frame_height;
 
 	if (width_ratio > height_ratio) {
-		data->frame_fullscreen_pos.width = (int)((float)data->frame_width * height_ratio);
-		data->frame_fullscreen_pos.height = (int)((float)data->frame_height * height_ratio);
-		data->frame_fullscreen_pos.x = (window_width - data->frame_fullscreen_pos.width) / 2;
-		data->frame_fullscreen_pos.y = offset_y;
+		data->frame_disp_pos.width = (int)((float)data->frame_width * height_ratio);
+		data->frame_disp_pos.height = (int)((float)data->frame_height * height_ratio);
+		data->frame_disp_pos.x = (window_width - data->frame_disp_pos.width) / 2;
+		data->frame_disp_pos.y = offset_y;
 	} else {
-		data->frame_fullscreen_pos.width = (int)((float)data->frame_width * width_ratio);
-		data->frame_fullscreen_pos.height = (int)((float)data->frame_height * width_ratio);
-		data->frame_fullscreen_pos.x = offset_x;
-		data->frame_fullscreen_pos.y = (window_height - data->frame_fullscreen_pos.height) / 2;
+		data->frame_disp_pos.width = (int)((float)data->frame_width * width_ratio);
+		data->frame_disp_pos.height = (int)((float)data->frame_height * width_ratio);
+		data->frame_disp_pos.x = offset_x;
+		data->frame_disp_pos.y = (window_height - data->frame_disp_pos.height) / 2;
 	}
 }
 
 /**
  * This function get a file randomly in a directory
  */
-static std::string gui_get_files_in_directory_randomly(std::string directory)
+static std::string get_files_in_directory_randomly(std::string directory)
 {
 	std::stringstream file_path_sstr;
 
@@ -356,318 +314,62 @@ static std::string gui_get_files_in_directory_randomly(std::string directory)
 }
 
 /**
- * This function is called each time the GTK UI is redrawn
+ * This function is an idle function waiting for a new picture to be infered
  */
-bool first_call = true;
-static gboolean gui_draw_cb(GtkWidget *widget,
-			    cairo_t *cr,
-			    CustomData *data)
+static gboolean infer_new_picture(CustomData *data)
 {
-	GdkWindow *window = gtk_widget_get_window(widget);
-	std::string file;
-
-	/* Get display information and set UI variable accordingly */
-	if (first_call) {
-		data->window_width = gdk_window_get_width(window);
-		data->window_height = gdk_window_get_height(window);
-
-		gui_set_ui_parameters(data);
+	if (exit_application) {
+		gtk_main_quit();
+		return FALSE;
 	}
 
-	if (data->preview_enabled) {
-		/* Camera preview use case */
-
-		/* Set the transparent background */
-		cairo_set_source_rgba (cr, 0.31, 0.32, 0.31, 0.0);
-		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-		cairo_paint(cr);
-
-		if (first_call) {
-			/* Calculating the position of the preview in fullscreen
-			 * mode. This position is compute automaticaly by the
-			 * waylandsink gstreamer element and is it is not
-			 * exposed. Thus we need to calculate it by our own. */
-			gui_compute_frame_position(data);
-			first_call = false;
-		}
-	} else {
-		/* Still picture use case */
-
-		/* As this function is called twice at the initialisation,
-		 * return immediatly the first time it is called in a still
-		 * picture context */
-		if (first_call) {
-			first_call = false;
-			return FALSE;
-		}
-
-		/* Set the black background */
-		cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 1.0);
-		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-		cairo_paint(cr);
-
+	if (data->new_inference){
 		/* Select a picture in the directory */
-		file = gui_get_files_in_directory_randomly(image_dir_str);
+		data->file = get_files_in_directory_randomly(image_dir_str);
+		/* Read and format the picture */
+		cv::Mat img_bgr, img_bgra, img_nn;
 
-		/* Read and format the pciture */
-		cairo_surface_t *picture;
-		cv::Mat img_bgr, img_bgra, img_bgra_resized, img_nn;
-
-		img_bgr = cv::imread(file);
+		img_bgr = cv::imread(data->file);
 		cv::cvtColor(img_bgr, img_bgra, cv::COLOR_BGR2BGRA);
 		data->frame_width =  img_bgra.size().width;
 		data->frame_height = img_bgra.size().height;
+		compute_frame_position(data);
 
 		/* Get final frame position and dimension and resize it */
-		gui_compute_frame_position(data);
-		cv::Size size(data->frame_fullscreen_pos.width, data->frame_fullscreen_pos.height);
-		cv::resize(img_bgra, img_bgra_resized, size);
+		cv::Size size(data->frame_disp_pos.width,data->frame_disp_pos.height);
+		cv::resize(img_bgra, data->img_to_display, size);
 
-		/* Generate the cairo surface */
-		int stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24,
-							   data->frame_fullscreen_pos.width);
-
-		picture = cairo_image_surface_create_for_data(img_bgra_resized.data,
-							      CAIRO_FORMAT_RGB24,
-							      data->frame_fullscreen_pos.width,
-							      data->frame_fullscreen_pos.height,
-							      stride);
-
-		/*  Display the resized picture */
-		cairo_set_source_surface(cr,
-					 picture,
-					 data->frame_fullscreen_pos.x,
-					 data->frame_fullscreen_pos.y);
-		cairo_paint(cr);
-		cairo_surface_destroy(picture);
-
-		/* Run the NN inference */
+		/* prepare the inference */
 		cv::Size size_nn(data->nn_input_width, data->nn_input_height);
 		cv::resize(img_bgr, img_nn, size_nn);
 		cv::cvtColor(img_nn, img_nn, cv::COLOR_BGR2RGB);
-
 		nn_inference(img_nn.data);
-	}
-	std::stringstream information_sstr;
-	if (tfl_wrapper.IsModelQuantized())
-		information_sstr << std::left  << "quant model ";
-	else
-		information_sstr << std::left  << "float model ";
-	information_sstr << config.model_name.substr(config.model_name.find_last_of("/\\") + 1);
 
-	std::stringstream display_fps_sstr;
-	display_fps_sstr   << std::left  << std::setw(11) << "disp. fps:";
-	display_fps_sstr   << std::right << std::setw(5) << std::fixed << std::setprecision(1) << display_avg_fps;
-	display_fps_sstr   << std::right << std::setw(3) << "fps";
+		std::stringstream inference_time_sstr;
+		inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << results.inference_time;
+		inference_time_sstr << std::right << std::setw(2) << " ms ";
+		gtk_label_set_text(GTK_LABEL(data->info_inf_time),inference_time_sstr.str().c_str());
 
-	std::stringstream inference_fps_sstr;
-	inference_fps_sstr << std::left  << std::setw(11) << "inf. fps:";
-	inference_fps_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << nn_avg_fps;
-	inference_fps_sstr << std::right << std::setw(3) << "fps";
+		if (validation) {
+			data->valid_inference_time.push_back(results.inference_time);
 
-	float inf_time = 0;
-	if (results.vect_ObjDetect_Results.size() != 0)
-		inf_time = results.inference_time;
-
-	std::stringstream inference_time_sstr;
-	inference_time_sstr << std::left  << std::setw(11) << "inf. time:";
-	inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << inf_time;
-	inference_time_sstr << std::right << std::setw(2) << "ms";
-
-	/* Draw the ST icon at the top left corner */
-	cairo_set_source_surface(cr, data->st_icon, 0, 0);
-	cairo_paint(cr);
-
-	/* Draw the exit icon at the top right corner */
-	cairo_set_source_surface(cr, data->exit_icon, data->window_width - ui_icon_exit_width, 0);
-	cairo_paint(cr);
-
-	if (data->preview_enabled) {
-		/* Translate to the preview position taking into account the
-		 * ST icon to not overlap it. */
-		if (data->frame_fullscreen_pos.x == 0)
-			cairo_translate(cr,
-					0,
-					std::max(data->frame_fullscreen_pos.y,
-						 ui_icon_st_height));
-		else
-			cairo_translate(cr,
-					std::max(data->frame_fullscreen_pos.x,
-						 ui_icon_st_width),
-					0);
-
-		if (crop) {
-			/* draw the crop window on the preview to center image
-			 * to classify */
-			float ratio;
-			cv::Rect cropDisplay;
-
-			float ratio_width = (float)data->frame_fullscreen_pos.width / (float)cropRect.width;
-			float ratio_height = (float)data->frame_fullscreen_pos.height / (float)cropRect.height;
-
-			/* Adapt the cropRect to the display size */
-			if (ratio_width > ratio_height)
-				ratio = ratio_height;
-			else
-				ratio = ratio_width;
-
-			cropDisplay.width = cropRect.width * ratio;
-			cropDisplay.height = cropRect.height * ratio;
-			cropDisplay.x = cropRect.x * ratio;
-			cropDisplay.y = cropRect.y * ratio;
-
-			cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-			cairo_rectangle(cr, int(cropDisplay.x), int(cropDisplay.y), int(cropDisplay.width), int(cropDisplay.height));
-			cairo_stroke(cr);
-		}
-	} else {
-		cairo_translate(cr, ui_icon_st_width, 0);
-	}
-
-	/* Display inference result */
-	cairo_select_font_face (cr, "monospace",
-				CAIRO_FONT_SLANT_NORMAL,
-				CAIRO_FONT_WEIGHT_BOLD);
-	cairo_set_font_size (cr, ui_cairo_font_size);
-
-	if (data->preview_enabled) {
-		/* Camera preview use case */
-		cairo_move_to(cr, 2, ui_cairo_font_size);
-		gui_display_outlined_text(cr, information_sstr.str().c_str());
-		cairo_move_to(cr, 2, ui_cairo_font_size * 2);
-		gui_display_outlined_text(cr, display_fps_sstr.str().c_str());
-		cairo_move_to(cr, 2, ui_cairo_font_size * 3);
-		gui_display_outlined_text(cr, inference_fps_sstr.str().c_str());
-		cairo_move_to(cr, 2, ui_cairo_font_size * 4);
-		gui_display_outlined_text(cr, inference_time_sstr.str().c_str());
-	} else {
-		/* Still picture use case */
-		cairo_move_to(cr, 2, ui_cairo_font_size);
-		gui_display_outlined_text(cr, information_sstr.str().c_str());
-		cairo_move_to(cr, 2, ui_cairo_font_size * 2);
-		gui_display_outlined_text(cr, inference_time_sstr.str().c_str());
-	}
-
-	/* Draw bounding box of the 5 first detected object if the score is
-	 * above 60% */
-	if (!data->preview_enabled) {
-		/* Translate to the frame position */
-		cairo_translate(cr,
-				data->frame_fullscreen_pos.x - ui_icon_st_width,
-				data->frame_fullscreen_pos.y);
-	}
-
-	if (results.vect_ObjDetect_Results.size() != 0){
-		if (results.vect_ObjDetect_Results.size() >= MAX_PRINTED_BOXES){
-			for (int i = 0; i < MAX_PRINTED_BOXES ; i++) {
-				switch (i) {
-				case 0:
-					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-					break;
-				case 1:
-					cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
-					break;
-				case 2:
-					cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
-					break;
-				case 3:
-					cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
-					break;
-				case 4:
-					cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
-					break;
-				default:
-					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-				}
-				if (results.vect_ObjDetect_Results[i].score > threshold) {
-					std::stringstream info_sstr;
-					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
-					float x      = data->frame_fullscreen_pos.width  * results.vect_ObjDetect_Results[i].location.x0;
-					float y      = data->frame_fullscreen_pos.height * results.vect_ObjDetect_Results[i].location.y0;
-					float width  = data->frame_fullscreen_pos.width  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
-					float height = data->frame_fullscreen_pos.height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
-					cairo_set_line_width(cr, box_line_width);
-					cairo_rectangle(cr, int(x), int(y), int(width), int(height));
-					cairo_stroke(cr);
-					cairo_move_to(cr, int(x) + 2, int(y) - (ui_cairo_font_size / 2));
-					cairo_show_text(cr, info_sstr.str().c_str());
-				}
-			}
-		} else {
-			for (int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
-				switch (i) {
-				case 0:
-					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-					break;
-				case 1:
-					cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
-					break;
-				case 2:
-					cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
-					break;
-				case 3:
-					cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
-					break;
-				case 4:
-					cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
-					break;
-				default:
-					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
-				}
-				if (results.vect_ObjDetect_Results[i].score > threshold) {
-					std::stringstream info_sstr;
-					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
-					float x      = data->frame_fullscreen_pos.width  * results.vect_ObjDetect_Results[i].location.x0;
-					float y      = data->frame_fullscreen_pos.height * results.vect_ObjDetect_Results[i].location.y0;
-					float width  = data->frame_fullscreen_pos.width  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
-					float height = data->frame_fullscreen_pos.height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
-					cairo_set_line_width(cr, box_line_width);
-					cairo_rectangle(cr, int(x), int(y), int(width), int(height));
-					cairo_stroke(cr);
-					cairo_move_to(cr, int(x) + 2, int(y) - (ui_cairo_font_size / 2));
-					cairo_show_text(cr, info_sstr.str().c_str());
-				}
-			}
-		}
-	}
-
-	if (validation) {
-		data->valid_inference_time.push_back(results.inference_time);
-
-		/* Reload the timeout */
-		g_source_remove(data->valid_timeout_id);
-		data->valid_timeout_id = g_timeout_add(5000,
-						      valid_timeout_callback,
-						      NULL);
-
-		if (data->preview_enabled) {
-			data->valid_draw_count++;
-
-			if (data->valid_draw_count > 25) {
-				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
-								  data->valid_inference_time.end(), 0.0) /
-					data->valid_inference_time.size();
-				/* Stop the timeout and properly exit the
-				 * application */
-				std::cout << "avg display fps= " << display_avg_fps << std::endl;
-				std::cout << "avg inference fps= " << nn_avg_fps << std::endl;
-				std::cout << "avg inference time= " << avg_inf_time << std::endl;
-				g_source_remove(data->valid_timeout_id);
-				gtk_main_quit();
-			}
-		} else {
+			/* Reload the timeout */
+			g_source_remove(data->valid_timeout_id);
+			data->valid_timeout_id = g_timeout_add(5000,
+							       valid_timeout_callback,
+							       NULL);
 			std::stringstream label_sstr;
 
-			std::cout << "\nInput file: " << file <<std::endl;
+			std::cout << "\nInput file: " << data->file <<std::endl;
 
 			/* Get the name of the file without extension */
-			file = file.substr(0, file.find_last_of('.'));
+			data->file = data->file.substr(0, data->file.find_last_of('.'));
 			std::vector<ValidObjectInfo> objects_info;
 
 			/* Load associated JSON file information */
-			int ret = load_valid_results_from_json_file(file, &objects_info);
+			int ret = load_valid_results_from_json_file(data->file, &objects_info);
 			if(ret) {
-				std::cout << "JSON file reading is failing (" << file << ".json)\n";
+				std::cout << "JSON file reading is failing (" << data->file << ".json)\n";
 				exit(1);
 			}
 
@@ -681,7 +383,7 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 						count ++;
 				}
 			} else {
-				for (int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
+				for (unsigned int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
 					if (results.vect_ObjDetect_Results[i].score > threshold)
 						count ++;
 				}
@@ -733,55 +435,658 @@ static gboolean gui_draw_cb(GtkWidget *widget,
 					exit(1);
 				}
 			}
-
 			/* Continue over all files */
 			if (dir_files.size() == 0) {
 				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
-								  data->valid_inference_time.end(), 0.0) /
+								    data->valid_inference_time.end(), 0.0) /
 					data->valid_inference_time.size();
 				std::cout << "\navg inference time= " << avg_inf_time << " ms\n";
 				g_source_remove(data->valid_timeout_id);
-				gtk_main_quit();
+				gtk_widget_queue_draw(data->window_main);
+				gtk_widget_queue_draw(data->window_overlay);
+				exit_application = true;
 			} else {
-				gtk_widget_queue_draw(data->window);
+				data->new_inference = true;
 			}
+		} else {
+			data->new_inference = false;
+		}
+		/*  Refresh main window and overlay */
+		gtk_widget_queue_draw(data->window_overlay);
+		gtk_widget_queue_draw(data->window_main);
+	}
+	return TRUE;
+}
+
+/**
+ * This function display text is a black stroke and a white fill color
+ */
+void gui_display_outlined_text(cairo_t *cr,
+			       const char* text)
+{
+	cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+	cairo_text_path(cr, text);
+	cairo_fill_preserve(cr);
+	cairo_set_source_rgb(cr, 0.0, 0.0, 0.0);
+	cairo_set_line_width(cr, 0.5);
+	cairo_stroke(cr);
+}
+
+bool first_load = true;
+static void gui_gtk_style(CustomData *data)
+{
+	std::stringstream css_sstr;
+	css_sstr << RESOURCES_DIRECTORY;
+	if (first_load){
+		css_sstr << "Default.css";
+		first_load = false;
+	} else {
+		if (data->window_width > 800)
+			css_sstr << "widgets_720p.css";
+		else if (data->window_width > 480)
+			css_sstr << "widgets_480p.css";
+		else
+			css_sstr << "widgets_272p.css";
+	}
+	GtkCssProvider *cssProvider = gtk_css_provider_new();
+	gtk_css_provider_load_from_path (cssProvider,
+					 css_sstr.str().c_str(),
+					 NULL);
+	gtk_style_context_add_provider_for_screen(gdk_screen_get_default(),
+						  GTK_STYLE_PROVIDER(cssProvider),
+						  GTK_STYLE_PROVIDER_PRIORITY_USER);
+}
+
+/**
+ * This function is an helper to set UI variable according to the display size
+ */
+static void gui_set_ui_parameters(CustomData *data)
+{
+	int window_height = data->window_height;
+	/* Default UI parameter to target 720p display */
+	int ui_icon_exit_width = 50;
+	int ui_icon_exit_height = 50;
+	int ui_icon_st_width = 130;
+	int ui_icon_st_height = 160;
+	data->ui_cairo_font_size = 25;
+
+	if (window_height <= 272) {
+		/* Display 480x272 */
+		std::cout << "Adjust UI param to 272p display" <<  std::endl;
+		data->ui_cairo_font_size = 12;
+		ui_icon_exit_width = 25;
+		ui_icon_exit_height = 25;
+		ui_icon_st_width = 42;
+		ui_icon_st_height = 52;
+	} else if (window_height <= 480) {
+		/* Display 800x480 */
+		std::cout << "Adjust UI param to 480p display" <<  std::endl;
+		data->ui_cairo_font_size = 25;
+		ui_icon_exit_width = 50;
+		ui_icon_exit_height = 50;
+		ui_icon_st_width = 65;
+		ui_icon_st_height = 80;
+	}
+
+	gui_gtk_style(data);
+
+	/* set the icons */
+	std::stringstream st_icon_sstr;
+	st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
+	if (!data->preview_enabled)
+		st_icon_sstr << "next_inference_";
+	st_icon_sstr << ui_icon_st_width << "x" << ui_icon_st_height << ".png";
+	gtk_image_set_from_file(GTK_IMAGE(data->st_icon_main), st_icon_sstr.str().c_str());
+	gtk_image_set_from_file(GTK_IMAGE(data->st_icon_ov), st_icon_sstr.str().c_str());
+
+	std::stringstream exit_icon_sstr;
+	exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
+	exit_icon_sstr << ui_icon_exit_width << "x" << ui_icon_exit_height << ".png";
+	gtk_image_set_from_file(GTK_IMAGE(data->exit_icon_main), exit_icon_sstr.str().c_str());
+	gtk_image_set_from_file(GTK_IMAGE(data->exit_icon_ov), exit_icon_sstr.str().c_str());
+}
+
+/**
+ * This function is called each time the GTK overlay UI is redrawn
+ */
+bool first_call_overlay = true;
+static gboolean gui_draw_overlay_cb(GtkWidget *widget,
+				    cairo_t *cr,
+				    CustomData *data)
+{
+	int offset = 0;
+	/* Get drawing area informations */
+	float ratio = (float)data->frame_width/(float)data->frame_height;
+	float width_preview = (ratio*data->video_allocation.height);
+
+	/* Updating the information with the new inference results */
+	std::stringstream display_fps_sstr;
+	display_fps_sstr   << std::right << std::setw(5) << std::fixed << std::setprecision(1) << display_avg_fps;
+	display_fps_sstr   << std::right << std::setw(3) << " fps ";
+
+	std::stringstream inference_fps_sstr;
+	inference_fps_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << nn_avg_fps;
+	inference_fps_sstr << std::right << std::setw(3) << " fps ";
+
+	float inf_time = 0;
+	if (results.vect_ObjDetect_Results.size() != 0)
+		inf_time = results.inference_time;
+
+	std::stringstream inference_time_sstr;
+	inference_time_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << results.inference_time;
+	inference_time_sstr << std::right << std::setw(2) << " ms ";
+	gtk_label_set_text(GTK_LABEL(data->info_inf_time),inference_time_sstr.str().c_str());
+
+	/* set the font and the size for the label*/
+	cairo_select_font_face (cr, "monospace",
+				CAIRO_FONT_SLANT_NORMAL,
+				CAIRO_FONT_WEIGHT_BOLD);
+	cairo_set_font_size (cr, data->ui_cairo_font_size);
+
+	/*  Update the gtk labels with latest information */
+	if (data->preview_enabled) {
+		/* Camera preview use case */
+		if (first_call_overlay){
+			first_call_overlay = false;
+			return FALSE;
+		} else {
+			/*  Update labels */
+			gtk_label_set_text(GTK_LABEL(data->info_disp_fps),display_fps_sstr.str().c_str());
+			gtk_label_set_text(GTK_LABEL(data->info_inf_fps),inference_fps_sstr.str().c_str());
+			gtk_label_set_text(GTK_LABEL(data->info_inf_time),inference_time_sstr.str().c_str());
+		}
+		if(exit_application)
+			gtk_main_quit();
+	} else {
+		/* Still picture use case */
+		if (first_call_overlay){
+			first_call_overlay = false;
+			/* add the inference function in idlle after the initialization of
+			 * the GUI */
+			g_idle_add((GSourceFunc)infer_new_picture,data);
+			data->new_inference = true;
+			return FALSE;
 		}
 	}
 
+	/* Draw bounding box of the 5 first detected object if the score is
+	 * above 60% */
+	if (!data->preview_enabled) {
+		/* Translate to the frame position */
+		offset = (data->widget_draw_width - data->frame_disp_pos.width)/2;
+		cairo_translate(cr,
+				offset,
+				0);
+	} else {
+		/*  Offset to draw on the preview */
+		offset = ((data->widget_draw_width - (int)width_preview)/2);
+	}
+
+	if (results.vect_ObjDetect_Results.size() != 0){
+		if (results.vect_ObjDetect_Results.size() >= MAX_PRINTED_BOXES){
+			for (int i = 0; i < MAX_PRINTED_BOXES ; i++) {
+				switch (i) {
+				case 0:
+					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+					break;
+				case 1:
+					cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
+					break;
+				case 2:
+					cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+					break;
+				case 3:
+					cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
+					break;
+				case 4:
+					cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
+					break;
+				default:
+					cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+				}
+				if (results.vect_ObjDetect_Results[i].score > threshold) {
+					std::stringstream info_sstr;
+					info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
+					if (data->preview_enabled){
+						/* Camera preview use case */
+						float x      = width_preview  * results.vect_ObjDetect_Results[i].location.x0 + offset;
+						float y      = data->widget_draw_height * results.vect_ObjDetect_Results[i].location.y0;
+						float width  = width_preview  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
+						float height = data->widget_draw_height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
+						cairo_set_line_width(cr, data->ui_box_line_width);
+						cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+						cairo_stroke(cr);
+						cairo_move_to(cr, int(x) + 2, int(y) - (data->ui_cairo_font_size / 2));
+						cairo_show_text(cr, info_sstr.str().c_str());
+					} else {
+						/*  Still picture use case */
+						float x      = data->frame_disp_pos.width * results.vect_ObjDetect_Results[i].location.x0;
+						float y      = data->frame_disp_pos.height * results.vect_ObjDetect_Results[i].location.y0;
+						float width  = data->frame_disp_pos.width  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
+						float height = data->frame_disp_pos.height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
+						cairo_set_line_width(cr, data->ui_box_line_width);
+						cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+						cairo_stroke(cr);
+						cairo_move_to(cr, int(x) + 2, int(y) - (data->ui_cairo_font_size / 2));
+						cairo_show_text(cr, info_sstr.str().c_str());
+					}
+				}
+			}
+		}
+	} else {
+		for (unsigned int i = 0; i < results.vect_ObjDetect_Results.size() ; i++) {
+			switch (i) {
+			case 0:
+				cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+				break;
+			case 1:
+				cairo_set_source_rgb (cr, 0.0, 1.0, 0.0);
+				break;
+			case 2:
+				cairo_set_source_rgb (cr, 0.0, 0.0, 1.0);
+				break;
+			case 3:
+				cairo_set_source_rgb (cr, 0.5, 0.5, 0.0);
+				break;
+			case 4:
+				cairo_set_source_rgb (cr, 0.5, 0.0, 0.5);
+				break;
+			default:
+				cairo_set_source_rgb (cr, 1.0, 0.0, 0.0);
+			}
+			if (results.vect_ObjDetect_Results[i].score > threshold) {
+				std::stringstream info_sstr;
+				info_sstr << labels[results.vect_ObjDetect_Results[i].classe] << " " << std::fixed << std::setprecision(1) << results.vect_ObjDetect_Results[i].score * 100 << "%";
+				if (data->preview_enabled){
+					/* Camera preview use case */
+					float x      = width_preview  * results.vect_ObjDetect_Results[i].location.x0 + offset;
+					float y      = data->widget_draw_height * results.vect_ObjDetect_Results[i].location.y0;
+					float width  = width_preview  * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
+					float height = data->widget_draw_height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
+					cairo_set_line_width(cr, data->ui_box_line_width);
+					cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+					cairo_stroke(cr);
+					cairo_move_to(cr, int(x) + 2, int(y) - (data->ui_cairo_font_size / 2));
+					cairo_show_text(cr, info_sstr.str().c_str());
+				} else {
+					/*  Still picture use case */
+					float x      = data->frame_disp_pos.width * results.vect_ObjDetect_Results[i].location.x0 + offset;
+					float y      = data->frame_disp_pos.height * results.vect_ObjDetect_Results[i].location.y0;
+					float width  = data->frame_disp_pos.width * (results.vect_ObjDetect_Results[i].location.x1 - results.vect_ObjDetect_Results[i].location.x0);
+					float height = data->frame_disp_pos.height * (results.vect_ObjDetect_Results[i].location.y1 - results.vect_ObjDetect_Results[i].location.y0);
+					cairo_set_line_width(cr, data->ui_box_line_width);
+					cairo_rectangle(cr, int(x), int(y), int(width), int(height));
+					cairo_stroke(cr);
+					cairo_move_to(cr, int(x) + 2, int(y) - (data->ui_cairo_font_size / 2));
+					cairo_show_text(cr, info_sstr.str().c_str());
+				}
+			}
+		}
+	}
+	/*  Validation mode  */
+	if(validation){
+		if (data->preview_enabled) {
+			data->valid_inference_time.push_back(inf_time);
+			/* Reload the timeout */
+			g_source_remove(data->valid_timeout_id);
+			data->valid_timeout_id = g_timeout_add(5000,
+							       valid_timeout_callback,
+							       NULL);
+			data->valid_draw_count++;
+			if (data->valid_draw_count > 25) {
+				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
+								    data->valid_inference_time.end(), 0.0) /
+					data->valid_inference_time.size();
+				/* Stop the timeout and properly exit the
+				 * application */
+				std::cout << "avg display fps= " << display_avg_fps << std::endl;
+				std::cout << "avg inference fps= " << nn_avg_fps << std::endl;
+				std::cout << "avg inference time= " << avg_inf_time << std::endl;
+				g_source_remove(data->valid_timeout_id);
+				gtk_main_quit();
+			}
+		}
+	}
+	return TRUE;
+}
+
+/**
+ * This function is creating GTK widget to create the overlay window to display UI
+ * information
+ */
+static void gui_create_overlay(CustomData *data)
+{
+	/* HBox to hold all other boxes */
+	GtkWidget *main_box;
+	/* Hbox to hold the drawing area where the boxes are displayed */
+	GtkWidget *drawing_box;
+	/* Drawing area to handle labels */
+	GtkWidget *drawing_area;
+	GtkWidget *still_pict_draw;
+	/* Event box for ST icon */
+	GtkWidget *st_icon_event_box;
+	/* Event box for exit icon */
+	GtkWidget *exit_icon_event_box;
+	/* Labels for information */
+	GtkWidget *title_disp_fps;
+	GtkWidget *title_inf_fps;
+	GtkWidget *title_inf_time;
+
+	/* Create the window */
+	data->window_overlay = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_widget_set_app_paintable(data->window_overlay, TRUE);
+	g_signal_connect(G_OBJECT(data->window_overlay), "delete-event",
+			 G_CALLBACK(gtk_main_quit), NULL);
+	g_signal_connect(G_OBJECT(data->window_overlay), "destroy",
+			 G_CALLBACK(gtk_main_quit), NULL);
+
+	/* Remove title bar */
+	gtk_window_set_decorated(GTK_WINDOW(data->window_overlay), FALSE);
+
+	/* Maximize the window size*/
+	gtk_window_maximize(GTK_WINDOW(data->window_overlay));
+
+	/* Create the ST icon widget */
+	data->st_icon_ov = gtk_image_new();
+	st_icon_event_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(st_icon_event_box), data->st_icon_ov);
+	g_signal_connect(G_OBJECT(st_icon_event_box),"button_press_event",
+			 G_CALLBACK(st_icon_cb), data);
+
+	/* Create the exit icon widget */
+	data->exit_icon_ov = gtk_image_new();
+	exit_icon_event_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(exit_icon_event_box), data->exit_icon_ov);
+	g_signal_connect(G_OBJECT(exit_icon_event_box),"button_press_event",
+			 G_CALLBACK(exit_icon_cb), data);
+
+	if (data->preview_enabled) {
+		/*  Camera preview use case */
+		/* Create the drawing area to draw text on it using cairo */
+		drawing_area = gtk_drawing_area_new();
+		gtk_widget_set_app_paintable(drawing_area, TRUE);
+		g_signal_connect(G_OBJECT(drawing_area), "draw",
+				 G_CALLBACK(gui_draw_overlay_cb), data);
+
+		/* Create the gtk labels to display nn inference information*/
+		title_disp_fps = gtk_label_new("disp. fps:   ");
+		gtk_widget_set_halign(title_disp_fps,GTK_ALIGN_START);
+		title_inf_fps = gtk_label_new("inf. fps:    ");
+		gtk_widget_set_halign(title_inf_fps,GTK_ALIGN_START);
+		title_inf_time = gtk_label_new("inf. time:   ");
+		gtk_widget_set_halign(title_inf_time,GTK_ALIGN_START);
+
+		data->info_disp_fps = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_disp_fps,GTK_ALIGN_END);
+
+		data->info_inf_fps = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_inf_fps,GTK_ALIGN_END);
+
+		data->info_inf_time = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_inf_time,GTK_ALIGN_END);
+
+	} else {
+		/*  Still picture use case */
+		/* Create the video widget */
+		still_pict_draw = gtk_drawing_area_new();
+		gtk_widget_set_app_paintable(still_pict_draw, TRUE);
+		g_signal_connect(still_pict_draw, "draw",
+				 G_CALLBACK(gui_draw_overlay_cb), data);
+
+		title_inf_time = gtk_label_new("inf. time:     ");
+		gtk_widget_set_halign(title_inf_time,GTK_ALIGN_START);
+
+		data->info_inf_time = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_inf_time,GTK_ALIGN_END);
+	}
+
+	/* Set the boxes */
+	data->info_box_ov = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_widget_set_name(data->info_box_ov , "gui_overlay_stbox");
+	if (data->preview_enabled){
+		/* Camera preview use case */
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), st_icon_event_box, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), title_disp_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), data->info_disp_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), title_inf_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), data->info_inf_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), title_inf_time, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), data->info_inf_time, FALSE, FALSE, 3);
+	} else {
+		/*  Still picture use case */
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), st_icon_event_box, FALSE, FALSE, 4);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), title_inf_time, FALSE, FALSE, 4);
+		gtk_box_pack_start(GTK_BOX(data->info_box_ov), data->info_inf_time, FALSE, FALSE, 4);
+	}
+
+	drawing_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(drawing_box, "gui_overlay_draw");
+	if (data->preview_enabled){
+		/* Camera preview use case */
+		gtk_box_pack_start(GTK_BOX(drawing_box), drawing_area, TRUE, TRUE, 0);
+	} else {
+		/*  Still picture use case */
+		gtk_box_pack_start(GTK_BOX(drawing_box), still_pict_draw, TRUE, TRUE, 0);
+	}
+
+	data->exit_box_ov = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_widget_set_name(data->exit_box_ov, "gui_overlay_exit");
+	gtk_box_pack_start(GTK_BOX(data->exit_box_ov), exit_icon_event_box, FALSE, FALSE, 2);
+
+	main_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(main_box, "gui_overlay");
+	gtk_box_pack_start(GTK_BOX(main_box), data->info_box_ov , FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(main_box), drawing_box, TRUE, TRUE, 2);
+	gtk_box_pack_start(GTK_BOX(main_box), data->exit_box_ov, FALSE, FALSE, 2);
+
+	/* Push the UI into the window2 */
+	gtk_container_add(GTK_CONTAINER(data->window_overlay), main_box);
+}
+
+/**
+ * This function is called each time the GTK overlay UI is redrawn
+ */
+bool first_call_main = true;
+static gboolean gui_draw_main_cb(GtkWidget *widget,
+				 cairo_t *cr,
+				 CustomData *data)
+{
+	int offset = 0;
+	/* Get display information and set UI variable accordingly */
+	if (first_call_main) {
+		GdkWindow *window = gtk_widget_get_window(data->window_main);
+		data->window_width = gdk_window_get_width(window);
+		data->window_height = gdk_window_get_height(window) +
+			data->ui_weston_panel_thickness;
+		g_print("GTK window: width %d, height %d\n",
+			data->window_width,
+			data->window_height);
+		gui_set_ui_parameters(data);
+		/*  after the initialization of the main UI, initialize the
+		 *  overlay UI */
+		gtk_widget_show_all(data->window_overlay);
+	}
+	if (data->preview_enabled) {
+		/* Camera preview use case */
+		data->widget_draw_width = gtk_widget_get_allocated_width(widget);
+		data->widget_draw_height= gtk_widget_get_allocated_height(widget);
+
+		/* if first call skip the first frame */
+		if (first_call_main){
+			/*  Set pipeline in playing state when the ui is ready
+			 *  to handle the video */
+			int ret = gst_element_set_state(data->pipeline, GST_STATE_PLAYING);
+			if (ret == GST_STATE_CHANGE_FAILURE) {
+				g_printerr("Unable to set the pipeline to the playing state.\n");
+				gtk_main_quit();
+				return FALSE;
+			}
+			first_call_main = false;
+			g_print("Gst pipeline now playing\n");
+			return FALSE;
+		}
+	} else {
+		/* Still picture use case */
+		data->widget_draw_width = gtk_widget_get_allocated_width(widget);
+		data->widget_draw_height = gtk_widget_get_allocated_height(widget);
+		offset = (data->widget_draw_width - data->frame_disp_pos.width)/2;
+
+		/*  Don't display the first picture loaded to avoid UI issues */
+		if (first_call_main){
+			first_call_main = false;
+			return FALSE;
+		}
+
+		if(data->img_to_display.data){
+			/*  Display the resized picture */
+			/* Generate the cairo surface */
+			int stride = cairo_format_stride_for_width(CAIRO_FORMAT_RGB24,
+								   data->frame_disp_pos.width);
+
+			cairo_surface_t *picture = cairo_image_surface_create_for_data(data->img_to_display.data,
+										       CAIRO_FORMAT_RGB24,
+										       data->frame_disp_pos.width,
+										       data->frame_disp_pos.height,
+										       stride);
+			cairo_set_source_surface(cr, picture, offset, 0);
+			cairo_paint(cr);
+			cairo_surface_destroy(picture);
+		} else {
+			/* Set the black background */
+			cairo_set_source_rgba (cr, 0.0, 0.0, 0.0, 1.0);
+			cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+			cairo_paint(cr);
+		}
+	}
 	return FALSE;
 }
 
 /**
- * This function is creating GTK widget to create the window to display UI
+ * This function is creating GTK widget to create the main window to display UI
  * information
  */
-static void gui_create(CustomData *data)
+static void gui_create_main(CustomData *data)
 {
-	GtkWidget *drawing_area;
-
+	/* HBox to hold all other boxes */
+	GtkWidget *main_box;
+	/* VBox to hold the video */
+	GtkWidget *video_box;
+	/* Event box for ST icon */
+	GtkWidget *st_icon_event_box;
+	/* Event box for exit icon */
+	GtkWidget *exit_icon_event_box;
+	/* Widget to handle picture in Still picture use case */
+	GtkWidget *still_pict_draw;
+	/* Labels for information */
+	GtkWidget *title_disp_fps;
+	GtkWidget *title_inf_fps;
+	GtkWidget *title_inf_time;
 	/* Create the window */
-	data->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	g_signal_connect(G_OBJECT(data->window), "delete-event",
-			 G_CALLBACK (gtk_main_quit), NULL);
-	g_signal_connect(G_OBJECT(data->window), "destroy",
-			 G_CALLBACK (gtk_main_quit), NULL);
+	data->window_main = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(G_OBJECT(data->window_main), "delete-event",
+			 G_CALLBACK(gtk_main_quit), NULL);
+	g_signal_connect(G_OBJECT(data->window_main), "destroy",
+			 G_CALLBACK(gtk_main_quit), NULL);
+
 	/* Remove title bar */
-	gtk_window_set_decorated(GTK_WINDOW (data->window), FALSE);
-	/* Tell GTK that we want to draw the background ourself */
-	gtk_widget_set_app_paintable(data->window, TRUE);
-	gtk_window_maximize(GTK_WINDOW(data->window));
+	gtk_window_set_decorated(GTK_WINDOW(data->window_main), FALSE);
 
-	/* Create the drawing area to draw text on it using cairo */
-	drawing_area = gtk_drawing_area_new();
-	gtk_widget_add_events(drawing_area, GDK_BUTTON_PRESS_MASK);
-	g_signal_connect(G_OBJECT(drawing_area), "draw",
-			 G_CALLBACK(gui_draw_cb), data);
-	g_signal_connect(G_OBJECT(drawing_area), "button-press-event",
-			 G_CALLBACK(gui_press_event_cb), data);
+	/* Place the window in the fullscreen state */
+	gtk_window_maximize(GTK_WINDOW(data->window_main));
 
-	gtk_container_add (GTK_CONTAINER(data->window), drawing_area);
+	/* Create the ST icon widget */
+	data->st_icon_main = gtk_image_new();
+	st_icon_event_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(st_icon_event_box), data->st_icon_main);
+	g_signal_connect(G_OBJECT(st_icon_event_box),"button_press_event",
+			 G_CALLBACK(st_icon_cb), data);
 
-	gtk_widget_show_all(data->window);
+	/* Create the exit icon widget */
+	data->exit_icon_main = gtk_image_new();
+	exit_icon_event_box = gtk_event_box_new();
+	gtk_container_add(GTK_CONTAINER(exit_icon_event_box), data->exit_icon_main);
+	g_signal_connect(G_OBJECT(exit_icon_event_box),"button_press_event",
+			 G_CALLBACK(exit_icon_cb), data);
+
+	if (data->preview_enabled) {
+		/* Camera preview use case */
+		/* Create the video widget */
+		data->video = gtk_drawing_area_new();
+		gtk_widget_set_app_paintable(data->video, TRUE);
+		g_signal_connect(data->video, "draw",
+				 G_CALLBACK(gui_draw_main_cb), data);
+
+		/* Create the gtk labels to display nn inference information*/
+		title_disp_fps = gtk_label_new("disp. fps:   ");
+		gtk_widget_set_halign(title_disp_fps,GTK_ALIGN_START);
+		title_inf_fps = gtk_label_new("inf. fps:    ");
+		gtk_widget_set_halign(title_inf_fps,GTK_ALIGN_START);
+		title_inf_time = gtk_label_new("inf. time:   ");
+		gtk_widget_set_halign(title_inf_time,GTK_ALIGN_START);
+
+		data->info_disp_fps = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_disp_fps,GTK_ALIGN_END);
+		data->info_inf_fps = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_inf_fps,GTK_ALIGN_END);
+		data->info_inf_time = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_inf_time,GTK_ALIGN_END);
+
+	} else {
+		/*  Still picture preview use case */
+		/* Create the drawing widget */
+		still_pict_draw = gtk_drawing_area_new();
+		gtk_widget_set_app_paintable(still_pict_draw, TRUE);
+		g_signal_connect(still_pict_draw, "draw",
+				 G_CALLBACK(gui_draw_main_cb), data);
+
+		title_inf_time = gtk_label_new("inf. time:     ");
+		gtk_widget_set_halign(title_inf_time,GTK_ALIGN_START);
+
+		data->info_inf_time = gtk_label_new(NULL);
+		gtk_widget_set_halign(data->info_inf_time,GTK_ALIGN_END);
+	}
+
+	/* Set the boxes */
+	data->info_box_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_widget_set_name(data->info_box_main, "gui_main_stbox");
+	if (data->preview_enabled){
+		/*  Camera preview use case */
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), st_icon_event_box, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), title_disp_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), data->info_disp_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), title_inf_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), data->info_inf_fps, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), title_inf_time, FALSE, FALSE, 3);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), data->info_inf_time, FALSE, FALSE, 3);
+	} else {
+		/*  Still picture use case */
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), st_icon_event_box, FALSE, FALSE, 4);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), title_inf_time, FALSE, FALSE, 4);
+		gtk_box_pack_start(GTK_BOX(data->info_box_main), data->info_inf_time, FALSE, FALSE, 4);
+	}
+
+	video_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(video_box, "gui_main_video");
+	if (data->preview_enabled){
+		/*  Camera preview use case  */
+		gtk_box_pack_start(GTK_BOX(video_box), data->video, TRUE, TRUE, 0);
+	} else {
+		/*  Still picture use case */
+		gtk_box_pack_start(GTK_BOX(video_box), still_pict_draw, TRUE, TRUE, 0);
+	}
+
+	data->exit_box_main = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+	gtk_widget_set_name(data->exit_box_main, "gui_main_exit");
+	gtk_box_pack_start(GTK_BOX(data->exit_box_main), exit_icon_event_box, FALSE, FALSE, 2);
+
+	main_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	gtk_widget_set_name(main_box, "gui_main");
+	gtk_box_pack_start(GTK_BOX(main_box), data->info_box_main, FALSE, FALSE, 2);
+	gtk_box_pack_start(GTK_BOX(main_box), video_box, TRUE, TRUE, 2);
+	gtk_box_pack_start(GTK_BOX(main_box), data->exit_box_main, FALSE, FALSE, 2);
+
+	gtk_container_add(GTK_CONTAINER(data->window_main), main_box);
+	gtk_widget_show_all(data->window_main);
 }
 
 /**
@@ -793,19 +1098,6 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 	GstSample *sample;
 	GstBuffer *app_buffer, *buffer;
 	GstMapInfo info;
-
-	if (first_frame) {
-		/*  when the first frame is received, do not process anything
-		 *  and only unlock the synchronization variable to start
-		 *  creating the GTK main window.
-		 *  This is mandatory to ensure that wayandsink is take into
-		 *  account before GTK window to be sure that the GTK
-		 *  transparent window will be on top of the camera preview. */
-		g_print("Receive the first frame\n");
-		std::lock_guard<std::mutex> lk(cond_var_m);
-		cond_var.notify_all();
-		first_frame = false;
-	}
 
 	/* Retrieve the buffer */
 	g_signal_emit_by_name (sink, "pull-sample", &sample);
@@ -896,8 +1188,68 @@ static void gst_eos_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 static void gst_application_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
 	if (g_strcmp0(gst_structure_get_name(gst_message_get_structure(msg)), "inference-done") == 0) {
 		/* If the message is the "inference-done", update the GTK UI */
-		gtk_widget_queue_draw(data->window);
+		gtk_widget_queue_draw(data->window_overlay);
 	}
+}
+
+/**
+ * This function is called every time a new message is posted on the bus. This
+ * function is also used to assign the video to a video overlay which can be 
+ * display in a gtk UI
+ */
+static GstBusSyncReply gst_bus_sync_handler(GstBus * bus, GstMessage * message, gpointer user_data)
+{
+	CustomData *data = (CustomData *)user_data;
+
+	if (gst_is_wayland_display_handle_need_context_message(message)) {
+		GstContext *context;
+		GdkDisplay *display;
+		struct wl_display *display_handle;
+
+		display = gtk_widget_get_display(data->video);
+		display_handle = gdk_wayland_display_get_wl_display(display);
+		context = gst_wayland_display_handle_context_new(display_handle);
+		gst_element_set_context(GST_ELEMENT(GST_MESSAGE_SRC(message)), context);
+		gst_context_unref(context);
+
+		goto drop;
+	} else if (gst_is_video_overlay_prepare_window_handle_message(message)) {
+		GdkWindow *window;
+		struct wl_surface *window_handle;
+
+		/* GST_MESSAGE_SRC (message) will be the overlay object that we have to
+		 * use. This may be waylandsink, but it may also be playbin. In the latter
+		 * case, we must make sure to use playbin instead of waylandsink, because
+		 * playbin resets the window handle and render_rectangle after restarting
+		 * playback and the actual window size is lost */
+		data->video_overlay = GST_VIDEO_OVERLAY(GST_MESSAGE_SRC(message));
+
+		gtk_widget_get_allocation(data->video, &data->video_allocation);
+		window = gtk_widget_get_window(data->video);
+		window_handle = gdk_wayland_window_get_wl_surface(window);
+
+		g_print("Setting video window handle, position (%d - %d) and size (%d x %d)\n",
+			data->video_allocation.x, data->video_allocation.y,
+			data->video_allocation.width, data->video_allocation.height);
+
+		data->x_scale = (float)data->video_allocation.width / (float)data->frame_width;
+		data->y_scale = (float)data->video_allocation.height / (float)data->frame_height;
+
+		g_print("Scaling factor x %.3f y %.3f\n", data->x_scale, data->y_scale);
+
+		gst_video_overlay_set_window_handle(data->video_overlay, (guintptr) window_handle);
+		gst_video_overlay_set_render_rectangle(data->video_overlay,
+						       data->video_allocation.x, data->video_allocation.y,
+						       data->video_allocation.width, data->video_allocation.height);
+		gst_video_overlay_expose(data->video_overlay);
+
+		goto drop;
+	}
+	return GST_BUS_PASS;
+
+drop:
+	gst_message_unref(message);
+	return GST_BUS_DROP;
 }
 
 /**
@@ -930,7 +1282,6 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	framerate   = gst_element_factory_make("videorate",      "video-rate");
 	fpsmeasure1 = gst_element_factory_make("fpsdisplaysink", "fps-measure1");
 	fpsmeasure2 = gst_element_factory_make("fpsdisplaysink", "fps-measure2");
-
 
 	if (!pipeline || !source || !tee || !queue1 || !queue2 || !convert || !convert2 ||
 	    !scale || !dispsink || !appsink || !framerate || !fpsmeasure1 ||
@@ -1027,16 +1378,17 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	g_signal_connect(G_OBJECT(bus), "message::error", (GCallback)gst_error_cb, data);
 	g_signal_connect(G_OBJECT(bus), "message::eos", (GCallback)gst_eos_cb, data);
 	g_signal_connect(G_OBJECT(bus), "message::application", (GCallback)gst_application_cb, data);
+	gst_bus_set_sync_handler(bus, gst_bus_sync_handler, data, NULL);
 	gst_object_unref(bus);
 
-	/* Set the pipeline to playing state */
-	ret = gst_element_set_state(pipeline, GST_STATE_PLAYING);
+	/* Set the pipeline to ready state */
+	ret = gst_element_set_state(pipeline, GST_STATE_READY);
 	if (ret == GST_STATE_CHANGE_FAILURE) {
-		g_printerr("Unable to set the pipeline to the playing state.\n");
+		g_printerr("Unable to set the pipeline to the ready state.\n");
 		gst_object_unref(GST_OBJECT(data->pipeline));
 		return -1;
 	}
-	g_print("Gst pipeline now playing\n");
+	g_print("Gst pipeline is ready\n");
 
 	return 0;
 }
@@ -1171,14 +1523,15 @@ void process_args(int argc, char** argv)
 }
 
 /**
- * Function called when CTRL + C or Kill signal is destected
+ * Function called when CTRL + C or Kill signal is detected
  */
 static void int_handler(int dummy)
 {
-	if (gtk_main_started)
-		gtk_main_quit();
-	else
+	if (gtk_main_started){
+		exit_application = true;
+	} else {
 		exit(0);
+	}
 }
 
 /**
@@ -1206,7 +1559,14 @@ int main(int argc, char *argv[])
 
 	/* Initialize our data structure */
 	data.pipeline = NULL;
-	data.window = NULL;
+	data.window_main = NULL;
+	data.window_overlay = NULL;
+	data.new_inference = false;
+	data.frame_width  = std::stoi(camera_width_str);
+	data.frame_height = std::stoi(camera_height_str);
+	data.ui_cairo_font_size = 25;
+	data.ui_box_line_width = 2.0;
+	data.ui_weston_panel_thickness = 32;
 
 	/* If image_dir is set by the user, test data picture are used instead
 	 * of camera frames */
@@ -1226,7 +1586,7 @@ int main(int argc, char *argv[])
 		data.preview_enabled = false;
 
 		/* Check if directory is empty */
-		std::string file = gui_get_files_in_directory_randomly(image_dir_str);
+		std::string file = get_files_in_directory_randomly(image_dir_str);
 		if (file.empty()) {
 			g_printerr("ERROR: Image directory %s is empty\n", image_dir_str.c_str());
 			exit(1);
@@ -1280,20 +1640,29 @@ int main(int argc, char *argv[])
 
 	/* Initialize GTK */
 	gtk_init(&argc, &argv);
-
+	gui_gtk_style(&data);
 	if (data.preview_enabled) {
+		/*  Camera preview use case */
 		/* Initialize GStreamer for camera preview use case*/
 		gst_init(&argc, &argv);
-
+		/* Create the GUI containing the video stream  */
+		g_print("Start Creating main GTK window\n");
+		gui_create_main(&data);
 		/* Create the GStreamer pipeline for camera use case */
 		ret = gst_pipeline_camera_creation(&data);
 		if(ret)
 			exit(1);
-
-		auto now = std::chrono::system_clock::now();
-		auto delay = std::chrono::milliseconds(5000);
-		std::unique_lock<std::mutex> lk(cond_var_m);
-		cond_var.wait_until(lk, now + delay);
+		/* Create the second GUI containing the nn information  */
+		g_print("Start Creating overlay GTK window\n");
+		gui_create_overlay(&data);
+	} else {
+		/*  Still picture use case */
+		/* Create the GUI containing the random picture to infer  */
+		g_print("Start Creating main GTK window\n");
+		gui_create_main(&data);
+		/* Create the second GUI containing the nn information  */
+		g_print("Start Creating overlay GTK window\n");
+		gui_create_overlay(&data);
 	}
 
 	/* Start a timeout timer in validation process to close application if
@@ -1301,13 +1670,9 @@ int main(int argc, char *argv[])
 	if (validation) {
 		data.valid_draw_count = 0;
 		data.valid_timeout_id = g_timeout_add(10000,
-						      valid_timeout_callback,
-						      NULL);
+						       valid_timeout_callback,
+						       NULL);
 	}
-
-	/* Create the GUI */
-	g_print("Start Creating GTK window\n");
-	gui_create(&data);
 
 	/* Start the GTK main loop.
 	 * We will not regain control until gtk_main_quit is called. */
@@ -1325,9 +1690,6 @@ int main(int argc, char *argv[])
 		gst_object_unref(data.pipeline);
 	}
 
-	/* Clean cairo surfaces */
-	cairo_surface_destroy(data.st_icon);
-	cairo_surface_destroy(data.exit_icon);
-
+	g_print(" Application exited properly \n");
 	return 0;
 }
