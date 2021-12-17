@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite libedgetpu gtk+3 opencv gstreamer1.0"
+DEPENDS += "tensorflow-lite libedgetpu gtk+3 opencv gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
 
 SRC_URI  = " file://image-classification/src;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_C++.png;subdir=${BPN}-${PV} "
@@ -55,7 +55,7 @@ do_install() {
     # install application binaries and launcher scripts
     install -m 0755 ${S}/image-classification/src/*_gtk  ${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin
     install -m 0755 ${S}/image-classification/src/*.sh   ${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin
-
+    install -m 0755 ${S}/image-classification/src/*.css      ${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin/resources
 }
 
 PACKAGES_remove = "${PN}-dev"
