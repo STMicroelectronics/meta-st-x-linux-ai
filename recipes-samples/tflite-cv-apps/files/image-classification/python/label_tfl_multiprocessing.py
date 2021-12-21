@@ -52,7 +52,7 @@ class VideoFrameCapture:
         self._width = width
         self._height = height
         self._fps = fps
-        self._cap = cv2.VideoCapture(device)
+        self._cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
         assert self._cap.isOpened()
 
     def __getstate__(self):
@@ -61,7 +61,7 @@ class VideoFrameCapture:
 
     def __setstate__(self, state):
         self._device, self._width, self._height, self._fps = state
-        self._cap = cv2.VideoCapture(self._device)
+        self._cap = cv2.VideoCapture(self._device,cv2.CAP_V4L2)
         self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
         self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
         self._cap.set(cv2.CAP_PROP_FPS, self._fps)

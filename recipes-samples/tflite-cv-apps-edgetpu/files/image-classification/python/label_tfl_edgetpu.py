@@ -38,7 +38,7 @@ class VideoFrameCapture:
         :param height: heigh of the requested frame
         :param fps:    framerate of the camera
         """
-        self.cap = cv2.VideoCapture(device)
+        self.cap = cv2.VideoCapture(device,cv2.CAP_V4L2)
         assert self.cap.isOpened()
         ret = self.cap.set(cv2.CAP_PROP_FPS, fps)
         ret = self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
