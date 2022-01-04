@@ -1,4 +1,4 @@
-SUMMARY = "X-LINUX-AI full components (TFLite, armNN and application samples)"
+SUMMARY = "X-LINUX-AI full components (TFLite and application samples)"
 LICENSE = "MIT & Apache-2.0 & BSD-3-Clause"
 
 LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
@@ -14,14 +14,12 @@ PACKAGES = "\
     packagegroup-x-linux-ai                  \
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
-    packagegroup-x-linux-ai-armnn-tflite     \
 "
 
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS_packagegroup-x-linux-ai = "\
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
-    packagegroup-x-linux-ai-armnn-tflite     \
 "
 
 SUMMARY_packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
@@ -43,15 +41,4 @@ RDEPENDS_packagegroup-x-linux-ai-tflite-edgetpu = "\
     tflite-cv-apps-edgetpu-image-classification-python \
     tflite-cv-apps-edgetpu-object-detection-c++ \
     tflite-cv-apps-edgetpu-object-detection-python \
-"
-
-SUMMARY_packagegroup-x-linux-ai-armnn-tflite = "X-LINUX-AI armNN with TensorFlow Lite parser components"
-RDEPENDS_packagegroup-x-linux-ai-armnn-tflite = "\
-    arm-compute-library-tools \
-    armnn \
-    armnn-tensorflow-lite \
-    armnn-tensorflow-lite-examples \
-    armnn-tools \
-    armnn-tfl-cv-apps-image-classification-c++ \
-    armnn-tfl-cv-apps-object-detection-c++ \
 "

@@ -14,7 +14,6 @@ Compatible with Yoto Project build system Dunfell.
 ## Available frameworks and tools within the meta-layer
 [X-LINUX-AI v2.1.0 expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package):
 * TensorFlow Lite 2.5.0
-* armNN 21.05
 * OpenCV 4.1.x
 * Python 3.8.x (enabling Pillow module)
 * Support STM32MP15xF devices operating at up to 800MHz
@@ -28,8 +27,6 @@ Compatible with Yoto Project build system Dunfell.
   * C++ / Python™ object detection application using TensorFlow™ Lite based on COCO SSD MobileNet v1 quantized model
   * C++ / Python™ image classification application using Coral Edge TPU™ based on MobileNet v1 quantized model and compiled for the Coral Edge TPU
   * C++ / Python™ object detection applicationusing Coral Edge TPU™ based on COCO SSD MobileNet v1 quantized model and compiled for the Coral Edge TPU
-  * C++ image classification application using armNN TensorFlow™ Lite parser based on MobileNet v1 float model
-  * C++ object detection application using armNN TensorFlow™ Lite parser based on COCO SSD MobileNet v1 quantized model
   * C++ face recognition application using proprietary model capable of recognizing the face of a known (enrolled) user. Contact the local STMicroelectronics support for more information about this application or send a request to [edge.ai@st.com](mailto:edge.ai@st.com)
 * Application support 720p, 480p and 272p display configurations
 * Application user interface with updated look and feel
