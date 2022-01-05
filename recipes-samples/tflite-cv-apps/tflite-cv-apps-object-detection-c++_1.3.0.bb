@@ -76,4 +76,5 @@ RDEPENDS_${PN} += " \
 	libopencv-imgproc \
 	libopencv-imgcodecs \
 	tflite-models-coco-ssd-mobilenetv1 \
+	rapidjson\
 "
