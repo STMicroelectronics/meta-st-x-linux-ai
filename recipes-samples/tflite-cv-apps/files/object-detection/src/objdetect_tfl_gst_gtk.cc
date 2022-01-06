@@ -175,6 +175,52 @@ typedef struct _ValidInfo {
 } ValidInfo;
 
 /**
+* This function is called when we need to setup the dcmipp camera
+*/
+static void setup_dcmipp()
+{
+	std::stringstream config_cam_sstr;
+	std::stringstream config_dcmipp_parallel_sstr;
+	std::stringstream config_dcmipp_dump_postproc0_sstr;
+	std::stringstream config_dcmipp_dump_postproc1_sstr;
+	std::stringstream config_dcmipp_dump_postproc_crop_sstr;
+
+	config_cam_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'ov5640 1-003c\':0[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str << "@1/" << camera_fps_str << " field:none]\"";
+	system(config_cam_sstr.str().c_str());
+
+	config_dcmipp_parallel_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_parallel\':0[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str <<"]\"";
+	system(config_dcmipp_parallel_sstr.str().c_str());
+
+	config_dcmipp_dump_postproc0_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':0[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str <<"]\"";
+	system(config_dcmipp_dump_postproc0_sstr.str().c_str());
+
+	config_dcmipp_dump_postproc1_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str <<"]\"";
+	system(config_dcmipp_dump_postproc1_sstr.str().c_str());
+
+	config_dcmipp_dump_postproc_crop_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[crop:(0,0)/" << camera_width_str << "x" << camera_height_str << "]\"";
+	system(config_dcmipp_dump_postproc_crop_sstr.str().c_str());
+
+g_print("dcmipp congiguration passed \n");
+}
+
+/**
+* This function is called when we need to pass a shell cmd and
+* recover the output
+* */
+std::string shell_cmd_exec(const char* cmd) {
+    std::array<char, 128> char_buff;
+    std::string cmd_output;
+    std::unique_ptr<FILE, decltype(&pclose)> cmd_pipe(popen(cmd, "r"), pclose);
+    if (!cmd_pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(char_buff.data(), char_buff.size(), cmd_pipe.get()) != nullptr) {
+        cmd_output += char_buff.data();
+    }
+    return cmd_output;
+}
+
+/**
  * This function is called when the ST icon image is clicked
  */
 static gboolean st_icon_cb(GtkWidget *event_box,
@@ -1581,6 +1627,18 @@ int main(int argc, char *argv[])
 		if (access(device_sstr.str().c_str(), F_OK) == -1) {
 			g_printerr("ERROR: No camera connected, %s does not exist.\n", device_sstr.str().c_str());
 			exit(1);
+		} else {
+			/* Check the camera type to configure it if necessary */
+			std::stringstream cmd;
+			cmd << "cat /sys/class/video4linux/video" << video_device_str << "/name";
+			std::string camera_type = shell_cmd_exec(cmd.str().c_str());
+			std::cout << "camera type : " << camera_type << std::endl;
+			std::string dcmipp = "dcmipp_dump_capture";
+			std::size_t found = camera_type.find(dcmipp);
+			if (found!=std::string::npos) {
+				/* dcmipp camera found */
+				setup_dcmipp();
+			}
 		}
 	} else {
 		data.preview_enabled = false;
