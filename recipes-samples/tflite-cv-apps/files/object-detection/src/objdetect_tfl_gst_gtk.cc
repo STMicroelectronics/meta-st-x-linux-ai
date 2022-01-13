@@ -160,7 +160,6 @@ typedef struct _CustomData {
 
 /* Framerate statisitics */
 gdouble display_avg_fps = 0;
-gdouble nn_avg_fps = 0;
 
 /* Structure that contains validation information */
 typedef struct _ValidObjectInfo {
@@ -611,7 +610,7 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 	display_fps_sstr   << std::right << std::setw(3) << " fps ";
 
 	std::stringstream inference_fps_sstr;
-	inference_fps_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << nn_avg_fps;
+	inference_fps_sstr << std::right << std::setw(5) << std::fixed << std::setprecision(1) << (1000 / results.inference_time);
 	inference_fps_sstr << std::right << std::setw(3) << " fps ";
 
 	float inf_time = 0;
@@ -786,7 +785,7 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 				/* Stop the timeout and properly exit the
 				 * application */
 				std::cout << "avg display fps= " << display_avg_fps << std::endl;
-				std::cout << "avg inference fps= " << nn_avg_fps << std::endl;
+				std::cout << "avg inference fps= " << (1000 / avg_inf_time) << std::endl;
 				std::cout << "avg inference time= " << avg_inf_time << std::endl;
 				g_source_remove(data->valid_timeout_id);
 				gtk_main_quit();
@@ -1188,18 +1187,6 @@ void gst_fps_measure_display_cb(GstElement *fpsdisplaysink,
 }
 
 /**
- * This function is called by Gstreamer fpsdisplaysink to get fps measurment
- */
-void gst_fps_measure_nn_cb(GstElement *fpsdisplaysink,
-			   gdouble fps,
-			   gdouble droprate,
-			   gdouble avgfps,
-			   gpointer data)
-{
-	nn_avg_fps = avgfps;
-}
-
-/**
  * This function is called when a Gstreamer error message is posted on the bus.
  */
 static void gst_error_cb (GstBus *bus, GstMessage *msg, CustomData *data) {
@@ -1307,7 +1294,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	GstStateChangeReturn ret;
 	GstElement *pipeline, *source, *dispsink, *tee, *scale, *framerate;
 	GstElement *queue1, *queue2, *convert, *convert2, *appsink, *framecrop;
-	GstElement *fpsmeasure1, *fpsmeasure2;
+	GstElement *fpsmeasure1;
 	GstBus *bus;
 
 	/* Create the pipeline */
@@ -1327,11 +1314,9 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	appsink     = gst_element_factory_make("appsink",        "app-sink");
 	framerate   = gst_element_factory_make("videorate",      "video-rate");
 	fpsmeasure1 = gst_element_factory_make("fpsdisplaysink", "fps-measure1");
-	fpsmeasure2 = gst_element_factory_make("fpsdisplaysink", "fps-measure2");
 
 	if (!pipeline || !source || !tee || !queue1 || !queue2 || !convert || !convert2 ||
-	    !scale || !dispsink || !appsink || !framerate || !fpsmeasure1 ||
-	    !fpsmeasure2 || !framecrop) {
+	    !scale || !dispsink || !appsink || !framerate || !fpsmeasure1  || !framecrop) {
 		g_printerr("One element could not be created. Exiting.\n");
 		return -1;
 	}
@@ -1362,11 +1347,6 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		     "video-sink", dispsink, NULL);
 	g_signal_connect(fpsmeasure1, "fps-measurements", G_CALLBACK(gst_fps_measure_display_cb), NULL);
 
-	g_object_set(fpsmeasure2, "signal-fps-measurements", TRUE,
-		     "fps-update-interval", 2000, "text-overlay", FALSE,
-		     "video-sink", appsink, NULL);
-	g_signal_connect(fpsmeasure2, "fps-measurements", G_CALLBACK(gst_fps_measure_nn_cb), NULL);
-
 	/* Configure the videocrop */
 	if (crop) {
 		/* Crop requested */
@@ -1390,7 +1370,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	/* Add all elements into the pipeline */
 	gst_bin_add_many(GST_BIN(pipeline),
 			 source, framerate, tee, convert, convert2, queue1, queue2, scale,
-			 framecrop, fpsmeasure1, fpsmeasure2, NULL);
+			 framecrop, fpsmeasure1, appsink, NULL);
 
 	/* Link the elements together */
 	if (!gst_element_link_many(source, framerate, NULL)) {
@@ -1401,12 +1381,8 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		g_error("Failed to link elements (2)");
 		return -2;
 	}
-	if (!gst_element_link_many(tee, queue2, convert, framecrop, scale, NULL)) {
+	if (!gst_element_link_many(tee, queue2, convert, framecrop, scale, appsink, NULL)) {
 		g_error("Failed to link elements (3)");
-		return -2;
-	}
-	if (!gst_element_link_filtered(scale, fpsmeasure2, scaleCaps)) {
-		g_error("Failed to link elements (4)");
 		return -2;
 	}
 	if (!gst_element_link_many(tee, queue1, convert2, fpsmeasure1, NULL)) {
