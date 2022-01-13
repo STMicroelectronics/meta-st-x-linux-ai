@@ -1,3 +1,7 @@
+<p align="center">
+    <img width="720" src="https://raw.githubusercontent.com/STMicroelectronics/meta-st-stm32mpu-ai/master/x-linux-ai-logo.png">
+</p>
+
 # meta-st-stm32mpu-ai
 OpenEmbedded meta layer to install AI frameworks and tools for the STM32MP1.
 It also provide application samples.
