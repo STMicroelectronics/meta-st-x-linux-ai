@@ -771,30 +771,37 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 	/*  Validation mode  */
 	if(validation){
 		if (data->preview_enabled) {
-			data->valid_inference_time.push_back(inf_time);
-			/* Reload the timeout */
-			g_source_remove(data->valid_timeout_id);
-			data->valid_timeout_id = g_timeout_add(5000,
-							       valid_timeout_callback,
-							       NULL);
-			data->valid_draw_count++;
-			if (data->valid_draw_count > 25) {
-				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
-								    data->valid_inference_time.end(), 0.0) /
-					data->valid_inference_time.size();
-				/* Stop the timeout and properly exit the
-				 * application */
-				std::cout << "avg display fps= " << display_avg_fps << std::endl;
-				std::cout << "avg inference fps= " << (1000 / avg_inf_time) << std::endl;
-				std::cout << "avg inference time= " << avg_inf_time << std::endl;
+			if (data->valid_draw_count < 5){
 				g_source_remove(data->valid_timeout_id);
-				gtk_main_quit();
+				data->valid_timeout_id = g_timeout_add(10000,
+													   valid_timeout_callback,
+													   NULL);
+				data->valid_draw_count++;
+			} else {
+				data->valid_inference_time.push_back(inf_time);
+				/* Reload the timeout */
+				g_source_remove(data->valid_timeout_id);
+				data->valid_timeout_id = g_timeout_add(10000,
+													   valid_timeout_callback,
+													   NULL);
+				data->valid_draw_count++;
+				if (data->valid_draw_count > 100) {
+					auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
+														data->valid_inference_time.end(), 0.0) /
+														data->valid_inference_time.size();
+					/* Stop the timeout and properly exit the
+					 * application */
+					std::cout << "avg display fps= " << display_avg_fps << std::endl;
+					std::cout << "avg inference fps= " << (1000 / avg_inf_time)<< std::endl;
+					std::cout << "avg inference time= " << avg_inf_time << std::endl;
+					g_source_remove(data->valid_timeout_id);
+					gtk_main_quit();
+				}
 			}
 		}
 	}
 	return TRUE;
 }
-
 /**
  * This function is creating GTK widget to create the overlay window to display UI
  * information
