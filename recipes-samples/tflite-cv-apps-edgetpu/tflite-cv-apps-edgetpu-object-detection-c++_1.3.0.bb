@@ -27,7 +27,7 @@ EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 
 do_compile() {
     #Check the version of OpenCV and fill OPENCV_VERSION accordingly
-    FILE=${RECIPE_SYSROOT}/usr/lib/pkgconfig/opencv4.pc
+    FILE=${RECIPE_SYSROOT}/${libdir}/pkgconfig/opencv4.pc
     if [ -f "$FILE" ]; then
         OPENCV_VERSION=opencv4
     else
