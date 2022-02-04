@@ -1,10 +1,9 @@
 SYSROOT?=""
 TARGET_BIN = tflite_edgetpu_benchmark
 
-CXXFLAGS += -Wall -I${SYSROOT}/usr/include/tensorflow/lite/tools/make/downloads/flatbuffers/include -L${SYSROOT}/${libdir}
+CXXFLAGS += -Wall -I$(SYSROOT)/usr/include/tensorflow/lite/flatbuffers/include -L${SYSROOT}/${libdir}
 
-LDFLAGS  = -lpthread -ldl
-LDFLAGS += -ledgetpu -Wl,--whole-archive -ltensorflow-lite  -Wl,--no-whole-archive
+LDFLAGS  = -lpthread -ldl -ltensorflow-lite -ledgetpu
 
 SRCS = tflite_edgetpu_benchmark.cc
 OBJS = $(SRCS:.cc=.o)
