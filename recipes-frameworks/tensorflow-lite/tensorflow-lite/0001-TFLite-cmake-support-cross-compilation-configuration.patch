@@ -1,0 +1,41 @@
+From e95c10293779bada2dbcbe6f341b2b87dedb7e40 Mon Sep 17 00:00:00 2001
+From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+Date: Wed, 26 Jan 2022 15:53:33 +0100
+Subject: [PATCH 1/4] TFLite: cmake: support cross compilation configuration
+
+Add new case to support cross compilation configuration.
+To allow cross-compilation for arm architecture, python3.8
+pybind11 and numpy includes are now pointing to the target sysroot
+instead of the native includes.
+
+Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+---
+ .../pip_package/build_pip_package_with_cmake.sh      | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+index 35eb3a917fb..071af4602b7 100755
+--- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
++++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+@@ -66,6 +66,18 @@ cd "${BUILD_DIR}/cmake_build"
+ 
+ echo "Building for ${TENSORFLOW_TARGET}"
+ case "${TENSORFLOW_TARGET}" in
++  linux)
++    ARMCC_FLAGS="${ARMCC_FLAGS} -I${PYTHON_TARGET_INCLUDE} -I${NUMPY_TARGET_INCLUDE} -I${PYBIND11_TARGET_INCLUDE}"
++    cmake \
++      -DCMAKE_C_COMPILER=${ARMCC_PREFIX}gcc \
++      -DCMAKE_CXX_COMPILER=${ARMCC_PREFIX}g++ \
++      -DCMAKE_C_FLAGS="${ARMCC_FLAGS}" \
++      -DCMAKE_CXX_FLAGS="${ARMCC_FLAGS}" \
++      -DTFLITE_ENABLE_XNNPACK=OFF \
++      -DCMAKE_SYSTEM_NAME=Linux \
++      -DCMAKE_SYSTEM_PROCESSOR=${TENSORFLOW_TARGET_ARCH} \
++      "${TENSORFLOW_LITE_DIR}"
++    ;;
+   armhf)
+     eval $(${TENSORFLOW_LITE_DIR}/tools/cmake/download_toolchains.sh "${TENSORFLOW_TARGET}")
+     ARMCC_FLAGS="${ARMCC_FLAGS} -I${PYBIND11_INCLUDE}"
+-- 
+2.17.1
+

@@ -1,0 +1,123 @@
+From 3e3807af214b25334b8311a2707f3ba23df89f99 Mon Sep 17 00:00:00 2001
+From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+Date: Wed, 2 Feb 2022 15:51:43 +0100
+Subject: [PATCH 3/4] TFlite: cmake: introduce shared library build
+
+Introducing libtensorflow-lite.so generating during cmake build.
+This shared library contains the static library libtensorflowlite.a
+and all the dependencies static libraries. The aim of this step is
+to simplify the link of applications to a single dynamic library.
+
+Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+---
+ tensorflow/lite/CMakeLists.txt                | 28 ++++++++++++++-----
+ .../build_pip_package_with_cmake.sh           |  6 +++-
+ 2 files changed, 26 insertions(+), 8 deletions(-)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 200d1a7c46d..83736e8d813 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -37,7 +37,7 @@ endif()
+ cmake_policy(SET CMP0028 NEW)
+ # Enable MACOSX_RPATH (@rpath) for built dynamic libraries.
+ cmake_policy(SET CMP0042 NEW)
+-project(tensorflow-lite C CXX)
++project(tensorflowlite C CXX)
+ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+ set(TENSORFLOW_SOURCE_DIR "" CACHE PATH
+   "Directory that contains the TensorFlow project"
+@@ -458,7 +458,7 @@ include_directories(
+ )
+ 
+ # TFLite library
+-add_library(tensorflow-lite
++add_library(tensorflowlite
+   ${TFLITE_CORE_API_SRCS}
+   ${TFLITE_CORE_SRCS}
+   ${TFLITE_C_SRCS}
+@@ -484,11 +484,11 @@ add_library(tensorflow-lite
+   ${TFLITE_SOURCE_DIR}/kernels/internal/utils/sparsity_format_converter.cc
+   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
+ )
+-target_include_directories(tensorflow-lite
++target_include_directories(tensorflowlite
+   PUBLIC
+     ${TFLITE_INCLUDE_DIRS}
+ )
+-target_link_libraries(tensorflow-lite
++target_link_libraries(tensorflowlite
+   PUBLIC
+     Eigen3::Eigen
+     NEON_2_SSE
+@@ -511,11 +511,11 @@ if (NOT BUILD_SHARED_LIBS)
+   list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DTFL_STATIC_LIBRARY_BUILD")
+ endif()
+ 
+-target_compile_options(tensorflow-lite
++target_compile_options(tensorflowlite
+   PUBLIC ${TFLITE_TARGET_PUBLIC_OPTIONS}
+   PRIVATE ${TFLITE_TARGET_PRIVATE_OPTIONS}
+ )
+-add_library(tensorflow::tensorflowlite ALIAS tensorflow-lite)
++#add_library(tensorflow::tensorflowlite ALIAS tensorflow-lite)
+ 
+ # The kernel tests.
+ if(TFLITE_KERNEL_TEST)
+@@ -547,10 +547,24 @@ target_include_directories(_pywrap_tensorflow_interpreter_wrapper
+ )
+ 
+ target_link_libraries(_pywrap_tensorflow_interpreter_wrapper
+-  tensorflow-lite
++  tensorflowlite
+   ${CMAKE_DL_LIBS}
+ )
+ target_compile_options(_pywrap_tensorflow_interpreter_wrapper
+   PUBLIC ${TFLITE_TARGET_PUBLIC_OPTIONS}
+   PRIVATE ${TFLITE_TARGET_PRIVATE_OPTIONS}
+ )
++
++# Tflite shared library
++add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
++  ${TFLITE_SOURCE_DIR}/examples/minimal/minimal.cc
++)
++target_include_directories(tensorflow-lite
++  PUBLIC
++    ${TFLITE_INCLUDE_DIRS}
++)
++target_link_libraries(tensorflow-lite tensorflowlite ${CMAKE_DL_LIBS})
++target_compile_options(tensorflow-lite
++  PUBLIC ${TFLITE_TARGET_PUBLIC_OPTIONS}
++  PRIVATE ${TFLITE_TARGET_PRIVATE_OPTIONS}
++)
+diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+index adca27e14a5..fc34abb2936 100755
+--- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
++++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+@@ -132,7 +132,7 @@ case "${TENSORFLOW_TARGET}" in
+     ;;
+ esac
+ 
+-cmake --build . --verbose -j ${BUILD_NUM_JOBS} -t _pywrap_tensorflow_interpreter_wrapper benchmark_model
++cmake --build . --verbose -j ${BUILD_NUM_JOBS} -t tensorflowlite _pywrap_tensorflow_interpreter_wrapper benchmark_model tensorflow-lite
+ cd "${BUILD_DIR}"
+ 
+ case "${TENSORFLOW_TARGET}" in
+@@ -146,10 +146,14 @@ esac
+ 
+ cp "${BUILD_DIR}/cmake_build/_pywrap_tensorflow_interpreter_wrapper${LIBRARY_EXTENSION}" \
+    "${BUILD_DIR}/tflite_runtime"
++cp "${BUILD_DIR}/cmake_build/libtensorflow-lite${LIBRARY_EXTENSION}" \
++   "${BUILD_DIR}"
++
+ # Bazel generates the wrapper library with r-x permissions for user.
+ # At least on Windows, we need write permissions to delete the file.
+ # Without this, setuptools fails to clean the build directory.
+ chmod u+w "${BUILD_DIR}/tflite_runtime/_pywrap_tensorflow_interpreter_wrapper${LIBRARY_EXTENSION}"
++chmod u+w "${BUILD_DIR}/libtensorflow-lite${LIBRARY_EXTENSION}"
+ 
+ # Build python wheel.
+ cd "${BUILD_DIR}"
+-- 
+2.17.1
+

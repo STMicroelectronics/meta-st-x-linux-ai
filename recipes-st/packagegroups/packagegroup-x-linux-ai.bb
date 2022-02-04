@@ -26,6 +26,7 @@ SUMMARY_packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
 RDEPENDS_packagegroup-x-linux-ai-tflite = "\
     python3-tensorflow-lite \
     tensorflow-lite-tools \
+    tensorflow-lite \
     tflite-cv-apps-image-classification-c++ \
     tflite-cv-apps-image-classification-python \
     tflite-cv-apps-object-detection-c++ \
@@ -36,6 +37,7 @@ SUMMARY_packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edg
 RDEPENDS_packagegroup-x-linux-ai-tflite-edgetpu = "\
     libedgetpu \
     python3-tensorflow-lite \
+    tensorflow-lite \
     tflite-edgetpu-benchmark \
     tflite-cv-apps-edgetpu-image-classification-c++ \
     tflite-cv-apps-edgetpu-image-classification-python \
