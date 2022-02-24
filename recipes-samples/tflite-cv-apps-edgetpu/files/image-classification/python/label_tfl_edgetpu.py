@@ -90,14 +90,10 @@ class NeuralNetwork:
         self._label_file = label_file
         self._floating_model = False
 
-        if perf == 'max':
+        if perf == 'std':
+            self._lib_edgetpu = "libedgetpu-std.so.2"
+        elif perf == 'max':
             self._lib_edgetpu = "libedgetpu-max.so.2"
-        elif perf == 'high':
-            self._lib_edgetpu = "libedgetpu-high.so.2"
-        elif perf == 'med':
-            self._lib_edgetpu = "libedgetpu-med.so.2"
-        elif perf == 'low':
-            self._lib_edgetpu = "libedgetpu-low.so.2"
 
         self._interpreter = tflite.Interpreter(self._model_file,
                                                experimental_delegates=[tflite.load_delegate(self._lib_edgetpu)])
@@ -546,7 +542,7 @@ if __name__ == '__main__':
     parser.add_argument("--framerate", default=30, help="framerate of the camera (default is 15fps)")
     parser.add_argument("-m", "--model_file", default="", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="", help="name of file containing labels")
-    parser.add_argument("-p", "--perf", default='high', choices= ['max', 'high', 'med', 'low'], help="Select the performance of the Coral EdgeTPU")
+    parser.add_argument("-p", "--perf", default='std', choices= ['std', 'max'], help="Select the performance of the Coral EdgeTPU")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
     args = parser.parse_args()
 

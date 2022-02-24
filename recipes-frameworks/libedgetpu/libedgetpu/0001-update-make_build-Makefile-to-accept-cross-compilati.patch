@@ -1,0 +1,142 @@
+From 6dad0f49375d2926a0b71f12a9b7044a9cb1fb2a Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Thu, 20 Jan 2022 11:43:17 +0100
+Subject: [PATCH 1/1] update make_build/Makefile to accept cross compilation
+ options
+
+This update is needed to allow libedgetpu build within a Yocto build system.
+Linking command line may differ to avoid undefined reference when the
+generated libedgetpu libraries are link with applications.
+Compatible with the abseil-cpp version 20190808 from Yocto Dunfell.
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ makefile_build/Makefile | 80 ++++++++++++++++++++++++++++-------------
+ 1 file changed, 56 insertions(+), 24 deletions(-)
+
+diff --git a/makefile_build/Makefile b/makefile_build/Makefile
+index ef7d290..76308c1 100644
+--- a/makefile_build/Makefile
++++ b/makefile_build/Makefile
+@@ -10,37 +10,64 @@ BUILDROOT ?= $(MAKEFILE_DIR)/..
+ BUILDDIR := $(BUILDROOT)/out
+ TOBUILDDIR = $(addprefix $(BUILDDIR)/,$(1))
+ MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
+-CC=gcc
+-CXX=g++
++
++ifeq ($(origin CC), undefined)
++	CC := gcc
++endif
++ifeq ($(origin CXX), undefined)
++	CXX := gcc
++endif
++
+ FLATC=flatc
+ 
+ LIBEDGETPU_CFLAGS := \
+ 	-fPIC \
+ 	-Wall \
+-	-std=c99
++	-std=c99 \
++	$(EXTRA_CFLAGS)
+ 
+ LIBEDGETPU_CXXFLAGS := \
+ 	-fPIC \
+ 	-Wall \
+ 	-std=c++14 \
+-	-DDARWINN_PORT_DEFAULT
++	-DDARWINN_PORT_DEFAULT \
++	$(EXTRA_CXXFLAGS)
++
++ABSL_LDFLAGS  = \
++	-labsl_flags \
++	-labsl_flags_marshalling \
++	-labsl_hashtablez_sampler \
++	-labsl_str_format_internal \
++	-labsl_throw_delegate \
++	-labsl_synchronization \
++	-labsl_time \
++	-labsl_time_zone \
++	-labsl_int128 \
++	-labsl_symbolize \
++	-labsl_base \
++	-labsl_debugging_internal \
++	-labsl_dynamic_annotations \
++	-labsl_malloc_internal \
++	-labsl_spinlock_wait \
++	-labsl_demangle_internal \
++	-labsl_hash \
++	-labsl_flags_registry \
++	-labsl_flags_handle \
++	-labsl_flags_config \
++	-labsl_flags_internal \
++	-labsl_strings \
++	-labsl_graphcycles_internal \
++	-labsl_stacktrace \
++	-labsl_raw_hash_set \
++	-labsl_bad_optional_access
+ 
+ LIBEDGETPU_LDFLAGS := \
+ 	-Wl,-Map=$(BUILDDIR)/output.map \
+-	-shared \
+-	-Wl,--soname,libedgetpu.so.1 \
+ 	-Wl,--version-script=$(BUILDROOT)/tflite/public/libedgetpu.lds \
+ 	-fuse-ld=gold \
+ 	-lflatbuffers \
+-	-labsl_flags \
+-	-labsl_flags_internal \
+-	-labsl_flags_reflection \
+-	-labsl_flags_marshalling \
+-	-labsl_hash \
+-	-labsl_hashtablez_sampler \
+-	-labsl_raw_hash_set \
+-	-labsl_str_format_internal \
+-	-lusb-1.0
++	-lusb-1.0 \
++	$(ABSL_LDFLAGS)
+ 
+ LIBEDGETPU_FLATC_SRCS := \
+ 	$(BUILDROOT)/executable/executable.fbs \
+@@ -155,9 +182,16 @@ LIBEDGETPU_STD_CCSRCS := \
+ 	$(BUILDROOT)/tflite/edgetpu_manager_direct.cc
+ LIBEDGETPU_STD_CCOBJS := $(call TOBUILDDIR,$(patsubst %.cc,%-throttled.o,$(LIBEDGETPU_STD_CCSRCS)))
+ 
++LIBEDGETPU_MAX_NAME := libedgetpu-max.so.%%VERSION%%
++LIBEDGETPU_STD_NAME := libedgetpu-std.so.%%VERSION%%
++
++LIBDIR := $(BUILDDIR)/lib
++LIBEDGETPU_MAX_PATH := $(LIBDIR)/$(LIBEDGETPU_MAX_NAME)
++LIBEDGETPU_STD_PATH := $(LIBDIR)/$(LIBEDGETPU_STD_NAME)
++
+ .PHONY: libedgetpu
+ 
+-all: libedgetpu libedgetpu-throttled
++all:  | firmware $(LIBEDGETPU_FLATC_OBJS) libedgetpu libedgetpu-throttled
+ 
+ clean:
+ 	rm -rf $(BUILDDIR)
+@@ -201,14 +235,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
+ 	@echo "Compiling $<"
+ 	@$(CXX) -DTHROTTLE_EDGE_TPU $(LIBEDGETPU_CXXFLAGS) $(LIBEDGETPU_INCLUDES) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
+ 
+-libedgetpu: | firmware $(LIBEDGETPU_FLATC_OBJS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS)
+-	@mkdir -p $(BUILDDIR)/direct/k8
++libedgetpu: $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS)
++	@mkdir -p $(LIBDIR)
+ 	@echo "Building libedgetpu.so"
+-	@$(CXX) $(LIBEDGETPU_CCFLAGS) $(LIBEDGETPU_LDFLAGS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS) -o $(BUILDDIR)/direct/k8/libedgetpu.so.1.0
+-	@ln -sf $(BUILDDIR)/direct/k8/libedgetpu.so.1.0 $(BUILDDIR)/direct/k8/libedgetpu.so.1
++	@$(CXX) -shared $^ -o $(LIBEDGETPU_MAX_PATH) $(LIBEDGETPU_LDFLAGS) -Wl,-soname,$(LIBEDGETPU_MAX_NAME)
+ 
+-libedgetpu-throttled: | firmware $(LIBEDGETPU_FLATC_OBJS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS)
+-	@mkdir -p $(BUILDDIR)/throttled/k8
++libedgetpu-throttled: $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS)
++	@mkdir -p $(LIBDIR)
+ 	@echo "Building throttled libedgetpu.so"
+-	@$(CXX) $(LIBEDGETPU_CCFLAGS) $(LIBEDGETPU_LDFLAGS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS) -o $(BUILDDIR)/throttled/k8/libedgetpu.so.1.0
+-	@ln -sf $(BUILDDIR)/throttled/k8/libedgetpu.so.1.0 $(BUILDDIR)/throttled/k8/libedgetpu.so.1
++	@$(CXX) -shared $^ -o $(LIBEDGETPU_STD_PATH) $(LIBEDGETPU_LDFLAGS) -Wl,-soname,$(LIBEDGETPU_STD_NAME)
+-- 
+2.17.1
+

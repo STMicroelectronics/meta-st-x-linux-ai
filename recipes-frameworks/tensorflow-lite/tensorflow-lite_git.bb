@@ -92,6 +92,10 @@ do_install() {
 	# Install Tflite python3 interpreter
 	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 	install -m 0644  ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/tflite_runtime/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
+
+	# install common.c and util.cc for edgtpu build
+	cp ${S}/tensorflow/lite/util.cc ${D}${includedir}/tensorflow/lite
+	cp ${S}/tensorflow/lite/c/common.c ${D}${includedir}/tensorflow/lite/c
 }
 
 PACKAGES += "${PN}-tools python3-${PN}"
