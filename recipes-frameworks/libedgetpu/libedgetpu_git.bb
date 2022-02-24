@@ -65,17 +65,17 @@ do_install () {
 	cp ${S}/tflite/public/edgetpu.h         ${D}${includedir}/tensorflow/lite
 }
 
-FILES_${PN} += "${sysconfdir}"
-FILES_${PN} += "${libdir}/libedgetpu-max.so.${PVB}"
-FILES_${PN} += "${libdir}/libedgetpu-std.so.${PVB}"
-FILES_${PN} += "${libdir}/libedgetpu.so.${PVB}"
-FILES_${PN} += "${libdir}/libedgetpu.so.${MAJOR}"
-FILES_${PN} += "${libdir}/libedgetpu-max.so.${MAJOR}"
-FILES_${PN} += "${libdir}/libedgetpu-std.so.${MAJOR}"
+FILES:${PN} += "${sysconfdir}"
+FILES:${PN} += "${libdir}/libedgetpu-max.so.${PVB}"
+FILES:${PN} += "${libdir}/libedgetpu-std.so.${PVB}"
+FILES:${PN} += "${libdir}/libedgetpu.so.${PVB}"
+FILES:${PN} += "${libdir}/libedgetpu.so.${MAJOR}"
+FILES:${PN} += "${libdir}/libedgetpu-max.so.${MAJOR}"
+FILES:${PN} += "${libdir}/libedgetpu-std.so.${MAJOR}"
 
-FILES_${PN}-dev  = "${libdir}/libedgetpu.so"
-FILES_${PN}-dev += "${includedir}/tensorflow/lite"
+FILES:${PN}-dev  = "${libdir}/libedgetpu.so"
+FILES:${PN}-dev += "${includedir}/tensorflow/lite"
 
-INSANE_SKIP_${PN} = "ldflags"
+INSANE_SKIP:${PN} = "ldflags"
 
-RDEPENDS_${PN} += "libusb1 flatbuffers"
+RDEPENDS:${PN} += "libusb1 flatbuffers"

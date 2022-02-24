@@ -19,10 +19,6 @@ do_install() {
     install -m 0644 ${S}/mobilenet_v1_1.0_224_quant_edgetpu/*.tflite ${D}${prefix}/local/demo-ai/computer-vision/models/mobilenet/
 }
 
-PACKAGES_remove = "${PN}-dbg"
-PACKAGES_remove = "${PN}-dev"
-PACKAGES_remove = "${PN}-staticdev"
+FILES:${PN} += "${prefix}/local/"
 
-FILES_${PN} += "${prefix}/local/"
-
-RDEPENDS_${PN} += " tflite-models-mobilenetv1 "
+RDEPENDS:${PN} += " tflite-models-mobilenetv1 "

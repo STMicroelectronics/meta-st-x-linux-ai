@@ -55,14 +55,11 @@ do_install() {
 
 }
 
-PACKAGES_remove = "${PN}-dev"
-RDEPENDS_${PN}-staticdev = ""
+FILES:${PN} += "${prefix}/local/"
 
-FILES_${PN} += "${prefix}/local/"
+INSANE_SKIP:${PN} = "ldflags"
 
-INSANE_SKIP_${PN} = "ldflags"
-
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
 	gstreamer1.0 \
 	gstreamer1.0-plugins-bad-waylandsink \
 	gstreamer1.0-plugins-bad-debugutilsbad \

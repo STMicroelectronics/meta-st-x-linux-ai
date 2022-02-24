@@ -54,14 +54,14 @@ do_install() {
     install -m 0755 ${S}/image-classification/src/*.css		${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification/bin/resources
 }
 
-PACKAGES_remove = "${PN}-dev"
-RDEPENDS_${PN}-staticdev = ""
+#PACKAGES:remove = "${PN}-dev"
+#RDEPENDS_${PN}-staticdev = ""
 
-FILES_${PN} += "${prefix}/local/"
+FILES:${PN} += "${prefix}/local/"
 
-INSANE_SKIP_${PN} = "ldflags"
+INSANE_SKIP:${PN} = "ldflags"
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
 	gstreamer1.0-plugins-bad-waylandsink \
 	gstreamer1.0-plugins-bad-debugutilsbad \
 	gstreamer1.0-plugins-base-app \

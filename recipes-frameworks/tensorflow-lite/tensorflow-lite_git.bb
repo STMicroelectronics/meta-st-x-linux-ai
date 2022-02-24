@@ -45,7 +45,7 @@ DEPENDS = "zlib \
 
 # Set building environment variables
 TENSORFLOW_TARGET="${@bb.utils.contains('TARGET_OS', 'linux-gnueabi', 'linux', '', d)}"
-TENSORFLOW_TARGET_ARCH_armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7l', '', d)}"
+TENSORFLOW_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7l', '', d)}"
 
 do_compile() {
 	# Used to download cmake dependencies when behind a proxy
@@ -100,13 +100,13 @@ do_install() {
 
 PACKAGES += "${PN}-tools python3-${PN}"
 
-FILES_${PN}  = "${libdir}/libtensorflow-lite.so.${MAJOR}"
-FILES_${PN} += "${libdir}/libtensorflow-lite.so.${PVB}"
+FILES:${PN}  = "${libdir}/libtensorflow-lite.so.${MAJOR}"
+FILES:${PN} += "${libdir}/libtensorflow-lite.so.${PVB}"
 
-FILES_${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/*"
+FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/*"
 
-FILES_python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
+FILES:python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
 
-RDEPENDS_python3-${PN} += " python3-ctypes python3-numpy "
+RDEPENDS:python3-${PN} += " python3-ctypes python3-numpy "
 
 PROVIDES += "python3-${PN}"

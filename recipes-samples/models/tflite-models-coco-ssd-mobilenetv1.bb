@@ -27,8 +27,4 @@ do_install() {
     install -m 0644 ${S}/coco_ssd_mobilenet_v1_1.0_quant/*.tflite		${D}${prefix}/local/demo-ai/computer-vision/models/coco_ssd_mobilenet/
 }
 
-PACKAGES_remove = "${PN}-dbg"
-PACKAGES_remove = "${PN}-dev"
-PACKAGES_remove = "${PN}-staticdev"
-
-FILES_${PN} += "${prefix}/local/"
+FILES:${PN} += "${prefix}/local/"

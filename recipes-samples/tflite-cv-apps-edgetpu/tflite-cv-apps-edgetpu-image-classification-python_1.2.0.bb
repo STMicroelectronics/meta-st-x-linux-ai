@@ -34,12 +34,9 @@ do_install() {
 
 }
 
-PACKAGES_remove = "${PN}-dev"
-RDEPENDS_${PN}-staticdev = ""
+FILES:${PN} += "${prefix}/local/"
 
-FILES_${PN} += "${prefix}/local/"
-
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
 	python3-core \
 	python3-ctypes \
 	python3-tensorflow-lite \

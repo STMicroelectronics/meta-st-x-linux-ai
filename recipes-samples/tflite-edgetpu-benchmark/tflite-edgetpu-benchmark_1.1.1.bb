@@ -27,13 +27,10 @@ do_install() {
     install -m 0755 ${S}/tflite_edgetpu_benchmark	${D}${prefix}/local/demo-ai/benchmark/tflite-edgetpu
 }
 
-PACKAGES_remove = "${PN}-dev"
-RDEPENDS_${PN}-staticdev = ""
+FILES:${PN} += "${prefix}/local/"
 
-FILES_${PN} += "${prefix}/local/"
+INSANE_SKIP:${PN} = "ldflags"
 
-INSANE_SKIP_${PN} = "ldflags"
-
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
 	libedgetpu \
 "

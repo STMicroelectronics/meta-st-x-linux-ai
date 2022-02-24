@@ -31,8 +31,4 @@ do_install() {
     install -m 0644 ${S}/mobilenet_v1_0.5_128_float/*.tflite   ${D}${prefix}/local/demo-ai/computer-vision/models/mobilenet/
 }
 
-PACKAGES_remove = "${PN}-dbg"
-PACKAGES_remove = "${PN}-dev"
-PACKAGES_remove = "${PN}-staticdev"
-
-FILES_${PN} += "${prefix}/local/"
+FILES:${PN} += "${prefix}/local/"

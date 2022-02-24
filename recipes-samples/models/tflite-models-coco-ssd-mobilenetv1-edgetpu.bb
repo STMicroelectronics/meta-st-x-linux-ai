@@ -16,10 +16,6 @@ do_install() {
     install -m 0644 ${S}/*_edgetpu.tflite ${D}${prefix}/local/demo-ai/computer-vision/models/coco_ssd_mobilenet/
 }
 
-PACKAGES_remove = "${PN}-dbg"
-PACKAGES_remove = "${PN}-dev"
-PACKAGES_remove = "${PN}-staticdev"
+FILES:${PN} += "${prefix}/local/"
 
-FILES_${PN} += "${prefix}/local/"
-
-RDEPENDS_${PN} += " tflite-models-coco-ssd-mobilenetv1 "
+RDEPENDS:${PN} += " tflite-models-coco-ssd-mobilenetv1 "

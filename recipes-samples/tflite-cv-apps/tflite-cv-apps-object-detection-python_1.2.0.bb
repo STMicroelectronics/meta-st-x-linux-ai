@@ -26,12 +26,9 @@ do_install() {
     install -m 0755 ${S}/object-detection/python/*.sh	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/python
 }
 
-PACKAGES_remove = "${PN}-dev"
-RDEPENDS_${PN}-staticdev = ""
+FILES:${PN} += "${prefix}/local/"
 
-FILES_${PN} += "${prefix}/local/"
-
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
 	python3-core \
 	python3-ctypes \
 	python3-multiprocessing \
