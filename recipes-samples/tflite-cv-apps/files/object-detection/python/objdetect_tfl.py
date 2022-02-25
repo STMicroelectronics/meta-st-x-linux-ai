@@ -22,20 +22,17 @@ from gi.repository import Gst
 
 import numpy as np
 import argparse
-import ctypes
 import signal
 import os
 import random
 import json
 import subprocess
 import re
-from multiprocessing import Array, Value
-
+import os.path
+from os import path
 import cv2
-
 from PIL import Image
 import tflite_runtime.interpreter as tflr
-
 from timeit import default_timer as timer
 
 #init gstreamer
@@ -47,13 +44,17 @@ nn_input_width = 0
 nn_input_height = 0
 nn_input_channel = 0
 
-RESOURCES_DIRECTORY = "/usr/local/demo-ai/computer-vision/tflite-object-detection/python/resources/"
+LIBTPU_STD_PATH = "/usr/lib/libedgetpu-std.so.2"
+LIBTPU_MAX_PATH = "/usr/lib/libedgetpu-max.so.2"
+
+RESOURCES_DIRECTORY = os.path.abspath(os.path.dirname(__file__)) + "/resources/"
 
 class NeuralNetwork:
     """
     Class that handles Neural Network inference
     """
-    def __init__(self, model_file, label_file, input_mean, input_std):
+
+    def __init__(self, model_file, label_file, input_mean, input_std, edgetpu, perf, ext_delegate):
         """
         :param model_path: .tflite model to be executedname of file containing labels")
         :param label_file:  name of file containing labels
@@ -63,15 +64,17 @@ class NeuralNetwork:
 
         if args.num_threads == None :
             if os.cpu_count() <= 1:
-                number_threads = 1
+                self.number_threads = 1
             else :
                 # one core is always reserved for video display
                 if args.image == "":
-                    number_threads = os.cpu_count() - 1
+                    self.number_threads = os.cpu_count() - 1
                 else :
-                    number_threads = os.cpu_count()
+                    self.number_threads = os.cpu_count()
         else :
-           number_threads = int(args.num_threads)
+           self.number_threads = int(args.num_threads)
+
+        self._selected_delegate = None
 
         def load_labels(filename):
             my_labels = []
@@ -86,8 +89,52 @@ class NeuralNetwork:
         self._input_std = input_std
         self._floating_model = False
 
-        print("number of threads used in tflite interpreter : ",number_threads)
-        self._interpreter = tflr.Interpreter(self._model_file,num_threads=number_threads)
+        if edgetpu is True:
+            #Check if the Edge TPU is connected
+            edge_tpu = False
+            device_re = re.compile(".+?ID\s(?P<id>\w+)", re.I)
+            lsusb = subprocess.check_output("lsusb").decode("utf-8")
+            for i in lsusb.split('\n'):
+                if i:
+                    info = device_re.match(i)
+                    if info:
+                        d = info.groupdict()
+                        if '1a6e' in d.values() or '18d1' in d.values():
+                            edge_tpu = True
+
+            if not edge_tpu:
+                print("Edge TPU is not plugged!")
+                print("Please connect the Edge TPU and try again.")
+                os._exit(1)
+
+            if perf == 'std':
+                if path.exists(LIBTPU_STD_PATH):
+                    self._selected_delegate = LIBTPU_STD_PATH
+                else :
+                    print("No delegate ",LIBTPU_STD_PATH, "found fall back on CPU mode")
+            elif perf == 'max':
+                if path.exists(LIBTPU_MAX_PATH):
+                    self._selected_delegate = LIBTPU_MAX_PATH
+                else :
+                    print("No delegate ",LIBTPU_MAX_PATH, "found fall back on CPU mode")
+
+        elif ext_delegate is not None :
+            if path.exists(ext_delegate):
+                self._selected_delegate = ext_delegate
+            else :
+                print("No delegate ",ext_delegate, "found fall back on CPU mode")
+
+        if self._selected_delegate is not None:
+            print('Loading external delegate from {}'.format(self._selected_delegate))
+            print("number of threads used in tflite interpreter : ",self.number_threads)
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads,
+                                                 experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
+        else :
+            print("no delegate to use, CPU mode activated")
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads)
+
         self._interpreter.allocate_tensors()
         self._input_details = self._interpreter.get_input_details()
         self._output_details = self._interpreter.get_output_details()
@@ -101,15 +148,21 @@ class NeuralNetwork:
 
     def __getstate__(self):
         return (self._model_file, self._label_file, self._input_mean,
-                self._input_std, self._floating_model,
+                self._input_std, self._floating_model, self._selected_delegate, self.number_threads, \
                 self._input_details, self._output_details, self._labels)
 
     def __setstate__(self, state):
         self._model_file, self._label_file, self._input_mean, \
-                self._input_std, self._floating_model, \
+                self._input_std, self._floating_model, self._selected_delegate, self.number_threads, \
                 self._input_details, self._output_details, self._labels = state
 
-        self._interpreter = tflr.Interpreter(self._model_file,num_threads=args.num_threads)
+        if self._selected_delegate is not None:
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads,
+                                                 experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
+        else :
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads)
         self._interpreter.allocate_tensors()
 
     def get_labels(self):
@@ -166,7 +219,7 @@ class GstWidget(Gtk.Box):
 
             # creation of the source v4l2src
             self.v4lsrc1 = Gst.ElementFactory.make("v4l2src", "source")
-            video_device = "/dev/video" + args.video_device
+            video_device = "/dev/video" + str(args.video_device)
             self.v4lsrc1.set_property("device", video_device)
 
             #creation of the v4l2src caps
@@ -301,8 +354,8 @@ class GstWidget(Gtk.Box):
             start_time = timer()
             self.nn.launch_inference(arr)
             stop_time = timer()
-            self.window.nn_inference_time.value = stop_time - start_time
-            self.window.nn_inference_fps.value = (1000/(self.window.nn_inference_time.value*1000))
+            self.window.nn_inference_time = stop_time - start_time
+            self.window.nn_inference_fps = (1000/(self.window.nn_inference_time*1000))
             self.window.nn_result_locations[:, :, :], self.window.nn_result_classes[:, :], self.window.nn_result_scores[:, :] = self.nn.get_results()
             struc = Gst.Structure.new_empty("inference-done")
             msg = Gst.Message.new_application(None, struc)
@@ -325,7 +378,7 @@ class MainUIWindow(Gtk.Window):
         Gtk.Window.__init__(self)
 
         # initialize NeuralNetwork object
-        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
+        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.edgetpu, args.perf, args.ext_delegate)
         self.shape = self.nn.get_img_size()
         global nn_input_width
         global nn_input_height
@@ -335,24 +388,17 @@ class MainUIWindow(Gtk.Window):
         nn_input_channel = self.shape[2]
 
         #define shared variables
-        self.nn_inference_time = Value('f', 0)
-        self.nn_inference_fps = Value('f', 0.0)
-        self.nn_result_label = Value('i', 0)
+        self.nn_inference_time = 0.0
+        self.nn_inference_fps = 0.0
+        self.nn_result_label = 0
 
-        self.nn_result_locations_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection * 4)
-        self.nn_result_locations = np.ctypeslib.as_array(self.nn_result_locations_shared_array.get_obj())
-        self.nn_result_locations = self.nn_result_locations.reshape(1, args.maximum_detection, 4)
+        self.nn_result_locations = np.reshape(np.zeros((args.maximum_detection, 4)), (1, 10, 4))
+        self.nn_result_classes = np.reshape(np.zeros(args.maximum_detection), (1, 10))
+        self.nn_result_scores = np.reshape(np.zeros(args.maximum_detection), (1, 10))
 
-        self.nn_result_classes_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection)
-        self.nn_result_classes = np.ctypeslib.as_array(self.nn_result_classes_shared_array.get_obj())
-        self.nn_result_classes = self.nn_result_classes.reshape(1, args.maximum_detection)
-
-        self.nn_result_scores_shared_array = Array(ctypes.c_float, 1 * args.maximum_detection)
-        self.nn_result_scores = np.ctypeslib.as_array(self.nn_result_scores_shared_array.get_obj())
-        self.nn_result_scores = self.nn_result_scores.reshape(1, args.maximum_detection)
-
-        self.exit_app = False;
-        self.dcmipp_camera = False;
+        self.exit_app = False
+        self.dcmipp_camera = False
+        self.first_call = True
 
         # initialize the list of the file to be processed (used with the
         # --image parameter)
@@ -414,6 +460,7 @@ class MainUIWindow(Gtk.Window):
         """
         Setup the Gtk UI
         """
+        print("main_creation_ui")
         # remove the title bar
         self.set_decorated(False)
 
@@ -787,14 +834,14 @@ class MainUIWindow(Gtk.Window):
         """
         # write information on the GTK UI
         labels = self.nn.get_labels()
-        label = labels[self.nn_result_label.value]
-        inference_time = self.nn_inference_time.value * 1000
-        inference_fps = self.nn_inference_fps.value
+        label = labels[self.nn_result_label]
+        inference_time = self.nn_inference_time * 1000
+        inference_fps = self.nn_inference_fps
         display_fps = self.video_widget.instant_fps
 
-        if (args.validation) and (inference_time != 0):
+        if (args.validation) and (inference_time != 0) and (self.valid_draw_count > 5):
             self.valid_preview_fps.append(round(self.video_widget.instant_fps))
-            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+            self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
 
         self.update_label_preview(str(label), inference_time, display_fps, inference_fps)
         return True
@@ -837,14 +884,13 @@ class MainUIWindow(Gtk.Window):
             self.nn.launch_inference(nn_frame)
             stop_time = timer()
             self.still_picture_next = False;
-            self.nn_inference_time.value = stop_time - start_time
-            self.nn_inference_fps.value = (1000/(self.nn_inference_time.value*1000))
+            self.nn_inference_time = stop_time - start_time
+            self.nn_inference_fps = (1000/(self.nn_inference_time*1000))
             self.nn_result_locations[:, :, :], self.nn_result_classes[:, :], self.nn_result_scores[:, :] = self.nn.get_results()
             # write information on the GTK UI
-            inference_time = self.nn_inference_time.value * 1000
+            inference_time = self.nn_inference_time * 1000
             labels = self.nn.get_labels()
-            label = labels[self.nn_result_label.value]
-
+            label = labels[self.nn_result_label]
             if args.validation and inference_time != 0:
                 # reload the timeout
                 GLib.source_remove(self.valid_timeout_id)
@@ -874,31 +920,56 @@ class MainUIWindow(Gtk.Window):
                     self.destroy()
                     os._exit(1);
 
+                found = False
+                valid_count = 0
                 for i in range(0, count):
-                    label = self.get_label(i)
-                    x0 = self.get_object_location_x0(i)
-                    y0 = self.get_object_location_y0(i)
-                    x1 = self.get_object_location_x1(i)
-                    y1 = self.get_object_location_y1(i)
+                    for j in range(0,expected_count):
+                        label = self.get_label(i)
+                        if expected_label[j] == label:
+                            found = True
+                            if found :
+                                valid_count += 1
+                                found = False
+                                break
 
-                    print("\t{0:12} (x0 y0 x1 y1) {1:12}{2:12}{3:12}{4:12}  expected result: {5:12} (x0 y0 x1 y1) {6:12}{7:12}{8:12}{9:12}".format(label, x0, y0, x1, y1, expected_label[i], expected_x0[i], expected_y0[i], expected_x1[i], expected_y1[i]))
-                    if expected_label[i] != label:
+                if valid_count != expected_count:
                         print("Inference result not aligned with the expected validation result\n")
                         self.destroy()
                         os._exit(1);
+                else :
+                    valid_count = 0
 
-                    error_epsilon = 0.02
-                    if abs(x0 - float(expected_x0[i])) > error_epsilon or \
-                       abs(y0 - float(expected_y0[i])) > error_epsilon or \
-                       abs(x1 - float(expected_x1[i])) > error_epsilon or \
-                       abs(y1 - float(expected_y1[i])) > error_epsilon:
-                        print("Inference result not aligned with the expected validation result\n")
-                        self.destroy()
-                        os._exit(1);
+                for i in range(0, count):
+                    for j in range(0,expected_count):
+                            label = self.get_label(i)
+                            x0 = self.get_object_location_x0(i)
+                            y0 = self.get_object_location_y0(i)
+                            x1 = self.get_object_location_x1(i)
+                            y1 = self.get_object_location_y1(i)
+                            error_epsilon = 0.02
+                            if abs(x0 - float(expected_x0[j])) <= error_epsilon or \
+                               abs(y0 - float(expected_y0[j])) <= error_epsilon or \
+                               abs(x1 - float(expected_x1[j])) <= error_epsilon or \
+                               abs(y1 - float(expected_y1[j])) <= error_epsilon:
+                                   found = True
+                                   if found :
+                                       valid_count += 1
+                                       found = False
+                                       print("\t{0:12} (x0 y0 x1 y1) {1:12}{2:12}{3:12}{4:12}  expected result: {5:12} (x0 y0 x1 y1) {6:12}{7:12}{8:12}{9:12}".format(label, x0, y0, x1, y1, expected_label[j], expected_x0[j], expected_y0[j], expected_x1[j], expected_y1[j]))
+                                       break
+                if (valid_count != expected_count) :
+                   print("Inference result not aligned with the expected validation result\n")
+                   self.destroy()
+                   os._exit(1);
+                valid_count = 0
 
                 # store the inference time in a list so that we can compute the
                 # average later on
-                self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+                if self.first_call :
+                    #skip first inference time to avoid warmup time in EdgeTPU mode
+                    self.first_call = False
+                else :
+                    self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
 
                 # process all the file
                 if len(self.files) == 0:
@@ -956,6 +1027,9 @@ if __name__ == '__main__':
     parser.add_argument("--framerate", default=15, help="framerate of the camera (default is 15fps)")
     parser.add_argument("-m", "--model_file", default="", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="", help="name of file containing labels")
+    parser.add_argument("-e", "--ext_delegate",default = None, help="external_delegate_library path")
+    parser.add_argument("-p", "--perf", default='std', choices= ['std', 'max'], help="[EdgeTPU ONLY] Select the performance of the Coral EdgeTPU")
+    parser.add_argument("--edgetpu", action='store_true', help="enable Coral EdgeTPU acceleration")
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")

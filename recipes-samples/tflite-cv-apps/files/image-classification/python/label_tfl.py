@@ -27,10 +27,9 @@ import os
 import random
 import subprocess
 import re
+import os.path
+from os import path
 import cv2
-
-from multiprocessing import Value
-
 from PIL import Image
 import tflite_runtime.interpreter as tflr
 from timeit import default_timer as timer
@@ -42,13 +41,17 @@ nn_input_width = 0
 nn_input_height = 0
 nn_input_channel = 0
 
-RESOURCES_DIRECTORY = "/usr/local/demo-ai/computer-vision/tflite-image-classification/python/resources/"
+LIBTPU_STD_PATH = "/usr/lib/libedgetpu-std.so.2"
+LIBTPU_MAX_PATH = "/usr/lib/libedgetpu-max.so.2"
+
+RESOURCES_DIRECTORY = os.path.abspath(os.path.dirname(__file__)) + "/resources/"
 
 class NeuralNetwork:
     """
     Class that handles Neural Network inference
     """
-    def __init__(self, model_file, label_file, input_mean, input_std):
+
+    def __init__(self, model_file, label_file, input_mean, input_std, edgetpu, perf, ext_delegate):
         """
         :param model_path: .tflite model to be executedname of file containing labels")
         :param label_file:  name of file containing labels
@@ -58,15 +61,17 @@ class NeuralNetwork:
 
         if args.num_threads == None :
             if os.cpu_count() <= 1:
-                number_threads = 1
+                self.number_threads = 1
             else :
                 # one core is always reserved for video display
-                if args.image =="":
-                    number_threads = os.cpu_count() - 1
+                if args.image == "":
+                    self.number_threads = os.cpu_count() - 1
                 else :
-                    number_threads = os.cpu_count()
+                    self.number_threads = os.cpu_count()
         else :
-           number_threads = int(args.num_threads)
+           self.number_threads = int(args.num_threads)
+
+        self._selected_delegate = None
 
         def load_labels(filename):
             my_labels = []
@@ -81,8 +86,52 @@ class NeuralNetwork:
         self._input_std = input_std
         self._floating_model = False
 
-        print("number of threads used in tflite interpreter : ",number_threads)
-        self._interpreter = tflr.Interpreter(self._model_file,num_threads=number_threads)
+        if edgetpu is True:
+            #Check if the Edge TPU is connected
+            edge_tpu = False
+            device_re = re.compile(".+?ID\s(?P<id>\w+)", re.I)
+            lsusb = subprocess.check_output("lsusb").decode("utf-8")
+            for i in lsusb.split('\n'):
+                if i:
+                    info = device_re.match(i)
+                    if info:
+                        d = info.groupdict()
+                        if '1a6e' in d.values() or '18d1' in d.values():
+                            edge_tpu = True
+
+            if not edge_tpu:
+                print("Edge TPU is not plugged!")
+                print("Please connect the Edge TPU and try again.")
+                os._exit(1)
+
+            if perf == 'std':
+                if path.exists(LIBTPU_STD_PATH):
+                    self._selected_delegate = LIBTPU_STD_PATH
+                else :
+                    print("No delegate ",LIBTPU_STD_PATH, "found fall back on CPU mode")
+            elif perf == 'max':
+                if path.exists(LIBTPU_MAX_PATH):
+                    self._selected_delegate = LIBTPU_MAX_PATH
+                else :
+                    print("No delegate ",LIBTPU_MAX_PATH, "found fall back on CPU mode")
+
+        elif ext_delegate is not None :
+            if path.exists(ext_delegate):
+                self._selected_delegate = ext_delegate
+            else :
+                print("No delegate ",ext_delegate, "found fall back on CPU mode")
+
+        if self._selected_delegate is not None:
+            print('Loading external delegate from {}'.format(self._selected_delegate))
+            print("number of threads used in tflite interpreter : ",self.number_threads)
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads,
+                                                 experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
+        else :
+            print("no delegate to use, CPU mode activated")
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads)
+
         self._interpreter.allocate_tensors()
         self._input_details = self._interpreter.get_input_details()
         self._output_details = self._interpreter.get_output_details()
@@ -96,15 +145,21 @@ class NeuralNetwork:
 
     def __getstate__(self):
         return (self._model_file, self._label_file, self._input_mean,
-                self._input_std, self._floating_model,
+                self._input_std, self._floating_model, self._selected_delegate, self.number_threads, \
                 self._input_details, self._output_details, self._labels)
 
     def __setstate__(self, state):
         self._model_file, self._label_file, self._input_mean, \
-                self._input_std, self._floating_model, \
+                self._input_std, self._floating_model, self._selected_delegate, self.number_threads, \
                 self._input_details, self._output_details, self._labels = state
 
-        self._interpreter = tflr.Interpreter(self._model_file,num_threads=args.num_threads)
+        if self._selected_delegate is not None:
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads,
+                                                 experimental_delegates=[tflr.load_delegate(self._selected_delegate)])
+        else :
+            self._interpreter = tflr.Interpreter(model_path=self._model_file,
+                                                 num_threads = self.number_threads)
         self._interpreter.allocate_tensors()
 
     def get_labels(self):
@@ -303,9 +358,9 @@ class GstWidget(Gtk.Box):
             start_time = timer()
             self.nn.launch_inference(arr)
             stop_time = timer()
-            self.window.nn_inference_time.value = stop_time - start_time
-            self.window.nn_inference_fps.value = (1000/(self.window.nn_inference_time.value*1000))
-            self.window.nn_result_accuracy.value,self.window.nn_result_label.value = self.nn.get_results()
+            self.window.nn_inference_time = stop_time - start_time
+            self.window.nn_inference_fps = (1000/(self.window.nn_inference_time*1000))
+            self.window.nn_result_accuracy,self.window.nn_result_label = self.nn.get_results()
             struc = Gst.Structure.new_empty("inference-done")
             msg = Gst.Message.new_application(None, struc)
             self.bus.post(msg)
@@ -326,7 +381,7 @@ class MainUIWindow(Gtk.Window):
         Gtk.Window.__init__(self)
 
         # initialize NeuralNetwork object
-        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
+        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.edgetpu, args.perf, args.ext_delegate)
         self.shape = self.nn.get_img_size()
         global nn_input_width
         global nn_input_height
@@ -336,18 +391,20 @@ class MainUIWindow(Gtk.Window):
         nn_input_channel = self.shape[2]
 
         #define shared variables
-        self.nn_inference_time = Value('f', 0)
-        self.nn_inference_fps = Value('f', 0.0)
-        self.nn_result_accuracy = Value('f', 0.0)
-        self.nn_result_label = Value('i', 0)
+        self.nn_inference_time = 0.0
+        self.nn_inference_fps = 0.0
+        self.nn_result_accuracy = 0.0
+        self.nn_result_label = 0
 
-        self.exit_app = False;
-        self.dcmipp_camera = False;
+        self.exit_app = False
+        self.dcmipp_camera = False
+        self.first_call = True
 
         # initialize the list of the file to be processed (used with the
         # --image parameter)
         self.files = []
         self.label_to_display = ""
+
         # initialize the list of inference/display time to process the average
         # (used with the --validation parameter)
         self.valid_inference_time = []
@@ -652,15 +709,15 @@ class MainUIWindow(Gtk.Window):
         """
         # write information on the GTK UI
         labels = self.nn.get_labels()
-        label = labels[self.nn_result_label.value]
-        accuracy = self.nn_result_accuracy.value * 100
-        inference_time = self.nn_inference_time.value * 1000
-        inference_fps = self.nn_inference_fps.value
+        label = labels[self.nn_result_label]
+        accuracy = self.nn_result_accuracy * 100
+        inference_time = self.nn_inference_time * 1000
+        inference_fps = self.nn_inference_fps
         display_fps = self.video_widget.instant_fps
 
-        if (args.validation) and (inference_time != 0):
+        if (args.validation) and (inference_time != 0) and (self.valid_draw_count > 5):
             self.valid_preview_fps.append(round(self.video_widget.instant_fps))
-            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+            self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
 
         self.update_label_preview(str(label), accuracy, inference_time, display_fps, inference_fps)
         return True
@@ -752,15 +809,15 @@ class MainUIWindow(Gtk.Window):
             self.nn.launch_inference(nn_frame)
             stop_time = timer()
             self.still_picture_next = False;
-            self.nn_inference_time.value = stop_time - start_time
-            self.nn_inference_fps.value = (1000/(self.nn_inference_time.value*1000))
-            self.nn_result_accuracy.value, self.nn_result_label.value = self.nn.get_results()
+            self.nn_inference_time = stop_time - start_time
+            self.nn_inference_fps = (1000/(self.nn_inference_time*1000))
+            self.nn_result_accuracy, self.nn_result_label = self.nn.get_results()
 
             # write information onf the GTK UI
             labels = self.nn.get_labels()
-            label = labels[self.nn_result_label.value]
-            accuracy = self.nn_result_accuracy.value * 100
-            inference_time = self.nn_inference_time.value * 1000
+            label = labels[self.nn_result_label]
+            accuracy = self.nn_result_accuracy * 100
+            inference_time = self.nn_inference_time * 1000
 
             if args.validation and inference_time != 0:
                 # reload the timeout
@@ -775,7 +832,11 @@ class MainUIWindow(Gtk.Window):
                 file_name = file_name.rsplit('_')[0]
                 # store the inference time in a list so that we can compute the
                 # average later on
-                self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+                if self.first_call :
+                    #skip first inference time to avoid warmup time in EdgeTPU mode
+                    self.first_call = False
+                else :
+                    self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
                 print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
                 if file_name != str(label):
                     print("Inference result mismatch the file name")
@@ -838,6 +899,9 @@ if __name__ == '__main__':
     parser.add_argument("--framerate", default=15, help="framerate of the camera (default is 15fps)")
     parser.add_argument("-m", "--model_file", default="", help=".tflite model to be executed")
     parser.add_argument("-l", "--label_file", default="", help="name of file containing labels")
+    parser.add_argument("-e", "--ext_delegate",default = None, help="external_delegate_library path")
+    parser.add_argument("-p", "--perf", default='std', choices= ['std', 'max'], help="[EdgeTPU ONLY] Select the performance of the Coral EdgeTPU")
+    parser.add_argument("--edgetpu", action='store_true', help="enable Coral EdgeTPU acceleration")
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
