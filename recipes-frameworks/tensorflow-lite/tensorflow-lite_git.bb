@@ -56,9 +56,9 @@ do_compile() {
 		export HTTPS_PROXY=${https_proxy}
 	fi
 
-	export PYTHON_TARGET_INCLUDE=${RECIPE_SYSROOT}/usr/include/python3.8/
-	export NUMPY_TARGET_INCLUDE=${RECIPE_SYSROOT}/usr/lib/python3.8/site-packages/numpy/core/include
-	export PYBIND11_TARGET_INCLUDE=${RECIPE_SYSROOT}/usr/lib/python3.8/site-packages/pybind11/include
+	export PYTHON_TARGET_INCLUDE=${RECIPE_SYSROOT}${includedir}/${PYTHON_DIR}
+	export NUMPY_TARGET_INCLUDE=${RECIPE_SYSROOT}${PYTHON_SITEPACKAGES_DIR}/numpy/core/include
+	export PYBIND11_TARGET_INCLUDE=${RECIPE_SYSROOT}${PYTHON_SITEPACKAGES_DIR}/pybind11/include
 	export TENSORFLOW_TARGET=${TENSORFLOW_TARGET}
 	export TENSORFLOW_TARGET_ARCH=${TENSORFLOW_TARGET_ARCH}
 	export ARMCC_PREFIX=${CCACHE}${HOST_PREFIX}
