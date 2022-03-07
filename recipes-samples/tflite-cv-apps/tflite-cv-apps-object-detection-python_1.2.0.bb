@@ -5,7 +5,14 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec
 
 SRC_URI  = " file://object-detection/python;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_Python.png;subdir=${BPN}-${PV} "
-
+SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_next_inference_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_next_inference_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_next_inference_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/exit_25x25.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/exit_50x50.png;subdir=${BPN}-${PV} "
 S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
@@ -24,6 +31,7 @@ do_install() {
     # install python scripts and launcher scripts
     install -m 0755 ${S}/object-detection/python/*.py	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/python
     install -m 0755 ${S}/object-detection/python/*.sh	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/python
+    install -m 0755 ${S}/object-detection/python/*.css	${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection/python/resources
 }
 
 FILES:${PN} += "${prefix}/local/"

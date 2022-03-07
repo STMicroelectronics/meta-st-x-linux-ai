@@ -1,0 +1,29 @@
+label {
+    color: #FFFFFF;
+}
+
+window {
+    background-color: #000000;
+}
+
+widget {
+    background-color: transparent;
+}
+
+box#gui_main_stbox {
+    background-color: #000000;
+    color: #FFFFFF;
+}
+
+box#gui_main_video {
+    background-color: #000000;
+}
+
+box#gui_main_exit {
+    background-color: #000000;
+}
+
+box#gui_main {
+    background-color: #000000;
+}
+
