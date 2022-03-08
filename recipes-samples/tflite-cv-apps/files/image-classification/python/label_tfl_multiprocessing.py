@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 #
 # Author: Vincent Abriou <vincent.abriou@st.com> for STMicroelectronics.
+# modified by : Maxence Guilhin <maxence.guilhin@st.com> for STMicroelectronics.
 #
 # Copyright (c) 2020 STMicroelectronics. All rights reserved.
 #
@@ -12,87 +13,36 @@
 
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('Gst', '1.0')
 from gi.repository import Gtk
-from gi.repository import GObject
 from gi.repository import Gdk
 from gi.repository import GLib
 from gi.repository import GdkPixbuf
+from gi.repository import Gst
 
 import numpy as np
 import argparse
-import time
-import ctypes
 import signal
-import sys
 import os
 import random
-
-from threading import Thread
-from multiprocessing import set_start_method
-from multiprocessing import Process, Event, Array, Value
+import subprocess
+import re
 import cv2
+
+from multiprocessing import Value
 
 from PIL import Image
 import tflite_runtime.interpreter as tflr
-
 from timeit import default_timer as timer
 
-class VideoFrameCapture:
-    """
-    Class that handles video capture from device
-    """
-    def __init__(self, device=0, width=320, height=240, fps=15):
-        """
-        :param device: device index or video filename
-        :param width:  width of the requested frame
-        :param height: heigh of the requested frame
-        :param fps:    framerate of the camera
-        """
-        self._device = device
-        self._width = width
-        self._height = height
-        self._fps = fps
-        self._cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
-        assert self._cap.isOpened()
+Gst.init(None)
+Gst.init_check(None)
+image_arr = None
+nn_input_width = 0
+nn_input_height = 0
+nn_input_channel = 0
 
-    def __getstate__(self):
-        self._cap.release()
-        return (self._device, self._width, self._height, self._fps)
-
-    def __setstate__(self, state):
-        self._device, self._width, self._height, self._fps = state
-        self._cap = cv2.VideoCapture(self._device,cv2.CAP_V4L2)
-        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
-        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
-        self._cap.set(cv2.CAP_PROP_FPS, self._fps)
-        assert self._cap.grab(), "The child could not grab the video capture"
-
-    def get_frame(self):
-        """
-        :param delay: delay between frames capture(in seconds)
-        :return: frame
-        """
-        frame = None
-        correct_frame = False
-        fail_counter = -1
-        while not correct_frame:
-            # capture the frame
-            correct_frame, frame = self._cap.read()
-            fail_counter += 1
-            # raise exception if there's no output from the device
-            if fail_counter > 10:
-                raise Exception("Capture: exceeded number of tries to capture "
-                                "the frame.")
-        return frame
-
-    def get_frame_size(self):
-        """
-        :return: size of the captured image
-        """
-        return (int(self._height), int(self._width), 3)
-
-    def release(self):
-        self._cap.release()
+RESOURCES_DIRECTORY = "/usr/local/demo-ai/computer-vision/tflite-image-classification/python/resources/"
 
 class NeuralNetwork:
     """
@@ -105,6 +55,19 @@ class NeuralNetwork:
         :param input_mean: input_mean
         :param input_std: input standard deviation
         """
+
+        if args.num_threads == None :
+            if os.cpu_count() <= 1:
+                number_threads = 1
+            else :
+                # one core is always reserved for video display
+                if args.image =="":
+                    number_threads = os.cpu_count() - 1
+                else :
+                    number_threads = os.cpu_count()
+        else :
+           number_threads = int(args.num_threads)
+
         def load_labels(filename):
             my_labels = []
             input_file = open(filename, 'r')
@@ -118,8 +81,9 @@ class NeuralNetwork:
         self._input_std = input_std
         self._floating_model = False
 
-        self._interpreter = tflr.Interpreter(self._model_file)
-
+        print("number of threads used in tflite interpreter : ",number_threads)
+        self._interpreter = tflr.Interpreter(self._model_file,num_threads=number_threads)
+        self._interpreter.allocate_tensors()
         self._input_details = self._interpreter.get_input_details()
         self._output_details = self._interpreter.get_output_details()
 
@@ -140,7 +104,7 @@ class NeuralNetwork:
                 self._input_std, self._floating_model, \
                 self._input_details, self._output_details, self._labels = state
 
-        self._interpreter = tflr.Interpreter(self._model_file)
+        self._interpreter = tflr.Interpreter(self._model_file,num_threads=args.num_threads)
         self._interpreter.allocate_tensors()
 
     def get_labels(self):
@@ -170,210 +134,220 @@ class NeuralNetwork:
         self._interpreter.invoke()
 
     def get_results(self):
+         """
+         This method can print and return the top_k results of the inference
+         """
+         output_data = self._interpreter.get_tensor(self._output_details[0]['index'])
+         results = np.squeeze(output_data)
+
+         top_k = results.argsort()[-5:][::-1]
+
+         if self._floating_model:
+             return (results[top_k[0]], top_k[0])
+         else:
+             return (results[top_k[0]]/255.0, top_k[0])
+
+class GstWidget(Gtk.Box):
+    """
+    Class that handles Gstreamer pipeline using gtksink and appsink
+    """
+    def __init__(self, window, nn):
+         super().__init__()
+         # connect the gtkwidget with the realize callback
+         self.connect('realize', self._on_realize)
+         self.instant_fps = 0
+         self.window = window
+         self.nn = nn
+
+    def _on_realize(self, widget):
+            """
+            creation of the gstreamer pipeline when gstwidget is created
+            """
+            # gstreamer pipeline creation
+            self.pipeline = Gst.Pipeline()
+
+            # creation of the source v4l2src
+            self.v4lsrc1 = Gst.ElementFactory.make("v4l2src", "source")
+            video_device = "/dev/video" + args.video_device
+            self.v4lsrc1.set_property("device", video_device)
+
+            #creation of the v4l2src caps
+            if self.window.dcmipp_camera :
+                caps = "video/x-raw,format = RGB16, width=" + str(args.frame_width) +",height=" + str(args.frame_height) + ", framerate=" + str(args.framerate)+ "/1"
+            else:
+                caps = "video/x-raw, width=" + str(args.frame_width) +",height=" + str(args.frame_height) + ", framerate=" + str(args.framerate)+ "/1"
+            camera1caps = Gst.Caps.from_string(caps)
+            self.camerafilter1 = Gst.ElementFactory.make("capsfilter", "filter1")
+            self.camerafilter1.set_property("caps", camera1caps)
+
+            # creation of the videoconvert elements
+            self.videoformatconverter1 = Gst.ElementFactory.make("videoconvert", "video_convert1")
+            self.videoformatconverter2 = Gst.ElementFactory.make("videoconvert", "video_convert2")
+
+            self.tee = Gst.ElementFactory.make("tee", "tee")
+
+            # creation and configuration of the queue elements
+            self.queue1 = Gst.ElementFactory.make("queue", "queue-1")
+            self.queue2 = Gst.ElementFactory.make("queue", "queue-2")
+            self.queue1.set_property("max-size-buffers", 1)
+            self.queue1.set_property("leaky", 2)
+            self.queue2.set_property("max-size-buffers", 1)
+            self.queue2.set_property("leaky", 2)
+
+            # creation and configuration of the appsink element
+            self.appsink = Gst.ElementFactory.make("appsink", "appsink")
+            nn_caps = "video/x-raw, format = RGB, width=" + str(nn_input_width) + ",height=" + str(nn_input_height)
+            nncaps = Gst.Caps.from_string(nn_caps)
+            self.appsink.set_property("caps", nncaps)
+            self.appsink.set_property("emit-signals", True)
+            self.appsink.set_property("sync", False)
+            self.appsink.set_property("max-buffers", 1)
+            self.appsink.set_property("drop", True)
+            self.appsink.connect("new-sample", self.new_sample)
+
+            # creation of the gtksink element to handle the gestreamer video stream
+            self.gtksink = Gst.ElementFactory.make("gtksink")
+            self.pack_start(self.gtksink.props.widget, True, True, 0)
+            self.gtksink.props.widget.show()
+
+            # creation and configuration of the fpsdisplaysink element to measure display fps
+            self.fps_disp_sink = Gst.ElementFactory.make("fpsdisplaysink", "fpsmeasure1")
+            self.fps_disp_sink.set_property("signal-fps-measurements", True)
+            self.fps_disp_sink.set_property("fps-update-interval", 2000)
+            self.fps_disp_sink.set_property("text-overlay", False)
+            self.fps_disp_sink.set_property("video-sink", self.gtksink)
+            self.fps_disp_sink.connect("fps-measurements",self.get_fps_display)
+
+            # creation of the video rate and video scale elements
+            self.video_rate = Gst.ElementFactory.make("videorate", "video-rate")
+            self.video_scale = Gst.ElementFactory.make("videoscale", "video-scale")
+
+            # Add all elements to the pipeline
+            self.pipeline.add(self.v4lsrc1)
+            self.pipeline.add(self.camerafilter1)
+            self.pipeline.add(self.videoformatconverter1)
+            self.pipeline.add(self.videoformatconverter2)
+            self.pipeline.add(self.tee)
+            self.pipeline.add(self.queue1)
+            self.pipeline.add(self.queue2)
+            self.pipeline.add(self.appsink)
+            self.pipeline.add(self.fps_disp_sink)
+            self.pipeline.add(self.video_rate)
+            self.pipeline.add(self.video_scale)
+
+            # linking elements together
+            #                              -> queue 1 -> videoconvert -> fpsdisplaysink
+            # v4l2src -> video rate -> tee
+            #                              -> queue 2 -> videoconvert -> video scale -> appsink
+            self.v4lsrc1.link(self.video_rate)
+            self.video_rate.link(self.camerafilter1)
+            self.camerafilter1.link(self.tee)
+            self.queue1.link(self.videoformatconverter1)
+            self.videoformatconverter1.link(self.fps_disp_sink)
+            self.queue2.link(self.videoformatconverter2)
+            self.videoformatconverter2.link(self.video_scale)
+            self.video_scale.link(self.appsink)
+            self.tee.link(self.queue1)
+            self.tee.link(self.queue2)
+
+            # set pipeline playing mode
+            self.pipeline.set_state(Gst.State.PLAYING)
+            # getting pipeline bus
+            self.bus = self.pipeline.get_bus()
+            self.bus.add_signal_watch()
+            self.bus.connect('message::error', self.msg_error_cb)
+            self.bus.connect('message::eos', self.msg_eos_cb)
+            self.bus.connect('message::info', self.msg_info_cb)
+            self.bus.connect('message::application', self.msg_application_cb)
+
+            Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL,
+                                           "pipeline")
+
+    def msg_eos_cb(self, bus, message):
+        print('eos message -> {}'.format(message))
+
+    def msg_info_cb(self, bus, message):
+        print('info message -> {}'.format(message))
+
+    def msg_error_cb(self, bus, message):
+        print('error message -> {}'.format(message.parse_error()))
+
+    def msg_application_cb(self, bus, message):
+        if message.get_structure().get_name() == 'inference-done':
+            self.window.update_camera_preview()
+            self.window.queue_draw()
+
+    def gst_to_opencv(self,sample):
         """
-        This method can print and return the top_k results of the inference
+        convertion of the gstreamer frame buffer into numpy array
         """
-        output_data = self._interpreter.get_tensor(self._output_details[0]['index'])
-        results = np.squeeze(output_data)
+        buf = sample.get_buffer()
+        caps = sample.get_caps()
+        arr = np.ndarray(
+            (caps.get_structure(0).get_value('height'),
+             caps.get_structure(0).get_value('width'),
+             3),
+            buffer=buf.extract_dup(0, buf.get_size()),
+            dtype=np.uint8)
+        return arr
 
-        top_k = results.argsort()[-5:][::-1]
-        #for i in top_k:
-        #    if self._floating_model:
-        #        print('{0:08.6f}'.format(float(results[i]))+":", self._labels[i])
-        #    else:
-        #        print('{0:08.6f}'.format(float(results[i]/255.0))+":", self._labels[i])
-        #print("\n")
-
-        if self._floating_model:
-            return (results[top_k[0]], top_k[0])
-        else:
-            return (results[top_k[0]]/255.0, top_k[0])
-
-def camera_streaming(cap,
-                     preview_frame,
-                     synchro_event,
-                     grabbing_fps):
-    """
-    Function keeps capturing frames until process is killed (terminated)
-    :param preview_frame: shared numpy array for multiprocessing
-    :param synchro_event: used to synchronize parent and child process
-    :return: nothing
-    """
-
-    #variable to compute grabbing framerate
-    loop_count = 1
-    loop_time = 0
-    loop_start = 0
-    total_time = 0
-
-    shape = cap.get_frame_size()
-
-    # define shared variables
-    frame = np.ctypeslib.as_array(preview_frame.get_obj())
-    frame = frame.reshape(shape[0], shape[1], shape[2])
-
-    # incorrect input array
-    if frame.shape != cap.get_frame_size():
-        raise Exception("Capture: improper size of the input preview_frame")
-
-    # send the synchro event to warn the main process
-    print("camera_streaming process started")
-    synchro_event.set()
-
-    # capture frame in a infinite loop
-    while True:
-        #compute preview FPS
-        loop_stop = timer();
-        loop_time = loop_stop - loop_start
-        loop_start = loop_stop
-        total_time = total_time + loop_time
-        if loop_count==15:
-            grabbing_fps.value = loop_count / total_time
-            loop_count = 0
-            total_time = 0
-        loop_count = loop_count + 1
-
-        frame[:, :, :] = cap.get_frame()
-
-    # release the device
-    cap.release()
-    print("camera_streaming process stoped")
-
-def nn_processing(nn,
-                  nn_image,
-                  nn_processing_start,
-                  nn_processing_finished,
-                  inference_time,
-                  accuracy,
-                  label,
-                  synchro_event,
-                  inference_fps):
-    """
-    Function keeps capturing frames until process is killed (terminated)
-    :param nn_image: shared numpy array for multiprocessing
-    :param nn_processing_start: variable to warn that NN processing can start
-    :param nn_processing_finished: varialbe to warn NN processing is finished
-    :param synchro_event: used to synchronize parent and child process
-    :return: nothing
-    """
-
-    #variable to compute inference framerate
-    loop_count = 1
-    loop_time = 0
-    loop_start = 0
-    total_time = 0
-
-    shape = nn.get_img_size()
-
-    # send the synchro event to warn the main process
-    print("nn_processing process started")
-    synchro_event.set()
-
-    # enter the infinite while loop
-    while True:
-        if nn_processing_start.value == True:
-            nn_processing_start.value = False
-
-            #compute inference FPS
-            loop_stop = timer();
-            loop_time = loop_stop - loop_start
-            loop_start = loop_stop
-            total_time = total_time + loop_time
-            if loop_count==5:
-                inference_fps.value = loop_count / total_time
-                loop_count = 0
-                total_time = 0
-            loop_count = loop_count + 1
-
-            # define shared variables
-            nn_img = np.ctypeslib.as_array(nn_image.get_obj())
-            nn_img = nn_img.reshape(shape[0], shape[1], shape[2])
-
-            # transform the nn_img array into image for NN
-            img = Image.fromarray(nn_img)
-
+    def new_sample(self,*data):
+        """
+        recover video frame from appsink
+        and run inference
+        """
+        global image_arr
+        sample = self.appsink.emit("pull-sample")
+        arr = self.gst_to_opencv(sample)
+        if arr is not None :
             start_time = timer()
-
-            # execute NN inference
-            nn.launch_inference(img)
-
+            self.nn.launch_inference(arr)
             stop_time = timer()
-            inference_time.value = stop_time - start_time
-            #print("\nProcessing time = %.3f s" % inference_time.value)
+            self.window.nn_inference_time.value = stop_time - start_time
+            self.window.nn_inference_fps.value = (1000/(self.window.nn_inference_time.value*1000))
+            self.window.nn_result_accuracy.value,self.window.nn_result_label.value = self.nn.get_results()
+            struc = Gst.Structure.new_empty("inference-done")
+            msg = Gst.Message.new_application(None, struc)
+            self.bus.post(msg)
+        return Gst.FlowReturn.OK
 
-            # display NN inference results
-            accuracy.value, label.value = nn.get_results()
-
-            nn_processing_finished.value = True
-
-    print("nn_processing process stoped")
-
+    def get_fps_display(self,fpsdisplaysink,fps,droprate,avgfps):
+        """
+        measure and recover display fps
+        """
+        self.instant_fps = fps
+        return self.instant_fps
 
 class MainUIWindow(Gtk.Window):
     def __init__(self, args):
+        """
+        Setup the Gtk UI
+        """
         Gtk.Window.__init__(self)
 
-        # set the title bar
-        self.headerbar = Gtk.HeaderBar()
-        Gtk.HeaderBar.set_has_subtitle(self.headerbar, True)
-        Gtk.HeaderBar.set_title(self.headerbar, "TensorFlow Lite")
-        Gtk.HeaderBar.set_show_close_button(self.headerbar, False)
-        self.set_titlebar(self.headerbar)
+        # initialize NeuralNetwork object
+        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
+        self.shape = self.nn.get_img_size()
+        global nn_input_width
+        global nn_input_height
+        global nn_input_channel
+        nn_input_width = self.shape[1]
+        nn_input_height = self.shape[0]
+        nn_input_channel = self.shape[2]
 
-        # add close button
-        self.close_button = Gtk.Button.new_with_label("Close")
-        self.close_button.connect("clicked", self.close)
-        self.headerbar.pack_end(self.close_button)
+        #define shared variables
+        self.nn_inference_time = Value('f', 0)
+        self.nn_inference_fps = Value('f', 0.0)
+        self.nn_result_accuracy = Value('f', 0.0)
+        self.nn_result_label = Value('i', 0)
 
-        if args.image == "":
-            self.enable_camera_preview = True
-        else:
-            self.enable_camera_preview = False
-
-        GdkDisplay = Gdk.Display.get_default()
-        monitor = Gdk.Display.get_monitor(GdkDisplay, 0)
-        workarea = Gdk.Monitor.get_workarea(monitor)
-
-        self.maximize()
-        self.screen_width = workarea.width
-        self.screen_height = workarea.height
-
-        if self.screen_width == 720:
-            self.picture_width = 480
-            self.picture_height = 360
-        else:
-            self.picture_width = 320
-            self.picture_height = 240
-
-        self.set_position(Gtk.WindowPosition.CENTER)
-        self.connect('destroy', Gtk.main_quit)
-
-        self.vbox = Gtk.VBox()
-        self.add(self.vbox)
-
-        self.progressbar = Gtk.ProgressBar()
-        self.vbox.pack_start(self.progressbar, False, False, 15)
-
-        self.hbox = Gtk.HBox()
-        self.vbox.pack_start(self.hbox, False, False, 15)
-
-        self.image = Gtk.Image()
-        self.hbox.pack_start(self.image, False, False, 15)
-
-        self.label = Gtk.Label()
-        self.label.set_size_request(400, -1) # -1 to keep height automatic
-        self.label.set_xalign(0)
-        self.label.set_yalign(0)
-        self.label.set_line_wrap(True)
-        self.label.set_line_wrap_mode(Gtk.WrapMode.WORD)
-        self.hbox.pack_start(self.label, False, False, 15)
-
-        self.timeout_id = GLib.timeout_add(50, self.on_timeout)
+        self.exit_app = False;
+        self.dcmipp_camera = False;
 
         # initialize the list of the file to be processed (used with the
         # --image parameter)
         self.files = []
-
+        self.label_to_display = ""
         # initialize the list of inference/display time to process the average
         # (used with the --validation parameter)
         self.valid_inference_time = []
@@ -381,65 +355,331 @@ class MainUIWindow(Gtk.Window):
         self.valid_preview_fps = []
         self.valid_draw_count = 0
 
-    def close(self, button):
-        self.destroy()
+        #if args.image is empty -> camera preview mode else still picture
+        if args.image == "":
+            self.enable_camera_preview = True
+            self.check_video_device()
+        else:
+            self.enable_camera_preview = False
+            self.still_picture_next = False
 
-    def on_timeout(self):
-        self.progressbar.pulse()
+        #waiting for the ui cration before launching the main function
+        ui_launched = self.main_ui_creation()
+        if ui_launched :
+            self.main(args)
+
+    def setup_dcmipp(self):
+        config_cam = "media-ctl -d /dev/media0 --set-v4l2 \"\'ov5640 1-003c\':0[fmt:RGB565_2X8_LE/" + str(args.frame_width)  + "x" + str(args.frame_height) + "@1/" + str(args.framerate) + " field:none]\""
+        os.system(config_cam)
+
+        config_dcmipp_parallel = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_parallel\':0[fmt:RGB565_2X8_LE/" + str(args.frame_width) + "x" + str(args.frame_height) + "]\""
+        os.system(config_dcmipp_parallel)
+
+        config_dcmipp_dump_postproc0 = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':0[fmt:RGB565_2X8_LE/" + str(args.frame_width) + "x" + str(args.frame_height) +"]\"";
+        os.system(config_dcmipp_dump_postproc0)
+
+        config_dcmipp_dump_postproc1 = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[fmt:RGB565_2X8_LE/" + str(args.frame_width) + "x" + str(args.frame_height) +"]\"";
+        os.system(config_dcmipp_dump_postproc1)
+
+        config_dcmipp_dump_postproc_crop = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[crop:(0,0)/" + str(args.frame_width) + "x" + str(args.frame_height) + "]\"";
+        os.system(config_dcmipp_dump_postproc_crop)
+        self.dcmipp_camera = True
+        print("dcmipp congiguration passed ")
+
+    def check_video_device (self):
+        #Check the camera type to configure it if necessary
+        cmd = "cat /sys/class/video4linux/video" + str(args.video_device) + "/name"
+        camera_type = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
+        dcmipp = 'dcmipp_dump_capture'
+        found = re.search(dcmipp,str(camera_type))
+        if found :
+            #dcmipp camera found
+            self.setup_dcmipp();
+            return True
+        else :
+            return False
+
+    def main_ui_creation(self):
+        """
+        Setup the Gtk UI
+        """
+        print("main_creation_ui")
+        # remove the title bar
+        self.set_decorated(False)
+
+        self.first_drawing_call = True
+        GdkDisplay = Gdk.Display.get_default()
+        monitor = Gdk.Display.get_monitor(GdkDisplay, 0)
+        workarea = Gdk.Monitor.get_workarea(monitor)
+
+        GdkScreen = Gdk.Screen.get_default()
+        provider = Gtk.CssProvider()
+        css_path = RESOURCES_DIRECTORY + "py_widgets.css"
+        provider.load_from_path(css_path)
+        Gtk.StyleContext.add_provider_for_screen(GdkScreen, provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+
+        self.maximize()
+        self.screen_width = workarea.width
+        self.screen_height = workarea.height
+
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.connect('destroy', Gtk.main_quit)
+        self.set_ui_param()
+
+        # setup info_box containing inference results and ST_logo which is a
+        # "next inference" button in still picture mode
+        if self.enable_camera_preview == True:
+            # camera preview mode
+            self.info_box = Gtk.VBox()
+            self.info_box.set_css_name("gui_main_stbox")
+            self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
+            self.st_icon = Gtk.Image.new_from_file(self.st_icon_path)
+            self.st_icon_event = Gtk.EventBox()
+            self.st_icon_event.add(self.st_icon)
+            self.info_box.pack_start(self.st_icon_event,True,False,0)
+            self.label_disp = Gtk.Label()
+            self.label_disp.set_justify(Gtk.Justification.LEFT)
+            self.label_disp.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>disp.fps:\n</b></span>" % self.ui_cairo_font_size)
+            self.info_box.pack_start(self.label_disp,True,False,0)
+            self.disp_fps = Gtk.Label()
+            self.disp_fps.set_justify(Gtk.Justification.FILL)
+            self.info_box.pack_start(self.disp_fps,True,False,0)
+            self.label_inf_fps = Gtk.Label()
+            self.label_inf_fps.set_justify(Gtk.Justification.LEFT)
+            self.label_inf_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.fps:\n</b></span>" % self.ui_cairo_font_size)
+            self.info_box.pack_start(self.label_inf_fps,True,False,0)
+            self.inf_fps = Gtk.Label()
+            self.inf_fps.set_justify(Gtk.Justification.FILL)
+            self.info_box.pack_start(self.inf_fps,True,False,0)
+            self.label_inftime = Gtk.Label()
+            self.label_inftime.set_justify(Gtk.Justification.LEFT)
+            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:\n</b></span>" % self.ui_cairo_font_size)
+            self.info_box.pack_start(self.label_inftime,True,False,0)
+            self.inf_time = Gtk.Label()
+            self.inf_time.set_justify(Gtk.Justification.FILL)
+            self.info_box.pack_start(self.inf_time,True,False,0)
+        else :
+            # still picture mode
+            self.info_box = Gtk.VBox()
+            self.info_box.set_css_name("gui_main_stbox")
+            self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_next_inference_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
+            self.st_icon = Gtk.Image.new_from_file(self.st_icon_path)
+            self.st_icon_event = Gtk.EventBox()
+            self.st_icon_event.add(self.st_icon)
+            self.st_icon_event.connect("button_press_event",self.still_picture)
+            self.info_box.pack_start(self.st_icon_event,True,False,2)
+            self.label_inftime = Gtk.Label()
+            self.label_inftime.set_justify(Gtk.Justification.LEFT)
+            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:\n</b></span>" % self.ui_cairo_font_size)
+            self.info_box.pack_start(self.label_inftime,True,False,2)
+            self.inf_time = Gtk.Label()
+            self.inf_time.set_justify(Gtk.Justification.FILL)
+            self.info_box.pack_start(self.inf_time,True,False,2)
+            self.label_acc = Gtk.Label()
+            self.label_acc.set_justify(Gtk.Justification.LEFT)
+            self.label_acc.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>accuracy:\n</b></span>" % self.ui_cairo_font_size)
+            self.info_box.pack_start(self.label_acc,True,False,2)
+            self.acc = Gtk.Label()
+            self.acc.set_justify(Gtk.Justification.FILL)
+            self.info_box.pack_start(self.acc,True,False,2)
+
+        # setup video box containing gst stream in camera previex mode
+        # and a openCV picture in still picture mode
+        # An overlay is used to keep a gtk drawing area on top of the video stream
+        self.video_box = Gtk.HBox()
+        self.video_box.set_css_name("gui_main_video")
+        self.drawing_area = Gtk.DrawingArea()
+        self.drawing_area.connect("draw",self.drawing)
+        self.overlay = Gtk.Overlay()
+        if self.enable_camera_preview == True:
+            # camera preview => gst stream
+            self.video_widget = GstWidget(self,self.nn)
+            self.overlay.add_overlay(self.video_widget)
+        else :
+            # still picture => openCV picture
+            self.image = Gtk.Image()
+            self.overlay.add_overlay(self.image)
+        self.overlay.add_overlay(self.drawing_area)
+        self.video_box.pack_start(self.overlay, True, True, 0)
+
+        # setup the exit box which contains the exit button
+        self.exit_box = Gtk.VBox()
+        self.exit_box.set_css_name("gui_main_exit")
+        self.exit_icon_path = RESOURCES_DIRECTORY + 'exit_' + self.ui_icon_exit_width + 'x' + self.ui_icon_exit_height + '.png'
+        self.exit_icon = Gtk.Image.new_from_file(self.exit_icon_path)
+        self.exit_icon_event = Gtk.EventBox()
+        self.exit_icon_event.add(self.exit_icon)
+        self.exit_icon_event.connect("button_press_event",self.exit_icon_cb)
+        self.exit_box.pack_start(self.exit_icon_event,False,False,2)
+
+        # setup main box which group the three previous boxes
+        self.main_box =  Gtk.HBox()
+        self.exit_box.set_css_name("gui_main")
+        self.main_box.pack_start(self.info_box,False,False,0)
+        self.main_box.pack_start(self.video_box,True,True,0)
+        self.main_box.pack_start(self.exit_box,False,False,0)
+        self.add(self.main_box)
         return True
 
-    # Updating the labels and the inference infos displayed on the GUI interface - camera input
-    def update_label_preview(self, label, accuracy, inference_time, display_fps, grab_fps, inference_fps):
+    def exit_icon_cb(self,eventbox, event):
+        """
+        Exit callback to close application
+        """
+        self.destroy()
+        Gtk.main_quit()
+
+    def drawing(self, widget, cr):
+        """
+        Drawing callback used to draw with cairo on
+        the drawing are
+        """
+        if self.first_drawing_call :
+            self.first_drawing_call = False
+            self.drawing_width = widget.get_allocated_width()
+            self.drawing_height = widget.get_allocated_height()
+            cr.set_font_size(self.ui_cairo_font_size_label)
+            self.label_printed = True
+            if self.enable_camera_preview == False :
+                self.still_picture_next = True
+                if args.validation:
+                    GLib.idle_add(self.process_picture)
+                else:
+                    self.process_picture()
+            return False
+        if (self.label_to_display == ""):
+            # waiting screen
+            text = "Load nn_model"
+            cr.set_font_size(self.ui_cairo_font_size_label)
+            xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(text)
+            cr.move_to((self.drawing_width/2-width/2),(self.drawing_height/2))
+            cr.text_path(text)
+            cr.set_source_rgb(0.235, 0.71, 0.90)
+            cr.fill_preserve()
+            cr.set_source_rgb(0.012, 0.137, 0.294)
+            cr.set_line_width(1)
+            cr.stroke()
+            return True
+        else :
+            cr.set_font_size(self.ui_cairo_font_size_label)
+            self.label_printed = True
+            if args.validation:
+                self.still_picture_next = True
+            # running screen
+            xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(self.label_to_display)
+            cr.move_to((self.drawing_width/2-width/2),((9/10)*self.drawing_height))
+            cr.text_path(self.label_to_display)
+            cr.set_source_rgb(1, 1, 1)
+            cr.fill_preserve()
+            cr.set_source_rgb(0, 0, 0)
+            cr.set_line_width(0.7)
+            cr.stroke()
+            return True
+
+    def set_ui_param(self):
+        """
+        Setup all the UI parameter depending
+        on the screen size
+        """
+        self.ui_cairo_font_size_label = 50;
+        self.ui_cairo_font_size = 20;
+        self.ui_icon_exit_width = '50';
+        self.ui_icon_exit_height = '50';
+        self.ui_icon_st_width = '130';
+        self.ui_icon_st_height = '160';
+        if self.screen_height <= 272:
+               # Display 480x272 */
+               self.ui_cairo_font_size_label = 25;
+               self.ui_cairo_font_size = 8;
+               self.ui_icon_exit_width = '25';
+               self.ui_icon_exit_height = '25';
+               self.ui_icon_st_width = '42';
+               self.ui_icon_st_height = '52';
+        elif self.screen_height <= 480:
+               #Display 800x480 */
+               self.ui_cairo_font_size_label = 30;
+               self.ui_cairo_font_size = 13;
+               self.ui_icon_exit_width = '50';
+               self.ui_icon_exit_height = '50';
+               self.ui_icon_st_width = '65';
+               self.ui_icon_st_height = '80';
+
+    def valid_timeout_callback(self):
+        """
+        if timeout occurs that means that camera preview and the gtk is not
+        behaving as expected */
+        """
+        print("Timeout: camera preview and/or gtk is not behaving has expected\n");
+        self.destroy()
+        os._exit(1)
+
+    def update_label_preview(self, label, accuracy, inference_time, display_fps, inference_fps):
+        """
+        Updating the labels and the inference infos displayed on the GUI interface - camera input
+        """
         str_accuracy = str("{0:.0f}".format(accuracy))
         str_inference_time = str("{0:0.1f}".format(inference_time))
         str_display_fps = str("{0:.1f}".format(display_fps))
-        str_grab_fps = str("{0:.1f}".format(grab_fps))
         str_inference_fps = str("{0:.1f}".format(inference_fps))
 
-        self.progressbar.show()
-        self.progressbar.set_show_text(True)
-        self.progressbar.set_fraction(accuracy / 100)
-
-        self.label.set_markup("<span font='10' color='#002052FF'><b>display   @%sfps\n</b></span>"
-                              "<span font='10' color='#002052FF'><b>inference @%sfps\n\n\n</b></span>"
-                              "<span font='15' color='#002052FF'><b>inference time: %sms\n</b></span>"
-                              "<span font='15' color='#002052FF'><b>accuracy:       %s&#37;\n\n</b></span>"
-                              "<span font='15' color='#002052FF'><b>%s</b></span>"
-                              % (str_grab_fps, str_inference_fps, str_inference_time, str_accuracy, label))
+        self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.ui_cairo_font_size,str_inference_time))
+        self.inf_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.ui_cairo_font_size,str_inference_fps))
+        self.disp_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.ui_cairo_font_size,str_display_fps))
+        self.label_to_display = label + " " + str_accuracy +"%"
 
         if args.validation:
             # reload the timeout
             GLib.source_remove(self.valid_timeout_id)
-            self.valid_timeout_id = GLib.timeout_add(5000,
+            self.valid_timeout_id = GLib.timeout_add(10000,
                                                      self.valid_timeout_callback)
 
             self.valid_draw_count = self.valid_draw_count + 1
-            # stop the application after 100 draws
-            if self.valid_draw_count > 100:
+            # stop the application after 200 draws
+            if self.valid_draw_count > 200:
                 avg_prev_fps = sum(self.valid_preview_fps) / len(self.valid_preview_fps)
-                avg_inf_fps = sum(self.valid_inference_fps) / len(self.valid_inference_fps)
                 avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+                avg_inf_fps = (1000/avg_inf_time)
                 print("avg display fps= " + str(avg_prev_fps))
                 print("avg inference fps= " + str(avg_inf_fps))
                 print("avg inference time= " + str(avg_inf_time) + " ms")
                 GLib.source_remove(self.valid_timeout_id)
                 self.destroy()
-                os._exit(0)
+                Gtk.main_quit()
+
+    def update_camera_preview(self):
+        """
+        if the last inference is done grab a new frame from appsink
+        and update the inference results
+        """
+        # write information on the GTK UI
+        labels = self.nn.get_labels()
+        label = labels[self.nn_result_label.value]
+        accuracy = self.nn_result_accuracy.value * 100
+        inference_time = self.nn_inference_time.value * 1000
+        inference_fps = self.nn_inference_fps.value
+        display_fps = self.video_widget.instant_fps
+
+        if (args.validation) and (inference_time != 0):
+            self.valid_preview_fps.append(round(self.video_widget.instant_fps))
+            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+
+        self.update_label_preview(str(label), accuracy, inference_time, display_fps, inference_fps)
+        return True
 
     def update_label_still(self, label, accuracy, inference_time):
+        """
+        update inference results in still picture mode
+        """
         str_accuracy = str("{0:.2f}".format(accuracy))
         str_inference_time = str("{0:0.1f}".format(inference_time))
 
-        self.progressbar.show()
-        self.progressbar.set_show_text(True)
-        self.progressbar.set_fraction(accuracy / 100)
-
-        self.label.set_markup("<span font='15' color='#002052FF'><b>inference time: %sms\n</b></span>"
-                              "<span font='15' color='#002052FF'><b>accuracy:       %s&#37;\n\n</b></span>"
-                              "<span font='15' color='#002052FF'><b>%s</b></span>"
-                              % (str_inference_time, str_accuracy, label))
+        self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.ui_cairo_font_size,str_inference_time))
+        self.acc.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s&#37;\n\n</b></span>" % (self.ui_cairo_font_size,str_accuracy))
+        self.label_to_display = label
 
     def update_frame(self, frame):
+        """
+        update frame in still picture mode
+        """
         img = Image.fromarray(frame)
         data = img.tobytes()
         data = GLib.Bytes.new(data)
@@ -451,15 +691,6 @@ class MainUIWindow(Gtk.Window):
                                                  frame.shape[0],
                                                  frame.shape[2] * frame.shape[1])
         self.image.set_from_pixbuf(pixbuf.copy())
-
-    # termination function
-    def terminate(self):
-        print("Main: termination")
-        if self.enable_camera_preview:
-            if self.camera_not_started:
-                return
-            self.preview_process.terminate()
-        self.nn_process.terminate()
 
     # get random file in a directory
     def getRandomFile(self, path):
@@ -477,168 +708,104 @@ class MainUIWindow(Gtk.Window):
         self.files.pop(index)
         return file_path
 
-    # GTK camera preview function
-    def camera_preview(self):
-        # crop the preview frame to fit the NN input size
-        frame_crop = self.frame[self.y1:self.y2, self.x1:self.x2]
-        frame_crop_RGB = cv2.cvtColor(frame_crop,cv2.COLOR_BGR2RGB)
-        frame_crop_RGB_resize = cv2.resize(frame_crop_RGB, (self.nn_img.shape[1], self.nn_img.shape[0]))
-
-        if self.nn_processing_finished.value == True:
-            self.nn_processing_finished.value = False
-            # grab a new frame
-            self.nn_img[:, :, :] = frame_crop_RGB_resize
-            # display the cropped image that will feed the NN
-            #cv2.imshow("nn_img", self.nn_img)
-            # request NN processing
-            self.nn_processing_start.value = True
-
-        # compute preview FPS
-        loop_stop = timer();
-        self.loop_time = loop_stop - self.loop_start
-        self.loop_start = loop_stop
-        self.total_time = self.total_time + self.loop_time
-        if self.loop_count==15:
-            self.preview_fps = self.loop_count / self.total_time
-            self.loop_count = 0
-            self.total_time = 0
-        self.loop_count = self.loop_count + 1
-
-        # write information onf the GTK UI
-        labels = self.nn.get_labels()
-        label = labels[self.nn_result_label.value]
-        accuracy = self.nn_result_accuracy.value * 100
-        inference_time = self.nn_inference_time.value * 1000
-        inference_fps = self.nn_inference_fps.value
-        display_fps = self.preview_fps
-        grab_fps = self.grabbing_fps.value
-
-        if args.validation:
-            self.valid_preview_fps.append(round(self.preview_fps))
-            self.valid_inference_fps.append(round(self.nn_inference_fps.value))
-            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
-
-        self.update_label_preview(str(label), accuracy, inference_time, display_fps, grab_fps, inference_fps)
-
-        # update the preview frame
-        self.update_frame(frame_crop_RGB)
-
-        return True
-
-    # GTK still picture function
-    def still_picture(self, button):
+    def still_picture(self,  widget, event):
+        """
+        ST icon cb which trigger a new inference
+        """
+        self.still_picture_next = True
         return self.process_picture()
 
     def process_picture(self):
-        self.nn_processing_finished.value = False
-        # get randomly a picture in the directory
-        rfile = self.getRandomFile(args.image)
-        #print("Picture ", args.image + "/" + rfile)
-        img = Image.open(args.image + "/" + rfile)
-
-        # display the picture in the screen
-        prev_frame = cv2.resize(np.array(img), (self.picture_width, self.picture_height))
-
-        # update the preview frame
-        self.update_frame(prev_frame)
-
-        # execute the inference
-        nn_frame = cv2.resize(prev_frame, (self.nn_img.shape[1],  self.nn_img.shape[0]))
-        self.nn_img[:, :, :] = nn_frame
-        self.nn_processing_start.value = True
-        while not self.nn_processing_finished.value:
-            pass
-
-        # write information onf the GTK UI
-        labels = self.nn.get_labels()
-        label = labels[self.nn_result_label.value]
-        accuracy = self.nn_result_accuracy.value * 100
-        inference_time = self.nn_inference_time.value * 1000
-
-        self.update_label_still(str(label), accuracy, inference_time)
-
-        if args.validation:
-            # get file name
-            file_name = os.path.basename(rfile)
-            # remove the extension
-            file_name = os.path.splitext(file_name)[0]
-            # remove eventual '_'
-            file_name = file_name.rsplit('_')[0]
-            # store the inference time in a list so that we can compute the
-            # average later on
-            self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
-            print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
-            if file_name != str(label):
-                print("Inference result mismatch the file name")
-                self.destroy()
-                os._exit(1);
-
-        return True
-
-    def validation_picture(self):
-        # reload the timeout
-        GLib.source_remove(self.valid_timeout_id)
-        self.valid_timeout_id = GLib.timeout_add(5000,
-                                                 self.valid_timeout_callback)
-
-        # validation mode activated
-        self.process_picture()
-
-        # process all the file
-        if len(self.files) == 0:
-            avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
-            print("avg inference time= " + str(avg_inf_time) + " ms")
-            GLib.source_remove(self.valid_timeout_id)
+        """
+        Still picture inference function
+        Load the frame, launch inference and
+        call functions to refresh UI
+        """
+        if self.exit_app:
             self.destroy()
-            os._exit(0)
+            return False
 
-        return True
+        if self.still_picture_next and self.label_printed:
+            # get randomly a picture in the directory
+            rfile = self.getRandomFile(args.image)
+            img = Image.open(args.image + rfile)
+            picture_width, picture_height = img.size
 
-    def valid_timeout_callback(self):
-        # if timeout occurs that means that camera preview and the gtk is not
-        # behaving as expected */
-        print("Timeout: camera preview and/or gtk is not behaving has expected\n");
-        self.destroy()
-        os._exit(1)
+            # display the picture in the screen
+            frame_ratio = picture_width/picture_height
+            frame_height = self.screen_height - 32
+            frame_width = int(frame_ratio * frame_height)
+
+            # trying to keep aspect ratio of the image if possible but
+            # if not fill the drawing space as possible
+            if (frame_width > self.drawing_width):
+                frame_width = self.drawing_width
+            prev_frame = cv2.resize(np.array(img), (frame_width, frame_height))
+
+            # update the preview frame
+            self.update_frame(prev_frame)
+            self.label_printed = False
+
+            # execute the inference
+            nn_frame = cv2.resize(np.array(img), (nn_input_width, nn_input_height))
+            start_time = timer()
+            self.nn.launch_inference(nn_frame)
+            stop_time = timer()
+            self.still_picture_next = False;
+            self.nn_inference_time.value = stop_time - start_time
+            self.nn_inference_fps.value = (1000/(self.nn_inference_time.value*1000))
+            self.nn_result_accuracy.value, self.nn_result_label.value = self.nn.get_results()
+
+            # write information onf the GTK UI
+            labels = self.nn.get_labels()
+            label = labels[self.nn_result_label.value]
+            accuracy = self.nn_result_accuracy.value * 100
+            inference_time = self.nn_inference_time.value * 1000
+
+            if args.validation and inference_time != 0:
+                # reload the timeout
+                GLib.source_remove(self.valid_timeout_id)
+                self.valid_timeout_id = GLib.timeout_add(10000,
+                                                         self.valid_timeout_callback)
+                # get file name
+                file_name = os.path.basename(rfile)
+                # remove the extension
+                file_name = os.path.splitext(file_name)[0]
+                # remove eventual '_'
+                file_name = file_name.rsplit('_')[0]
+                # store the inference time in a list so that we can compute the
+                # average later on
+                self.valid_inference_time.append(round(self.nn_inference_time.value * 1000, 4))
+                print("name extract from the picture file: {0:32} label {1}".format(file_name, str(label)))
+                if file_name != str(label):
+                    print("Inference result mismatch the file name")
+                    self.destroy()
+                    os._exit(1);
+                # process all the file
+                if len(self.files) == 0:
+                    avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+                    avg_inf_time = round(avg_inf_time,4)
+                    print("avg inference time= " + str(avg_inf_time) + " ms")
+                    self.exit_app = True
+            #update label
+            self.update_label_still(str(label), accuracy, inference_time)
+            return True
+        else :
+            return False
 
     def main(self, args):
+        """
+        main function which setup shared variables
+        launch nn process
+        and iddle funcitons
+        """
         # start a timeout timer in validation process to close application if
         # timeout occurs
         if args.validation:
             self.valid_timeout_id = GLib.timeout_add(35000,
                                                      self.valid_timeout_callback)
 
-        if self.enable_camera_preview:
-            #variable to compute preview framerate
-            self.loop_count = 1
-            self.loop_time = 0
-            self.loop_start = 0
-            self.total_time = 0
-            self.preview_fps = 0
-
-            self.camera_not_started = True
-            # initialize VideoFrameCapture object
-            cap = VideoFrameCapture(int(args.video_device), float(args.frame_width), float(args.frame_height), float(args.framerate))
-            shape = cap.get_frame_size()
-            self.camera_not_started = False
-
-            # define shared variables
-            self.shared_array_base = Array(ctypes.c_uint8, shape[0] * shape[1] * shape[2])
-            self.frame = np.ctypeslib.as_array(self.shared_array_base.get_obj())
-            self.frame = self.frame.reshape(shape[0], shape[1], shape[2])
-            self.grabbing_fps = Value('f', 0.0)
-
-            # start processes which run in parallel
-            self.preview_synchro_event = Event()
-            self.preview_process = Process(name='camera_streaming', target=camera_streaming,
-                                           args=(cap,
-                                                 self.shared_array_base,
-                                                 self.preview_synchro_event,
-                                                 self.grabbing_fps))
-            # launch capture process
-            self.preview_process.daemon = True
-            self.preview_process.start()
-        else:
+        if self.enable_camera_preview == False:
             # still picture
             # Check if image directory is empty
             rfile = self.getRandomFile(args.image)
@@ -650,79 +817,13 @@ class MainUIWindow(Gtk.Window):
                 # reset the self.files variable
                 self.files = []
 
-        # initialize NeuralNetwork object
-        self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
-        shape = self.nn.get_img_size()
-
-        if self.nn._floating_model:
-            Gtk.HeaderBar.set_subtitle(self.headerbar, "float model " + os.path.basename(args.model_file))
-        else:
-            Gtk.HeaderBar.set_subtitle(self.headerbar, "quant model " + os.path.basename(args.model_file))
-
-        # define shared variables
-        self.nn_processing_start = Value(ctypes.c_bool, False)
-        self.nn_processing_finished = Value(ctypes.c_bool, False)
-        self.nn_img_shared_array = Array(ctypes.c_uint8, shape[0] * shape[1] * shape[2])
-        self.nn_img = np.ctypeslib.as_array(self.nn_img_shared_array.get_obj())
-        self.nn_img = self.nn_img.reshape(shape[0], shape[1], shape[2])
-        self.nn_inference_time = Value('f', 0)
-        self.nn_inference_fps = Value('f', 0.0)
-        self.nn_result_accuracy = Value('f', 0.0)
-        self.nn_result_label = Value('i', 0)
-
-        # start processes which run in parallel
-        self.nn_synchro_event = Event()
-        self.nn_process = Process(name='nn_processing', target=nn_processing,
-                                  args=(self.nn,
-                                        self.nn_img_shared_array,
-                                        self.nn_processing_start,
-                                        self.nn_processing_finished,
-                                        self.nn_inference_time,
-                                        self.nn_result_accuracy,
-                                        self.nn_result_label,
-                                        self.nn_synchro_event,
-                                        self.nn_inference_fps))
-        # launch nn process
-        self.nn_process.daemon = True
-        self.nn_process.start()
-
-        # wait the nn process to start
-        self.nn_synchro_event.wait()
-
-        if self.enable_camera_preview:
-            self.preview_synchro_event.wait()
-
-            # define the crop parameters that will be used to crop the input preview frame to
-            # the requested NN input image size
-            self.y1 = int(0)
-            self.y2 = int(self.frame.shape[0])
-            self.x1 = int((self.frame.shape[1] - self.frame.shape[0]) / 2)
-            self.x2 = int(self.x1 + self.frame.shape[0])
-
-            # set the following variable to True to trig the first NN inference
-            self.nn_processing_finished.value = True
-
-            # hidde the progress bar
-            GLib.source_remove(self.timeout_id)
-            self.progressbar.hide()
-
-            GLib.idle_add(self.camera_preview)
-        else:
-            # hidde the progress bar
-            GLib.source_remove(self.timeout_id)
-            self.progressbar.hide()
-
-            if not args.validation:
-                self.button = Gtk.Button.new_with_label("Next inference")
-                self.vbox.pack_start(self.button, False, False, 15)
-                self.button.connect("clicked", self.still_picture)
-                self.button.show_all()
-            else:
-                GLib.idle_add(self.validation_picture)
-
 def destroy_window(gtkobject):
-    gtkobject.terminate()
-    print("destroy")
+    """
+    Destroy the gtk window and
+    quit the gtk main loop
+    """
+    gtkobject.destroy()
+    Gtk.main_quit()
 
 if __name__ == '__main__':
     # add signal to catch CRTL+C
@@ -740,19 +841,18 @@ if __name__ == '__main__':
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
+    parser.add_argument("--num_threads", default=None, help="Select the number of threads used by tflite interpreter to run inference")
     args = parser.parse_args()
-
-    set_start_method("spawn")
 
     try:
         win = MainUIWindow(args)
         win.connect("delete-event", Gtk.main_quit)
         win.connect("destroy", destroy_window)
         win.show_all()
-        thread = Thread(target =  win.main, args = (args,))
-        thread.daemon = True
-        thread.start()
     except Exception as exc:
         print("Main Exception: ", exc )
 
     Gtk.main()
+    print("gtk main finished")
+    print("application exited properly")
+    os._exit(0)
