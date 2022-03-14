@@ -17,13 +17,13 @@ PACKAGES = "\
 "
 
 # Manage to provide all framework tools base packages with overall one
-RDEPENDS_packagegroup-x-linux-ai = "\
+RDEPENDS:packagegroup-x-linux-ai = "\
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
 "
 
-SUMMARY_packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
-RDEPENDS_packagegroup-x-linux-ai-tflite = "\
+SUMMARY:packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
+RDEPENDS:packagegroup-x-linux-ai-tflite = "\
     python3-tensorflow-lite \
     tensorflow-lite-tools \
     tensorflow-lite \
@@ -33,8 +33,8 @@ RDEPENDS_packagegroup-x-linux-ai-tflite = "\
     tflite-cv-apps-object-detection-python \
 "
 
-SUMMARY_packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
-RDEPENDS_packagegroup-x-linux-ai-tflite-edgetpu = "\
+SUMMARY:packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
+RDEPENDS:packagegroup-x-linux-ai-tflite-edgetpu = "\
     libedgetpu \
     python3-tensorflow-lite \
     tensorflow-lite \

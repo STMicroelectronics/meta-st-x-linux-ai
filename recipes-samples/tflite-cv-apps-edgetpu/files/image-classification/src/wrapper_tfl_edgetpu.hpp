@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <fstream>
 #include <queue>
 #include <memory>
 #include <string>
