@@ -8,6 +8,7 @@ PV = "2.8.0+git${SRCPV}"
 SRCREV = "ea1eaddbddece0c9ca1166e868f8fd03f4a3199e"
 SRC_URI = "git://github.com/google-coral/libedgetpu.git "
 SRC_URI += " file://0001-update-make_build-Makefile-to-accept-cross-compilati.patch "
+SRC_URI += " file://0002-fix-build-issue-with-gcc-v11.x.patch "
 
 S = "${WORKDIR}/git"
 
@@ -41,7 +42,14 @@ EXTRA_OEMAKE += 'EXTRA_CXXFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"'
 EXTRA_OEMAKE += 'TFROOT="${RECIPE_SYSROOT}/usr/include/"'
 
 do_compile () {
-	oe_runmake -C ${S} -f makefile_build/Makefile
+	#Check if abseil-cpp version use static or shared libraries
+	ABSL_SHARED_LIB=0
+	FILE=${RECIPE_SYSROOT}/${libdir}/pkgconfig/absl_status.pc
+	if [ -f "$FILE" ]; then
+		ABSL_SHARED_LIB=1
+	fi
+
+	oe_runmake ABSL_SHARED_LIB=${ABSL_SHARED_LIB} -C ${S} -f makefile_build/Makefile
 }
 
 do_install () {
@@ -50,10 +58,12 @@ do_install () {
 	install -d ${D}${sysconfdir}/udev/rules.d
 
 	# Installing the Edge TPU shared library version"
-	install -m 0755 ${S}/out/lib/*.so*                     ${D}${libdir}
+	install -m 0755 ${S}/out/lib/*.so* ${D}${libdir}
 
 	# Install the edgge TPU udev rules
-	install -m 0666 ${S}/debian/edgetpu-accelerator.rules  ${D}${sysconfdir}/udev/rules.d/99-edgetpu-accelerator.rules
+	install -m 0666 ${S}/debian/edgetpu-accelerator.rules ${D}${sysconfdir}/udev/rules.d/99-edgetpu-accelerator.rules
+	# Add MODE="0666" to the udev rules to access edgetpu for non root users
+	sed -i s/$/',MODE="0666"'/ ${D}${sysconfdir}/udev/rules.d/99-edgetpu-accelerator.rules
 
 	ln -sf libedgetpu-max.so.${PVB} ${D}${libdir}/libedgetpu-max.so.${MAJOR}
 	ln -sf libedgetpu-std.so.${PVB} ${D}${libdir}/libedgetpu-std.so.${MAJOR}
@@ -62,7 +72,7 @@ do_install () {
 	ln -sf libedgetpu.so.${PVB} ${D}${libdir}/libedgetpu.so
 
 	# Installing the edgetpu header
-	cp ${S}/tflite/public/edgetpu.h         ${D}${includedir}/tensorflow/lite
+	cp ${S}/tflite/public/edgetpu.h ${D}${includedir}/tensorflow/lite
 }
 
 FILES:${PN} += "${sysconfdir}"

@@ -1,7 +1,7 @@
-From 6dad0f49375d2926a0b71f12a9b7044a9cb1fb2a Mon Sep 17 00:00:00 2001
+From a63f4738b1e8becfb7d793eeb65ce097c8c3eeba Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 20 Jan 2022 11:43:17 +0100
-Subject: [PATCH 1/1] update make_build/Makefile to accept cross compilation
+Subject: [PATCH 1/2] update make_build/Makefile to accept cross compilation
  options
 
 This update is needed to allow libedgetpu build within a Yocto build system.
@@ -11,14 +11,14 @@ Compatible with the abseil-cpp version 20190808 from Yocto Dunfell.
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 ---
- makefile_build/Makefile | 80 ++++++++++++++++++++++++++++-------------
- 1 file changed, 56 insertions(+), 24 deletions(-)
+ makefile_build/Makefile | 109 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 85 insertions(+), 24 deletions(-)
 
 diff --git a/makefile_build/Makefile b/makefile_build/Makefile
-index ef7d290..76308c1 100644
+index ef7d290..6d57eee 100644
 --- a/makefile_build/Makefile
 +++ b/makefile_build/Makefile
-@@ -10,37 +10,64 @@ BUILDROOT ?= $(MAKEFILE_DIR)/..
+@@ -10,37 +10,93 @@ BUILDROOT ?= $(MAKEFILE_DIR)/..
  BUILDDIR := $(BUILDROOT)/out
  TOBUILDDIR = $(addprefix $(BUILDDIR)/,$(1))
  MKDIR = if [ ! -d $(dir $@) ]; then mkdir -p $(dir $@); fi
@@ -48,12 +48,50 @@ index ef7d290..76308c1 100644
 -	-DDARWINN_PORT_DEFAULT
 +	-DDARWINN_PORT_DEFAULT \
 +	$(EXTRA_CXXFLAGS)
-+
+ 
+-LIBEDGETPU_LDFLAGS := \
+-	-Wl,-Map=$(BUILDDIR)/output.map \
+-	-shared \
+-	-Wl,--soname,libedgetpu.so.1 \
+-	-Wl,--version-script=$(BUILDROOT)/tflite/public/libedgetpu.lds \
+-	-fuse-ld=gold \
+-	-lflatbuffers \
++ifeq ($(ABSL_SHARED_LIB), 1)
++ABSL_LDFLAGS  = \
+ 	-labsl_flags \
+-	-labsl_flags_internal \
+-	-labsl_flags_reflection \
+ 	-labsl_flags_marshalling \
+-	-labsl_hash \
+ 	-labsl_hashtablez_sampler \
++	-labsl_str_format_internal \
++	-labsl_throw_delegate \
++	-labsl_synchronization \
++	-labsl_time \
++	-labsl_time_zone \
++	-labsl_int128 \
++	-labsl_symbolize \
++	-labsl_base \
++	-labsl_debugging_internal \
++	-labsl_malloc_internal \
++	-labsl_spinlock_wait \
++	-labsl_demangle_internal \
++	-labsl_hash \
++	-labsl_flags_config \
++	-labsl_flags_internal \
++	-labsl_flags_parse \
++	-labsl_strings \
++	-labsl_graphcycles_internal \
++	-labsl_stacktrace \
+ 	-labsl_raw_hash_set \
++	-labsl_bad_optional_access
++else
 +ABSL_LDFLAGS  = \
 +	-labsl_flags \
 +	-labsl_flags_marshalling \
 +	-labsl_hashtablez_sampler \
-+	-labsl_str_format_internal \
+ 	-labsl_str_format_internal \
+-	-lusb-1.0
 +	-labsl_throw_delegate \
 +	-labsl_synchronization \
 +	-labsl_time \
@@ -71,34 +109,25 @@ index ef7d290..76308c1 100644
 +	-labsl_flags_handle \
 +	-labsl_flags_config \
 +	-labsl_flags_internal \
++	-labsl_flags_parse \
 +	-labsl_strings \
 +	-labsl_graphcycles_internal \
 +	-labsl_stacktrace \
 +	-labsl_raw_hash_set \
 +	-labsl_bad_optional_access
- 
- LIBEDGETPU_LDFLAGS := \
- 	-Wl,-Map=$(BUILDDIR)/output.map \
--	-shared \
--	-Wl,--soname,libedgetpu.so.1 \
- 	-Wl,--version-script=$(BUILDROOT)/tflite/public/libedgetpu.lds \
- 	-fuse-ld=gold \
- 	-lflatbuffers \
--	-labsl_flags \
--	-labsl_flags_internal \
--	-labsl_flags_reflection \
--	-labsl_flags_marshalling \
--	-labsl_hash \
--	-labsl_hashtablez_sampler \
--	-labsl_raw_hash_set \
--	-labsl_str_format_internal \
--	-lusb-1.0
++endif
++
++LIBEDGETPU_LDFLAGS := \
++	-Wl,-Map=$(BUILDDIR)/output.map \
++	-Wl,--version-script=$(BUILDROOT)/tflite/public/libedgetpu.lds \
++	-fuse-ld=gold \
++	-lflatbuffers \
 +	-lusb-1.0 \
 +	$(ABSL_LDFLAGS)
  
  LIBEDGETPU_FLATC_SRCS := \
  	$(BUILDROOT)/executable/executable.fbs \
-@@ -155,9 +182,16 @@ LIBEDGETPU_STD_CCSRCS := \
+@@ -155,9 +211,16 @@ LIBEDGETPU_STD_CCSRCS := \
  	$(BUILDROOT)/tflite/edgetpu_manager_direct.cc
  LIBEDGETPU_STD_CCOBJS := $(call TOBUILDDIR,$(patsubst %.cc,%-throttled.o,$(LIBEDGETPU_STD_CCSRCS)))
  
@@ -116,7 +145,7 @@ index ef7d290..76308c1 100644
  
  clean:
  	rm -rf $(BUILDDIR)
-@@ -201,14 +235,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
+@@ -201,14 +264,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
  	@echo "Compiling $<"
  	@$(CXX) -DTHROTTLE_EDGE_TPU $(LIBEDGETPU_CXXFLAGS) $(LIBEDGETPU_INCLUDES) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
  

@@ -1,0 +1,25 @@
+From 25e22eed08d832a476d4825a96c5df1b9073d931 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Fri, 11 Mar 2022 15:07:02 +0100
+Subject: [PATCH 2/2] fix build issue with gcc v11.x
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ api/allocated_buffer.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/api/allocated_buffer.h b/api/allocated_buffer.h
+index 97740f0..7bc0547 100644
+--- a/api/allocated_buffer.h
++++ b/api/allocated_buffer.h
+@@ -16,6 +16,7 @@
+ #define DARWINN_API_ALLOCATED_BUFFER_H_
+ 
+ #include <functional>
++#include <cstddef>
+ 
+ namespace platforms {
+ namespace darwinn {
+-- 
+2.17.1
+
