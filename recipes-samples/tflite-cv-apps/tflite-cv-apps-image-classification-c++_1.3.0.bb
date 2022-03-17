@@ -73,5 +73,6 @@ RDEPENDS:${PN} += " \
 	libopencv-core \
 	libopencv-imgproc \
 	libopencv-imgcodecs \
+	tensorflow-lite \
 	tflite-models-mobilenetv1 \
 "

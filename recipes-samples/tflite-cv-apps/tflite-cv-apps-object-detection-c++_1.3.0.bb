@@ -72,6 +72,7 @@ RDEPENDS:${PN} += " \
 	libopencv-core \
 	libopencv-imgproc \
 	libopencv-imgcodecs \
+	tensorflow-lite \
 	tflite-models-coco-ssd-mobilenetv1 \
 	rapidjson\
 "
