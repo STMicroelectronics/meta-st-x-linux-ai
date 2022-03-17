@@ -1,7 +1,7 @@
-From 462e9e253c79a979c49f230b4b4bf1aea5e3d59c Mon Sep 17 00:00:00 2001
+From 3aa73ac0e231c9653489d14963d7ec940a1840be Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 2/4] TFLite: cmake: generate benchmark_model binary
+Subject: [PATCH 2/5] TFLite: cmake: generate benchmark_model binary
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-index 071af4602b7..adca27e14a5 100755
+index 071af4602b7..069bb8d0f4c 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 @@ -132,7 +132,7 @@ case "${TENSORFLOW_TARGET}" in
@@ -17,7 +17,7 @@ index 071af4602b7..adca27e14a5 100755
  esac
  
 -cmake --build . --verbose -j ${BUILD_NUM_JOBS} -t _pywrap_tensorflow_interpreter_wrapper
-+cmake --build . --verbose -j ${BUILD_NUM_JOBS} -t _pywrap_tensorflow_interpreter_wrapper benchmark_model
++cmake --build . --verbose -j 2 -t _pywrap_tensorflow_interpreter_wrapper benchmark_model
  cd "${BUILD_DIR}"
  
  case "${TENSORFLOW_TARGET}" in

@@ -1,7 +1,7 @@
-From 3e3807af214b25334b8311a2707f3ba23df89f99 Mon Sep 17 00:00:00 2001
+From f8eca75e4cca3f8522acf813caeb2115852efb1a Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 2 Feb 2022 15:51:43 +0100
-Subject: [PATCH 3/4] TFlite: cmake: introduce shared library build
+Subject: [PATCH 3/5] TFlite: cmake: introduce shared library build
 
 Introducing libtensorflow-lite.so generating during cmake build.
 This shared library contains the static library libtensorflowlite.a
@@ -91,15 +91,15 @@ index 200d1a7c46d..83736e8d813 100644
 +  PRIVATE ${TFLITE_TARGET_PRIVATE_OPTIONS}
 +)
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-index adca27e14a5..fc34abb2936 100755
+index 069bb8d0f4c..bdd3bee1675 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 @@ -132,7 +132,7 @@ case "${TENSORFLOW_TARGET}" in
      ;;
  esac
  
--cmake --build . --verbose -j ${BUILD_NUM_JOBS} -t _pywrap_tensorflow_interpreter_wrapper benchmark_model
-+cmake --build . --verbose -j ${BUILD_NUM_JOBS} -t tensorflowlite _pywrap_tensorflow_interpreter_wrapper benchmark_model tensorflow-lite
+-cmake --build . --verbose -j 2 -t _pywrap_tensorflow_interpreter_wrapper benchmark_model
++cmake --build . --verbose -j 2 -t tensorflowlite _pywrap_tensorflow_interpreter_wrapper benchmark_model tensorflow-lite
  cd "${BUILD_DIR}"
  
  case "${TENSORFLOW_TARGET}" in

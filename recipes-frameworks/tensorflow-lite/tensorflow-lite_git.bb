@@ -14,7 +14,8 @@ SRC_URI = " git://github.com/tensorflow/tensorflow;branch=r2.8 "
 SRC_URI += " file://0001-TFLite-cmake-support-cross-compilation-configuration.patch "
 SRC_URI += " file://0002-TFLite-cmake-generate-benchmark_model-binary.patch "
 SRC_URI += " file://0003-TFlite-cmake-introduce-shared-library-build.patch "
-SRC_URI += " file://0004-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
+SRC_URI += " file://0004-TFLite-add-SONAME-with-MAJOR-version.patch "
+SRC_URI += " file://0005-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 
 S = "${WORKDIR}/git"
 
@@ -63,6 +64,7 @@ do_compile() {
 	export TENSORFLOW_TARGET_ARCH=${TENSORFLOW_TARGET_ARCH}
 	export ARMCC_PREFIX=${CCACHE}${HOST_PREFIX}
 	export ARMCC_FLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"
+	export TFLITE_VERSION_MAJOR="${MAJOR}"
 
 	unset PYTHON
 	bash ${S}/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh

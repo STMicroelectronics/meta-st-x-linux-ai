@@ -1,7 +1,7 @@
-From 454df3f1a74b687193918c9423cd2ca8f320f74e Mon Sep 17 00:00:00 2001
+From 5ef7811080d32677a6d6a700a6e50f04005053f3 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Wed, 23 Feb 2022 17:55:45 +0100
-Subject: [PATCH 4/4] TFLite: cmake: support git clone shallow with specified
+Subject: [PATCH 5/5] TFLite: cmake: support git clone shallow with specified
  SHA1ID
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>

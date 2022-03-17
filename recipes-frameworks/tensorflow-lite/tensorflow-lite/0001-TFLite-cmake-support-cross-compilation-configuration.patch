@@ -1,7 +1,7 @@
-From e95c10293779bada2dbcbe6f341b2b87dedb7e40 Mon Sep 17 00:00:00 2001
+From e4c1b9d1a8c5777bc0ad4651363b1f5bce6f77d5 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 1/4] TFLite: cmake: support cross compilation configuration
+Subject: [PATCH 1/5] TFLite: cmake: support cross compilation configuration
 
 Add new case to support cross compilation configuration.
 To allow cross-compilation for arm architecture, python3.8
