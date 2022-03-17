@@ -32,14 +32,11 @@ DEPENDS = " \
 	vim-native \
 "
 
-do_configure () {
-	#Set the version of the libraries according to the version of this recipe
-	sed -i "s#%%VERSION%%#${PVB}#g" ${S}/makefile_build/Makefile
-}
-
 EXTRA_OEMAKE  = 'EXTRA_CFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"'
 EXTRA_OEMAKE += 'EXTRA_CXXFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"'
 EXTRA_OEMAKE += 'TFROOT="${RECIPE_SYSROOT}/usr/include/"'
+EXTRA_OEMAKE += 'LIBEDGETPU_VERSION="${PVB}"'
+EXTRA_OEMAKE += 'LIBEDGETPU_VERSION_MAJOR="${MAJOR}"'
 
 do_compile () {
 	#Check if abseil-cpp version use static or shared libraries
@@ -88,4 +85,4 @@ FILES:${PN}-dev += "${includedir}/tensorflow/lite"
 
 INSANE_SKIP:${PN} = "ldflags"
 
-RDEPENDS:${PN} += "libusb1 flatbuffers"
+RDEPENDS:${PN} += "libusb1 flatbuffers tensorflow-lite"

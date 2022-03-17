@@ -1,7 +1,7 @@
-From a63f4738b1e8becfb7d793eeb65ce097c8c3eeba Mon Sep 17 00:00:00 2001
+From d876c9530a00e31989d164708d6b3d7032f798e6 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 20 Jan 2022 11:43:17 +0100
-Subject: [PATCH 1/2] update make_build/Makefile to accept cross compilation
+Subject: [PATCH 1/1] update make_build/Makefile to accept cross compilation
  options
 
 This update is needed to allow libedgetpu build within a Yocto build system.
@@ -11,11 +11,11 @@ Compatible with the abseil-cpp version 20190808 from Yocto Dunfell.
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 ---
- makefile_build/Makefile | 109 +++++++++++++++++++++++++++++++---------
- 1 file changed, 85 insertions(+), 24 deletions(-)
+ makefile_build/Makefile | 112 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 88 insertions(+), 24 deletions(-)
 
 diff --git a/makefile_build/Makefile b/makefile_build/Makefile
-index ef7d290..6d57eee 100644
+index ef7d290..7666395 100644
 --- a/makefile_build/Makefile
 +++ b/makefile_build/Makefile
 @@ -10,37 +10,93 @@ BUILDROOT ?= $(MAKEFILE_DIR)/..
@@ -127,12 +127,15 @@ index ef7d290..6d57eee 100644
  
  LIBEDGETPU_FLATC_SRCS := \
  	$(BUILDROOT)/executable/executable.fbs \
-@@ -155,9 +211,16 @@ LIBEDGETPU_STD_CCSRCS := \
+@@ -155,9 +211,19 @@ LIBEDGETPU_STD_CCSRCS := \
  	$(BUILDROOT)/tflite/edgetpu_manager_direct.cc
  LIBEDGETPU_STD_CCOBJS := $(call TOBUILDDIR,$(patsubst %.cc,%-throttled.o,$(LIBEDGETPU_STD_CCSRCS)))
  
-+LIBEDGETPU_MAX_NAME := libedgetpu-max.so.%%VERSION%%
-+LIBEDGETPU_STD_NAME := libedgetpu-std.so.%%VERSION%%
++LIBEDGETPU_MAX_NAME := libedgetpu-max.so.$(LIBEDGETPU_VERSION)
++LIBEDGETPU_STD_NAME := libedgetpu-std.so.$(LIBEDGETPU_VERSION)
++
++LIBEDGETPU_MAX_NAME_MAJOR := libedgetpu-max.so.$(LIBEDGETPU_VERSION_MAJOR)
++LIBEDGETPU_STD_NAME_MAJOR := libedgetpu-std.so.$(LIBEDGETPU_VERSION_MAJOR)
 +
 +LIBDIR := $(BUILDDIR)/lib
 +LIBEDGETPU_MAX_PATH := $(LIBDIR)/$(LIBEDGETPU_MAX_NAME)
@@ -145,7 +148,7 @@ index ef7d290..6d57eee 100644
  
  clean:
  	rm -rf $(BUILDDIR)
-@@ -201,14 +264,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
+@@ -201,14 +267,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
  	@echo "Compiling $<"
  	@$(CXX) -DTHROTTLE_EDGE_TPU $(LIBEDGETPU_CXXFLAGS) $(LIBEDGETPU_INCLUDES) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
  
@@ -156,7 +159,7 @@ index ef7d290..6d57eee 100644
  	@echo "Building libedgetpu.so"
 -	@$(CXX) $(LIBEDGETPU_CCFLAGS) $(LIBEDGETPU_LDFLAGS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS) -o $(BUILDDIR)/direct/k8/libedgetpu.so.1.0
 -	@ln -sf $(BUILDDIR)/direct/k8/libedgetpu.so.1.0 $(BUILDDIR)/direct/k8/libedgetpu.so.1
-+	@$(CXX) -shared $^ -o $(LIBEDGETPU_MAX_PATH) $(LIBEDGETPU_LDFLAGS) -Wl,-soname,$(LIBEDGETPU_MAX_NAME)
++	@$(CXX) -shared $^ -o $(LIBEDGETPU_MAX_PATH) $(LIBEDGETPU_LDFLAGS) -Wl,-soname,$(LIBEDGETPU_MAX_NAME_MAJOR)
  
 -libedgetpu-throttled: | firmware $(LIBEDGETPU_FLATC_OBJS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS)
 -	@mkdir -p $(BUILDDIR)/throttled/k8
@@ -165,7 +168,7 @@ index ef7d290..6d57eee 100644
  	@echo "Building throttled libedgetpu.so"
 -	@$(CXX) $(LIBEDGETPU_CCFLAGS) $(LIBEDGETPU_LDFLAGS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS) -o $(BUILDDIR)/throttled/k8/libedgetpu.so.1.0
 -	@ln -sf $(BUILDDIR)/throttled/k8/libedgetpu.so.1.0 $(BUILDDIR)/throttled/k8/libedgetpu.so.1
-+	@$(CXX) -shared $^ -o $(LIBEDGETPU_STD_PATH) $(LIBEDGETPU_LDFLAGS) -Wl,-soname,$(LIBEDGETPU_STD_NAME)
++	@$(CXX) -shared $^ -o $(LIBEDGETPU_STD_PATH) $(LIBEDGETPU_LDFLAGS) -Wl,-soname,$(LIBEDGETPU_STD_NAME_MAJOR)
 -- 
 2.17.1
 
