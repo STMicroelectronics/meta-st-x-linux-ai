@@ -54,9 +54,6 @@ do_install() {
     install -m 0755 ${S}/image-classification/src/*.css		${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification/bin/resources
 }
 
-#PACKAGES:remove = "${PN}-dev"
-#RDEPENDS_${PN}-staticdev = ""
-
 FILES:${PN} += "${prefix}/local/"
 
 INSANE_SKIP:${PN} = "ldflags"
