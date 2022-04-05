@@ -36,6 +36,7 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
 SUMMARY:packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edge TPU components"
 RDEPENDS:packagegroup-x-linux-ai-tflite-edgetpu = "\
     libedgetpu \
+    libcoral \
     python3-tensorflow-lite \
     tensorflow-lite \
     tflite-edgetpu-benchmark \
