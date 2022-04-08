@@ -76,4 +76,4 @@ FILES:${PN} += "${sysconfdir}"
 
 INSANE_SKIP:${PN} = "ldflags"
 
-RDEPENDS:${PN} += "libusb1 flatbuffers tensorflow-lite"
+RDEPENDS:${PN} += "libusb1 flatbuffers abseil-cpp tensorflow-lite"
