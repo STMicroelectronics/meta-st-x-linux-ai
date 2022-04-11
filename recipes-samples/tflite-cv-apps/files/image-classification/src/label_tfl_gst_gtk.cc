@@ -52,11 +52,15 @@ std::string video_device_str  = "0";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
+
+bool crop = false;
+bool accel = false;
+bool tpu = false;
 bool verbose = false;
 bool validation = false;
+
 float input_mean = 127.5f;
 float input_std = 127.5f;
-bool crop = false;
 cv::Rect cropRect(0, 0, 0, 0);
 
 /* TensorFlow Lite variables */
@@ -70,6 +74,7 @@ bool exit_application = false;
 
 /* Ressource directory on board */
 #define RESOURCES_DIRECTORY "/usr/local/demo-ai/computer-vision/tflite-image-classification/bin/resources/"
+#define RESOURCES_DIRECTORY_EDGETPU "/usr/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin/resources/"
 
 typedef struct _FramePosition {
 	int x;
@@ -314,6 +319,7 @@ static std::string get_files_in_directory_randomly(std::string directory)
  * This function is an idle function waiting for a new picture
  * to be infered
  */
+bool first_call_validation = true;
 static gboolean infer_new_picture(CustomData *data)
 {
 	if (exit_application) {
@@ -354,7 +360,20 @@ static gboolean infer_new_picture(CustomData *data)
 
 		if (validation) {
 			/* Still picture use case */
-			data->valid_inference_time.push_back(results.inference_time);
+			if (first_call_validation){
+				/* Skip the first inference time in hardware
+				 * accelerated mode which is the warmup time
+				 * The warmup time is far more important than
+				 * classic inference time and will make average
+				 * inference time completly false
+				 * */
+				first_call_validation = false;
+				if(not(accel))
+					/* In CPU mode no warmup time to skip  */
+					data->valid_inference_time.push_back(results.inference_time);
+			} else {
+				data->valid_inference_time.push_back(results.inference_time);
+			}
 			/* Reload the timeout */
 			g_source_remove(data->valid_timeout_id);
 			data->valid_timeout_id = g_timeout_add(5000,
@@ -412,7 +431,11 @@ bool first_load = true;
 static void gui_gtk_style(CustomData *data)
 {
 	std::stringstream css_sstr;
-	css_sstr << RESOURCES_DIRECTORY;
+	if(tpu) {
+		css_sstr << RESOURCES_DIRECTORY_EDGETPU;
+	} else {
+		css_sstr << RESOURCES_DIRECTORY;
+	}
 	if (first_load){
 		css_sstr << "Default.css";
 		first_load = false;
@@ -471,7 +494,11 @@ static void gui_set_ui_parameters(CustomData *data)
 
 	/* set the icons */
 	std::stringstream st_icon_sstr;
-	st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
+	if(tpu) {
+		st_icon_sstr << RESOURCES_DIRECTORY_EDGETPU << "st_icon_tpu_";
+	} else {
+		st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
+	}
 	if (!data->preview_enabled)
 		st_icon_sstr << "next_inference_";
 	st_icon_sstr << ui_icon_st_width << "x" << ui_icon_st_height << ".png";
@@ -479,7 +506,11 @@ static void gui_set_ui_parameters(CustomData *data)
 	gtk_image_set_from_file(GTK_IMAGE(data->st_icon_ov), st_icon_sstr.str().c_str());
 
 	std::stringstream exit_icon_sstr;
-	exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
+	if(tpu) {
+		exit_icon_sstr << RESOURCES_DIRECTORY_EDGETPU << "exit_";
+	} else {
+		exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
+	}
 	exit_icon_sstr << ui_icon_exit_width << "x" << ui_icon_exit_height << ".png";
 	gtk_image_set_from_file(GTK_IMAGE(data->exit_icon_main), exit_icon_sstr.str().c_str());
 	gtk_image_set_from_file(GTK_IMAGE(data->exit_icon_ov), exit_icon_sstr.str().c_str());
@@ -1246,7 +1277,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 		return -2;
 	}
 	if (!gst_element_link_many(tee, queue1, convert2, fpsmeasure1, NULL)) {
-		g_error("Failed to link elements (5)");
+		g_error("Failed to link elements (4)");
 		return -2;
 	}
 
@@ -1287,6 +1318,7 @@ static void print_help(int argc, char** argv)
 		"-l --label_file <label file path>:    name of file containing labels\n"
 		"-i --image <directory path>:          image directory with image to be classified\n"
 		"-v --video_device <n>:                video device (default /dev/video0)\n"
+		"--edgetpu                             if set, the NPU is used for the inference \n"
 		"--crop:                               if set, the nn input image is cropped (with the expected nn aspect ratio) before being resized,\n"
 		"                                      else the nn imput image is only resized to the nn input size (could cause picture deformation).\n"
 		"--frame_width  <val>:                 width of the camera frame (default is 640)\n"
@@ -1311,15 +1343,17 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_STD    1004
 #define OPT_VERBOSE      1005
 #define OPT_VALIDATION   1006
+#define OPT_EDGETPU      1007
 void process_args(int argc, char** argv)
 {
-	const char* const short_opts = "m:l:i:v:c:h";
+	const char* const short_opts = "m:l:i:v:c:e:h";
 	const option long_opts[] = {
 		{"model_file",   required_argument, nullptr, 'm'},
 		{"label_file",   required_argument, nullptr, 'l'},
 		{"image",        required_argument, nullptr, 'i'},
 		{"video_device", required_argument, nullptr, 'v'},
 		{"crop",         no_argument,       nullptr, 'c'},
+		{"edgetpu",      no_argument,       nullptr, OPT_EDGETPU},
 		{"frame_width",  required_argument, nullptr, OPT_FRAME_WIDTH},
 		{"frame_height", required_argument, nullptr, OPT_FRAME_HEIGHT},
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
@@ -1359,6 +1393,10 @@ void process_args(int argc, char** argv)
 		case 'c':
 			crop = true;
 			std::cout << "nn input image will be cropped then resized" << std::endl;
+			break;
+		case OPT_EDGETPU:
+			tpu = true;
+			std::cout << "Inference launched on EDGETPU" << std::endl;
 			break;
 		case OPT_FRAME_WIDTH:
 			camera_width_str = std::string(optarg);
@@ -1408,7 +1446,7 @@ static void int_handler(int dummy)
 	if (gtk_main_started){
 		exit_application = true;
 	} else {
-		exit(0);
+		exit(1);
 	}
 }
 
@@ -1444,8 +1482,6 @@ int main(int argc, char *argv[])
 	data.new_inference = false;
 	data.frame_width  = std::stoi(camera_width_str);
 	data.frame_height = std::stoi(camera_height_str);
-	std::cout << data.frame_width << " data.frame_width\n";
-	std::cout << data.frame_height << " data.frame_height\n";
 	data.ui_cairo_font_size = 25;
 	data.ui_cairo_font_size_label = 40;
 	data.ui_box_line_width = 2.0;
@@ -1492,6 +1528,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if(tpu){
+		accel = true;
+	} else {
+		g_print("No EDGETPU found. Inference launched on CPU\n");
+		accel = false;
+	}
+
 	/* TensorFlow Lite wrapper initialization */
 	config.verbose = verbose;
 	config.model_name = model_file_str;
@@ -1500,6 +1543,7 @@ int main(int argc, char *argv[])
 	config.input_std = input_std;
 	config.number_of_threads = nb_cpu_cores;
 	config.number_of_results = 5;
+	config.edgetpu = tpu;
 
 	tfl_wrapper.Initialize(&config);
 

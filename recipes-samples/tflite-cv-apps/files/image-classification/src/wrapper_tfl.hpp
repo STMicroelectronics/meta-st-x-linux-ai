@@ -38,6 +38,8 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 
+#include "tensorflow/lite/edgetpu.h"
+
 #define LOG(x) std::cerr
 
 namespace wrapper_tfl {
@@ -52,6 +54,7 @@ namespace wrapper_tfl {
 		int number_of_results = 5;
 		std::string model_name;
 		std::string labels_file_name;
+		bool edgetpu;
 	};
 
 	struct Label_Results {
@@ -64,6 +67,7 @@ namespace wrapper_tfl {
 	private:
 		// Taking a reference to the (const) model data avoids lifetime-related issues
 		// and complexity with the TFL_Model's existence.
+		std::shared_ptr<edgetpu::EdgeTpuContext> m_edgetpu_ctx;
 		std::unique_ptr<tflite::FlatBufferModel> m_model;
 		std::unique_ptr<tflite::Interpreter>     m_interpreter;
 		bool                                     m_verbose;
@@ -74,20 +78,34 @@ namespace wrapper_tfl {
 		float                                    m_inferenceTime;
 		int                                      m_numberOfThreads;
 		int                                      m_numberOfResults;
+		bool                                     m_edgetpu;
 
 	public:
 		Tfl_Wrapper() {}
 
 		void Initialize(Config* conf)
 		{
-			m_inputFloating = false;
-			m_allow_fp16 = false;
-			m_inferenceTime = 0;
-			m_verbose = conf->verbose;
-			m_inputMean = conf->input_mean;
-			m_inputStd = conf->input_std;
-			m_numberOfThreads = conf->number_of_threads;
-			m_numberOfResults = conf->number_of_results;
+			m_inputFloating		= false;
+			m_allow_fp16		= false;
+			m_inferenceTime		= 0;
+			m_verbose		= conf->verbose;
+			m_inputMean		= conf->input_mean;
+			m_inputStd		= conf->input_std;
+			m_numberOfThreads	= conf->number_of_threads;
+			m_numberOfResults	= conf->number_of_results;
+			m_edgetpu		= conf->edgetpu;
+
+			if (m_edgetpu) {
+				/*  Check if the Edge TPU is connected */
+				int status = system("lsusb -d 1a6e:");
+				status &= system("lsusb -d 18d1:");
+				if (status) {
+					std::cout << "ERROR: Edge TPU not connected.\n";
+					exit(-1);
+				}
+				/* Load EDGEPTU */
+				m_edgetpu_ctx = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
+			}
 
 			if (!conf->model_name.c_str()) {
 				LOG(ERROR) << "no model file name\n";
@@ -103,9 +121,12 @@ namespace wrapper_tfl {
 			}
 			LOG(INFO) << "Loaded model " << conf->model_name << "\n";
 			model->error_reporter();
-			LOG(INFO) << "resolved reporter\n";
 
 			tflite::ops::builtin::BuiltinOpResolver resolver;
+
+			if(m_edgetpu){
+				resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
+			}
 
 			tflite::InterpreterBuilder(*model, resolver)(&interpreter);
 			if (!interpreter) {
@@ -119,7 +140,11 @@ namespace wrapper_tfl {
 				LOG(INFO) << "Floating point Tensorflow Lite Model\n";
 			}
 
-			interpreter->SetAllowFp16PrecisionForFp32(m_allow_fp16);
+			if(m_edgetpu){
+				interpreter->SetExternalContext(kTfLiteEdgeTpuContext, m_edgetpu_ctx.get());
+			} else {
+				interpreter->SetAllowFp16PrecisionForFp32(m_allow_fp16);
+			}
 
 			if (m_numberOfThreads != -1) {
 				interpreter->SetNumThreads(m_numberOfThreads);
@@ -137,6 +162,7 @@ namespace wrapper_tfl {
 			LOG(INFO) << "input_std         " << m_inputStd << "\n";
 			LOG(INFO) << "number_of_threads " << m_numberOfThreads << "\n";
 			LOG(INFO) << "number_of_results " << m_numberOfResults << "\n";
+			LOG(INFO) << "edgetpu           " << m_edgetpu << "\n";
 		}
 
 		void DisplayModelInformation()

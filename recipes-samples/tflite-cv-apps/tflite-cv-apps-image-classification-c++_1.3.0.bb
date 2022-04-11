@@ -1,4 +1,4 @@
-# Copyright (C) 2020, STMicroelectronics - All Rights Reserved
+# Copyright (C) 2022, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite C++ API Computer Vision image classification application example"
 LICENSE = "BSD-3-Clause & Apache-2.0"
 LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
@@ -6,9 +6,18 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite gtk+3 opencv gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
+DEPENDS += " tensorflow-lite gtk+3 opencv gstreamer1.0-plugins-base gstreamer1.0-plugins-bad libedgetpu"
 
-SRC_URI  = " file://image-classification/src;subdir=${BPN}-${PV} "
+SRC_URI  = " file://image-classification/src/101-tflite-image-classification-C++.yaml;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/label_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/launch_bin_label_tfl_mobilenet.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/launch_bin_label_tfl_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/Default.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/widgets_272p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/widgets_480p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/widgets_720p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/Makefile;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/wrapper_tfl.hpp;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_C++.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "

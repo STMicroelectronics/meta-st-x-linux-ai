@@ -1,4 +1,4 @@
-# Copyright (C) 2020, STMicroelectronics - All Rights Reserved
+# Copyright (C) 2022, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite C++ API Computer Vision image classification application example running on the EdgeTPU"
 LICENSE = "BSD-3-Clause & Apache-2.0"
 LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
@@ -8,14 +8,23 @@ inherit pkgconfig
 
 DEPENDS += "tensorflow-lite libedgetpu gtk+3 opencv gstreamer1.0 gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
 
-SRC_URI  = " file://image-classification/src;subdir=${BPN}-${PV} "
+SRC_URI  = " file://image-classification/src/201-tflite-image-classification-C++-edgetpu.yaml;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/label_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/launch_bin_label_tfl_edgetpu_mobilenet.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/launch_bin_label_tfl_edgetpu_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/Default.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/widgets_272p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/widgets_480p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/widgets_720p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/Makefile;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/src/wrapper_tfl.hpp;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_C++.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_130x160.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_next_inference_42x52.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_next_inference_65x80.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_next_inference_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_next_inference_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_next_inference_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_next_inference_130x160.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_25x25.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_50x50.png;subdir=${BPN}-${PV} "
 
@@ -40,9 +49,6 @@ do_compile() {
 do_install() {
     install -d ${D}${prefix}/local/demo/
     install -d ${D}${prefix}/local/demo/application
-    install -d ${D}${prefix}/local/demo-ai
-    install -d ${D}${prefix}/local/demo-ai/computer-vision
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification-edgetpu
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin/resources
 
