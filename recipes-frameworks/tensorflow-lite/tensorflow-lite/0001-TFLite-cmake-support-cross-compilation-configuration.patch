@@ -1,7 +1,7 @@
-From e4c1b9d1a8c5777bc0ad4651363b1f5bce6f77d5 Mon Sep 17 00:00:00 2001
+From 3a903e8c29bf1ce8c7cd72018fc94b617e90bdb0 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 1/5] TFLite: cmake: support cross compilation configuration
+Subject: [PATCH 1/6] TFLite: cmake: support cross compilation configuration
 
 Add new case to support cross compilation configuration.
 To allow cross-compilation for arm architecture, python3.8
@@ -37,5 +37,5 @@ index 35eb3a917fb..071af4602b7 100755
      eval $(${TENSORFLOW_LITE_DIR}/tools/cmake/download_toolchains.sh "${TENSORFLOW_TARGET}")
      ARMCC_FLAGS="${ARMCC_FLAGS} -I${PYBIND11_INCLUDE}"
 -- 
-2.17.1
+2.25.1
 

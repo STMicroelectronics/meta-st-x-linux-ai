@@ -1,32 +1,31 @@
-From 0c068f2d448dfff56adba8f4738a353cd8d70f98 Mon Sep 17 00:00:00 2001
+From fef1dd455b48f1e844bd4dc4be57a2c8ad8e855f Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 17 Mar 2022 10:27:59 +0100
-Subject: [PATCH 4/5] TFLite: add SONAME with MAJOR version
+Subject: [PATCH 4/6] TFLite: add SONAME with MAJOR version
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 ---
- tensorflow/lite/CMakeLists.txt                               | 5 +++++
- .../lite/tools/pip_package/build_pip_package_with_cmake.sh   | 1 +
- 2 files changed, 6 insertions(+)
+ tensorflow/lite/CMakeLists.txt                                | 4 ++++
+ .../lite/tools/pip_package/build_pip_package_with_cmake.sh    | 1 +
+ 2 files changed, 5 insertions(+)
 
 diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 83736e8d813..daf3bffadd1 100644
+index e2253491713..1e774576f74 100644
 --- a/tensorflow/lite/CMakeLists.txt
 +++ b/tensorflow/lite/CMakeLists.txt
-@@ -559,6 +559,11 @@ target_compile_options(_pywrap_tensorflow_interpreter_wrapper
- add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
-   ${TFLITE_SOURCE_DIR}/examples/minimal/minimal.cc
+@@ -517,6 +517,10 @@ target_compile_options(tensorflow-lite
  )
-+
+ add_library(tensorflow::tensorflowlite ALIAS tensorflow-lite)
+ 
 +# To add SONAME with the MAJOR
 +message("TFLITE_VERSION_MAJOR=${TFLITE_VERSION_MAJOR}")
 +set_target_properties(tensorflow-lite PROPERTIES VERSION "${TFLITE_VERSION_MAJOR}")
 +
- target_include_directories(tensorflow-lite
-   PUBLIC
-     ${TFLITE_INCLUDE_DIRS}
+ # The kernel tests.
+ if(TFLITE_KERNEL_TEST)
+   enable_testing()
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-index bdd3bee1675..0d57bb0f1a9 100755
+index c2bfd07d713..2357467c8c9 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 @@ -76,6 +76,7 @@ case "${TENSORFLOW_TARGET}" in
@@ -38,5 +37,5 @@ index bdd3bee1675..0d57bb0f1a9 100755
      ;;
    armhf)
 -- 
-2.17.1
+2.25.1
 

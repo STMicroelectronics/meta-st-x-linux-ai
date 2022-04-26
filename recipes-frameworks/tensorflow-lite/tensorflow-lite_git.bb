@@ -13,7 +13,7 @@ SRCREV = "3f878cff5b698b82eea85db2b60d65a2e320850e"
 SRC_URI = " git://github.com/tensorflow/tensorflow;branch=r2.8 "
 SRC_URI += " file://0001-TFLite-cmake-support-cross-compilation-configuration.patch "
 SRC_URI += " file://0002-TFLite-cmake-generate-benchmark_model-binary.patch "
-SRC_URI += " file://0003-TFlite-cmake-introduce-shared-library-build.patch "
+SRC_URI += " file://0003-TFLite-cmake-force-tensorflow-lite-shared-library.patch "
 SRC_URI += " file://0004-TFLite-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0005-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 
@@ -93,6 +93,7 @@ do_install() {
 
 	# Install Tflite python3 interpreter
 	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
+	chrpath -d ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/tflite_runtime/*.so
 	install -m 0644  ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/tflite_runtime/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 
 	# install common.c and util.cc for edgtpu build
