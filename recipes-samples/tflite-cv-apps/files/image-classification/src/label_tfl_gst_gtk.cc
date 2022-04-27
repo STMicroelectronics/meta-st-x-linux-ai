@@ -26,6 +26,7 @@
  */
 
 #include <filesystem>
+#include <stdio.h>
 #include <getopt.h>
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -294,7 +295,12 @@ static std::string get_files_in_directory_randomly(std::string directory)
 	/* Get the list of all the file ins the directory if the list of the
 	 * file is empty */
 	if (dir_files.size() == 0) {
-		DIR* dirp = opendir(directory.c_str());
+		DIR* dirp;
+		/* checking if the directory can be opened */
+		if ((dirp = opendir(directory.c_str())) == NULL) {
+			g_printerr("Cannot open %s\n",directory.c_str());
+			exit (1);
+		}
 		struct dirent * dp;
 		while ((dp = readdir(dirp)) != NULL) {
 			if ((strcmp(dp->d_name, ".") !=0) &&
@@ -330,6 +336,12 @@ static gboolean infer_new_picture(CustomData *data)
 	if (data->new_inference){
 		/* Select a picture in the directory */
 		data->file = get_files_in_directory_randomly(image_dir_str);
+		/* Check the read and right permission of the selected file */
+		int ret = access(data->file.c_str(),R_OK);
+		if (ret != 0){
+			g_printerr("Read permission denied to the file %s\n",data->file.c_str());
+			exit(1);
+		}
 		/* Read and format the picture */
 		cv::Mat img_bgr, img_bgra, img_nn;
 
@@ -447,6 +459,12 @@ static void gui_gtk_style(CustomData *data)
 		else
 			css_sstr << "widgets_272p.css";
 	}
+	/* checking the reading permission of the file */
+	int ret = access(css_sstr.str().c_str(),R_OK);
+	if (ret != 0){
+		g_printerr("Read permission denied to the file %s\n",css_sstr.str().c_str());
+		exit(1);
+	}
 	GtkCssProvider *cssProvider = gtk_css_provider_new();
 	gtk_css_provider_load_from_path (cssProvider,
 					 css_sstr.str().c_str(),
@@ -502,6 +520,14 @@ static void gui_set_ui_parameters(CustomData *data)
 	if (!data->preview_enabled)
 		st_icon_sstr << "next_inference_";
 	st_icon_sstr << ui_icon_st_width << "x" << ui_icon_st_height << ".png";
+
+	/* checking the reading permission of the file */
+	int ret = access(st_icon_sstr.str().c_str(),R_OK);
+	if (ret != 0){
+		g_printerr("Read permission denied to the file %s\n",st_icon_sstr.str().c_str());
+		exit(1);
+	}
+
 	gtk_image_set_from_file(GTK_IMAGE(data->st_icon_main), st_icon_sstr.str().c_str());
 	gtk_image_set_from_file(GTK_IMAGE(data->st_icon_ov), st_icon_sstr.str().c_str());
 
@@ -512,6 +538,14 @@ static void gui_set_ui_parameters(CustomData *data)
 		exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
 	}
 	exit_icon_sstr << ui_icon_exit_width << "x" << ui_icon_exit_height << ".png";
+
+	/* checking the reading permission of the file */
+	ret = access(exit_icon_sstr.str().c_str(),R_OK);
+	if (ret != 0){
+		g_printerr("Read permission denied to the file %s\n",exit_icon_sstr.str().c_str());
+		exit(1);
+	}
+
 	gtk_image_set_from_file(GTK_IMAGE(data->exit_icon_main), exit_icon_sstr.str().c_str());
 	gtk_image_set_from_file(GTK_IMAGE(data->exit_icon_ov), exit_icon_sstr.str().c_str());
 }
@@ -1516,7 +1550,6 @@ int main(int argc, char *argv[])
 		}
 	} else {
 		data.preview_enabled = false;
-
 		/* Check if directory is empty */
 		std::string file = get_files_in_directory_randomly(image_dir_str);
 		if (file.empty()) {
