@@ -38,7 +38,7 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 
-#include "tensorflow/lite/edgetpu.h"
+#include "tflite/public/edgetpu.h"
 
 #define LOG(x) std::cerr
 

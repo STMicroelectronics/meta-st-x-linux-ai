@@ -51,7 +51,7 @@ do_compile () {
 
 do_install () {
 	install -d ${D}${libdir}
-	install -d ${D}${includedir}/tensorflow/lite
+	install -d ${D}${includedir}/tflite/public
 	install -d ${D}${sysconfdir}/udev/rules.d
 
 	# Installing the Edge TPU shared library version"
@@ -69,19 +69,10 @@ do_install () {
 	ln -sf libedgetpu.so.${PVB} ${D}${libdir}/libedgetpu.so
 
 	# Installing the edgetpu header
-	cp ${S}/tflite/public/edgetpu.h ${D}${includedir}/tensorflow/lite
+	cp ${S}/tflite/public/edgetpu.h ${D}${includedir}/tflite/public
 }
 
 FILES:${PN} += "${sysconfdir}"
-FILES:${PN} += "${libdir}/libedgetpu-max.so.${PVB}"
-FILES:${PN} += "${libdir}/libedgetpu-std.so.${PVB}"
-FILES:${PN} += "${libdir}/libedgetpu.so.${PVB}"
-FILES:${PN} += "${libdir}/libedgetpu.so.${MAJOR}"
-FILES:${PN} += "${libdir}/libedgetpu-max.so.${MAJOR}"
-FILES:${PN} += "${libdir}/libedgetpu-std.so.${MAJOR}"
-
-FILES:${PN}-dev  = "${libdir}/libedgetpu.so"
-FILES:${PN}-dev += "${includedir}/tensorflow/lite"
 
 INSANE_SKIP:${PN} = "ldflags"
 
