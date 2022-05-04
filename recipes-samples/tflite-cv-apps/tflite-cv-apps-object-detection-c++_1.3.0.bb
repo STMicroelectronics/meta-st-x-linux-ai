@@ -6,9 +6,18 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 
 inherit pkgconfig
 
-DEPENDS += "tensorflow-lite gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
+DEPENDS += "tensorflow-lite gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-base gstreamer1.0-plugins-bad libedgetpu"
 
-SRC_URI  = " file://object-detection/src;subdir=${BPN}-${PV} "
+SRC_URI  = " file://object-detection/src/111-tflite-object-detection-C++.yaml;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/objdetect_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/launch_bin_objdetect_tfl_coco_ssd_mobilenet.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/launch_bin_objdetect_tfl_coco_ssd_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/Default.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/widgets_272p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/widgets_480p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/widgets_720p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/Makefile;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/wrapper_tfl.hpp;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_C++.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "

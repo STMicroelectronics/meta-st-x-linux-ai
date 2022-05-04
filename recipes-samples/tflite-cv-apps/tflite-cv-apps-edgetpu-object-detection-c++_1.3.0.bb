@@ -8,14 +8,23 @@ inherit pkgconfig
 
 DEPENDS += "tensorflow-lite libedgetpu gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
 
-SRC_URI  = " file://object-detection/src;subdir=${BPN}-${PV} "
+SRC_URI  = " file://object-detection/src/211-tflite-object-detection-C++-edgetpu.yaml;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/objdetect_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/launch_bin_objdetect_tfl_edgetpu_coco_ssd_mobilenet.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/launch_bin_objdetect_tfl_edgetpu_coco_ssd_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/Default.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/widgets_272p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/widgets_480p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/widgets_720p.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/Makefile;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/wrapper_tfl.hpp;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_C++.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_42x52.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_65x80.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_130x160.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_next_inference_42x52.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_next_inference_65x80.png;subdir=${BPN}-${PV} "
-SRC_URI += " file://resources/st_icon_next_inference_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_130x160.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_next_inference_42x52.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_next_inference_65x80.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/st_icon_tpu_next_inference_130x160.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_25x25.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_50x50.png;subdir=${BPN}-${PV} "
 
@@ -40,8 +49,6 @@ do_compile() {
 do_install() {
     install -d ${D}${prefix}/local/demo/
     install -d ${D}${prefix}/local/demo/application
-    install -d ${D}${prefix}/local/demo-ai
-    install -d ${D}${prefix}/local/demo-ai/computer-vision/
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin
     install -d ${D}${prefix}/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources

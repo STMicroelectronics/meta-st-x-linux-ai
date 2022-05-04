@@ -56,12 +56,16 @@ std::string video_device_str  = "0";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
-float threshold = 0.60;
+
 bool verbose = false;
 bool validation = false;
+bool crop = false;
+bool accel = false;
+bool tpu = false;
+
+float threshold = 0.60;
 float input_mean = 127.5f;
 float input_std = 127.5f;
-bool crop = false;
 cv::Rect cropRect(0, 0, 0, 0);
 
 /* TensorFlow Lite variables */
@@ -1305,7 +1309,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	GstBus *bus;
 
 	/* Create the pipeline */
-	pipeline  = gst_pipeline_new("Image classification live camera");
+	pipeline  = gst_pipeline_new("Object detection live camera");
 	data->pipeline = pipeline;
 
 	/* Create gstreamer elements */
@@ -1434,6 +1438,7 @@ static void print_help(int argc, char** argv)
 		"-l --label_file <label file path>:    name of file containing labels\n"
 		"-i --image <directory path>:          image directory with image to be classified\n"
 		"-v --video_device <n>:                video device (default /dev/video0)\n"
+		"--edgetpu                             if set, the NPU is used for the inference \n"
 		"--crop:                               if set, the nn input image is cropped (with the expected nn aspect ratio) before being resized,\n"
 		"                                      else the nn imput image is only resized to the nn input size (could cause picture deformation).\n"
 		"--frame_width  <val>:                 width of the camera frame (default is 640)\n"
@@ -1459,6 +1464,7 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_STD    1004
 #define OPT_VERBOSE      1005
 #define OPT_VALIDATION   1006
+#define OPT_EDGETPU      1007
 void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "m:l:i:v:c:t:h";
@@ -1468,6 +1474,7 @@ void process_args(int argc, char** argv)
 		{"image",        required_argument, nullptr, 'i'},
 		{"video_device", required_argument, nullptr, 'v'},
 		{"crop",         no_argument,       nullptr, 'c'},
+		{"edgetpu",      no_argument,       nullptr, OPT_EDGETPU},
 		{"frame_width",  required_argument, nullptr, OPT_FRAME_WIDTH},
 		{"frame_height", required_argument, nullptr, OPT_FRAME_HEIGHT},
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
@@ -1506,6 +1513,10 @@ void process_args(int argc, char** argv)
 		case 'c':
 			crop = true;
 			std::cout << "nn input image will be cropped then resized" << std::endl;
+			break;
+		case OPT_EDGETPU:
+			tpu = true;
+			std::cout << "EdgeTPU enabled" << std::endl;
 			break;
 		case OPT_FRAME_WIDTH:
 			camera_width_str = std::string(optarg);
@@ -1637,6 +1648,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	if(tpu){
+		accel = true;
+	} else {
+		g_print("No EDGETPU found. Inference launched on CPU\n");
+		accel = false;
+	}
+
 	/* TensorFlow Lite wrapper initialization */
 	config.verbose = verbose;
 	config.model_name = model_file_str;
@@ -1645,6 +1663,7 @@ int main(int argc, char *argv[])
 	config.input_std = input_std;
 	config.number_of_threads = nb_cpu_cores;
 	config.number_of_results = 5;
+	config.edgetpu = tpu;
 
 	tfl_wrapper.Initialize(&config);
 
