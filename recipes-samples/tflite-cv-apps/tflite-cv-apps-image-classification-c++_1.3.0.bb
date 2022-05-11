@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7c
 
 inherit pkgconfig
 
-DEPENDS += " tensorflow-lite gtk+3 opencv gstreamer1.0-plugins-base gstreamer1.0-plugins-bad libedgetpu"
+DEPENDS += " tensorflow-lite gtk+3 opencv gstreamer1.0-plugins-base gstreamer1.0-plugins-bad"
 
 SRC_URI  = " file://image-classification/src/101-tflite-image-classification-C++.yaml;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/src/label_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "

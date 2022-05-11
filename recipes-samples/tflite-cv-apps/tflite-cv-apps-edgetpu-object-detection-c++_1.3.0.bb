@@ -32,7 +32,8 @@ S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 
-EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
+EXTRA_OEMAKE   = 'SYSROOT="${RECIPE_SYSROOT}"'
+EXTRA_OEMAKE  += 'EDGETPU=TRUE'
 
 do_compile() {
     #Check the version of OpenCV and fill OPENCV_VERSION accordingly

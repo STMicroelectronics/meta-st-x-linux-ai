@@ -1553,8 +1553,12 @@ void process_args(int argc, char** argv)
 			std::cout << "nn input image will be cropped then resized" << std::endl;
 			break;
 		case OPT_EDGETPU:
+#ifdef EDGETPU
 			tpu = true;
-			std::cout << "EdgeTPU enabled" << std::endl;
+			std::cout << "Inference launched on EdgeTPU" << std::endl;
+#else
+			std::cout << "EdgeTPU interface not supported, please re-build the app with EdgeTPU support enabled" << std::endl;
+#endif
 			break;
 		case OPT_FRAME_WIDTH:
 			camera_width_str = std::string(optarg);
@@ -1689,7 +1693,7 @@ int main(int argc, char *argv[])
 	if(tpu){
 		accel = true;
 	} else {
-		g_print("No EDGETPU found. Inference launched on CPU\n");
+		g_print("Inference launched on CPU\n");
 		accel = false;
 	}
 

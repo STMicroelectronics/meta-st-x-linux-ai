@@ -38,7 +38,9 @@
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/optional_debug_tools.h"
 
+#ifdef EDGETPU
 #include "tflite/public/edgetpu.h"
+#endif
 
 #define LOG(x) std::cerr
 
@@ -67,7 +69,10 @@ namespace wrapper_tfl {
 	private:
 		// Taking a reference to the (const) model data avoids lifetime-related issues
 		// and complexity with the TFL_Model's existence.
+#ifdef EDGETPU
 		std::shared_ptr<edgetpu::EdgeTpuContext> m_edgetpu_ctx;
+#endif
+
 		std::unique_ptr<tflite::FlatBufferModel> m_model;
 		std::unique_ptr<tflite::Interpreter>     m_interpreter;
 		bool                                     m_verbose;
@@ -95,6 +100,7 @@ namespace wrapper_tfl {
 			m_numberOfResults	= conf->number_of_results;
 			m_edgetpu		= conf->edgetpu;
 
+
 			if (m_edgetpu) {
 				/*  Check if the Edge TPU is connected */
 				int status = system("lsusb -d 1a6e:");
@@ -104,7 +110,9 @@ namespace wrapper_tfl {
 					exit(-1);
 				}
 				/* Load EDGEPTU */
+#ifdef EDGETPU
 				m_edgetpu_ctx = edgetpu::EdgeTpuManager::GetSingleton()->OpenDevice();
+#endif
 			}
 
 			if (!conf->model_name.c_str()) {
@@ -125,7 +133,9 @@ namespace wrapper_tfl {
 			tflite::ops::builtin::BuiltinOpResolver resolver;
 
 			if(m_edgetpu){
+#ifdef EDGETPU
 				resolver.AddCustom(edgetpu::kCustomOp, edgetpu::RegisterCustomOp());
+#endif
 			}
 
 			tflite::InterpreterBuilder(*model, resolver)(&interpreter);
@@ -141,7 +151,9 @@ namespace wrapper_tfl {
 			}
 
 			if(m_edgetpu){
+#ifdef EDGETPU
 				interpreter->SetExternalContext(kTfLiteEdgeTpuContext, m_edgetpu_ctx.get());
+#endif
 			} else {
 				interpreter->SetAllowFp16PrecisionForFp32(m_allow_fp16);
 			}
