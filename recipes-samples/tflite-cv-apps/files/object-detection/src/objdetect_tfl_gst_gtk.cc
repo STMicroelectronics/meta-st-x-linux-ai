@@ -78,6 +78,7 @@ bool gtk_main_started = false;
 bool exit_application = false;
 
 #define RESOURCES_DIRECTORY  "/usr/local/demo-ai/computer-vision/tflite-object-detection/bin/resources/"
+#define RESOURCES_DIRECTORY_EDGETPU "/usr/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin/resources/"
 
 typedef struct _FramePosition {
 	int x;
@@ -541,8 +542,11 @@ bool first_load = true;
 static void gui_gtk_style(CustomData *data)
 {
 	std::stringstream css_sstr;
-	css_sstr << RESOURCES_DIRECTORY;
-	if (first_load){
+	if(tpu) {
+		css_sstr << RESOURCES_DIRECTORY_EDGETPU;
+	} else {
+		css_sstr << RESOURCES_DIRECTORY;
+	}	if (first_load){
 		css_sstr << "Default.css";
 		first_load = false;
 	} else {
@@ -603,7 +607,11 @@ static void gui_set_ui_parameters(CustomData *data)
 
 	/* set the icons */
 	std::stringstream st_icon_sstr;
-	st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
+	if(tpu) {
+		st_icon_sstr << RESOURCES_DIRECTORY_EDGETPU << "st_icon_tpu_";
+	} else {
+		st_icon_sstr << RESOURCES_DIRECTORY << "st_icon_";
+	}
 	if (!data->preview_enabled)
 		st_icon_sstr << "next_inference_";
 	st_icon_sstr << ui_icon_st_width << "x" << ui_icon_st_height << ".png";
@@ -619,7 +627,11 @@ static void gui_set_ui_parameters(CustomData *data)
 	gtk_image_set_from_file(GTK_IMAGE(data->st_icon_ov), st_icon_sstr.str().c_str());
 
 	std::stringstream exit_icon_sstr;
-	exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
+	if(tpu) {
+		exit_icon_sstr << RESOURCES_DIRECTORY_EDGETPU << "exit_";
+	} else {
+		exit_icon_sstr << RESOURCES_DIRECTORY << "exit_";
+	}
 	exit_icon_sstr << ui_icon_exit_width << "x" << ui_icon_exit_height << ".png";
 
 	/* checking the reading permission of the file */
