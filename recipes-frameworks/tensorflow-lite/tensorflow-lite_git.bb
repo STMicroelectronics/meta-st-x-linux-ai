@@ -96,8 +96,10 @@ do_install() {
 
 	# Install Tflite python3 interpreter
 	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
+	install -d ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info
 	chrpath -d ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/tflite_runtime/*.so
 	install -m 0644  ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/tflite_runtime/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
+	install -m 0644  ${S}/tensorflow/lite/tools/pip_package/gen/tflite_pip/python3/tflite_runtime.egg-info/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info
 
 	# install common.c and util.cc for edgtpu build
 	cp ${S}/tensorflow/lite/util.cc ${D}${includedir}/tensorflow/lite
@@ -111,7 +113,8 @@ FILES:${PN} += "${libdir}/libtensorflow-lite.so.${PVB}"
 
 FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/*"
 
-FILES:python3-${PN} = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
+FILES:python3-${PN}  = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
+FILES:python3-${PN} += "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info"
 
 RDEPENDS:python3-${PN} += " python3-ctypes python3-numpy "
 
