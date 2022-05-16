@@ -78,7 +78,7 @@ bool gtk_main_started = false;
 bool exit_application = false;
 
 #define RESOURCES_DIRECTORY  "/usr/local/demo-ai/computer-vision/tflite-object-detection/bin/resources/"
-#define RESOURCES_DIRECTORY_EDGETPU "/usr/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin/resources/"
+#define RESOURCES_DIRECTORY_EDGETPU "/usr/local/demo-ai/computer-vision/tflite-object-detection-edgetpu/bin/resources/"
 
 typedef struct _FramePosition {
 	int x;
