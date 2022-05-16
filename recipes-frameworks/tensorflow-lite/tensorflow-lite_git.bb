@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=4158a261ca7f2525513e31ba9c50ae98"
 PV = "2.8.0+git${SRCPV}"
 
 SRCREV = "3f878cff5b698b82eea85db2b60d65a2e320850e"
-SRC_URI = " git://github.com/tensorflow/tensorflow;branch=r2.8 "
+SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.8 "
 SRC_URI += " file://0001-TFLite-cmake-support-cross-compilation-configuration.patch "
 SRC_URI += " file://0002-TFLite-cmake-generate-benchmark_model-binary.patch "
 SRC_URI += " file://0003-TFLite-cmake-force-tensorflow-lite-shared-library.patch "
@@ -48,6 +48,8 @@ DEPENDS = "zlib \
 # Set building environment variables
 TENSORFLOW_TARGET="${@bb.utils.contains('TARGET_OS', 'linux-gnueabi', 'linux', '', d)}"
 TENSORFLOW_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7l', '', d)}"
+
+do_compile[network] = "1"
 
 do_compile() {
 	# Used to download cmake dependencies when behind a proxy

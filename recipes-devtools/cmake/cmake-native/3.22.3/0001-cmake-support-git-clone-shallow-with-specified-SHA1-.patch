@@ -1,4 +1,4 @@
-From c33cdd37779a9c1bc99542c8e489d2f27da0c260 Mon Sep 17 00:00:00 2001
+From ae7b03e67ebf4dead503efad578bf1e3ee7296c5 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 24 Feb 2022 16:35:25 +0100
 Subject: [PATCH 1/1] cmake: support git clone shallow with specified SHA1 ID
@@ -20,10 +20,10 @@ Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
  1 file changed, 139 insertions(+), 12 deletions(-)
 
 diff --git a/Modules/ExternalProject.cmake b/Modules/ExternalProject.cmake
-index 9e25beecac..f143c34e2d 100644
+index 4004ea44..69b16a30 100644
 --- a/Modules/ExternalProject.cmake
 +++ b/Modules/ExternalProject.cmake
-@@ -1238,7 +1238,7 @@ define_property(DIRECTORY PROPERTY "EP_UPDATE_DISCONNECTED" INHERITED
+@@ -1254,7 +1254,7 @@ define_property(DIRECTORY PROPERTY "EP_UPDATE_DISCONNECTED" INHERITED
    "ExternalProject module."
    )
  
@@ -32,7 +32,7 @@ index 9e25beecac..f143c34e2d 100644
    if(NOT GIT_VERSION_STRING VERSION_LESS 1.8.5)
      # Use `git checkout <tree-ish> --` to avoid ambiguity with a local path.
      set(git_checkout_explicit-- "--")
-@@ -1257,13 +1257,6 @@ function(_ep_write_gitclone_script script_filename source_dir git_EXECUTABLE git
+@@ -1273,13 +1273,6 @@ function(_ep_write_gitclone_script script_filename source_dir git_EXECUTABLE git
    else()
      set(git_clone_options)
    endif()
@@ -46,7 +46,7 @@ index 9e25beecac..f143c34e2d 100644
    if(git_progress)
      list(APPEND git_clone_options --progress)
    endif()
-@@ -1356,6 +1349,131 @@ endif()
+@@ -1372,6 +1365,131 @@ endif()
  
  endfunction()
  
@@ -178,7 +178,7 @@ index 9e25beecac..f143c34e2d 100644
  function(_ep_write_hgclone_script script_filename source_dir hg_EXECUTABLE hg_repository hg_tag src_name work_dir hgclone_infofile hgclone_stampfile)
    if("${hg_tag}" STREQUAL "")
      message(FATAL_ERROR "Tag for hg checkout should not be empty.")
-@@ -2708,10 +2826,19 @@ function(_ep_add_download_command name)
+@@ -2724,10 +2842,19 @@ function(_ep_add_download_command name)
      # create a cmake script to invoke as download command.
      # The script will delete the source directory and then call git clone.
      #

@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 PV = "2.8.0+git${SRCPV}"
 
 SRCREV = "ea1eaddbddece0c9ca1166e868f8fd03f4a3199e"
-SRC_URI = "git://github.com/google-coral/libedgetpu.git "
+SRC_URI = "git://github.com/google-coral/libedgetpu.git;protocol=https;branch=master "
 SRC_URI += " file://0001-update-make_build-Makefile-to-accept-cross-compilati.patch "
 SRC_URI += " file://0002-fix-build-issue-with-gcc-v11.x.patch "
 
