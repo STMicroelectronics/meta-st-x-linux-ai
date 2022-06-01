@@ -1,10 +1,9 @@
-From 22f65af39980928305e991bc936e8c14a3f6858b Mon Sep 17 00:00:00 2001
+From adca9859b55afdde92f85599cd1c9c6ca5574566 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 5 Apr 2022 21:16:45 +0200
-Subject: [PATCH 2/2] align signature API with TFLite 2.8.0
+Subject: [PATCH 2/4] align signature API with TFLite 2.8.0
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
-Change-Id: I49017ebf30d5766f6ca4b09fe8d9b72af255515c
 ---
  coral/detection/adapter.cc | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
@@ -30,5 +29,5 @@ index 785443f..af29af5 100644
      count = TensorData<float>(
          *interpreter.tensor(signature_output_map.at("output_0")));
 -- 
-2.17.1
+2.25.1
 

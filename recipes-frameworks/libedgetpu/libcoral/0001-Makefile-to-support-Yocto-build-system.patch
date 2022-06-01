@@ -1,10 +1,9 @@
-From 44cf7ffad93da3cb6854e97986401f9b3c01462d Mon Sep 17 00:00:00 2001
+From 29d728d903dc8311c6793cbaab349dd515098380 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 5 Apr 2022 21:16:05 +0200
-Subject: [PATCH 1/2] Makefile to support Yocto build system
+Subject: [PATCH 1/4] Makefile to support Yocto build system
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
-Change-Id: I7978f1b7988ffa568ad8f7ba959108904e089d5e
 ---
  makefile_build/Makefile | 68 +++++++++++++++++++++++++++++++++++++++++
  1 file changed, 68 insertions(+)
@@ -12,7 +11,7 @@ Change-Id: I7978f1b7988ffa568ad8f7ba959108904e089d5e
 
 diff --git a/makefile_build/Makefile b/makefile_build/Makefile
 new file mode 100644
-index 0000000..47f64db
+index 0000000..c4eb9c2
 --- /dev/null
 +++ b/makefile_build/Makefile
 @@ -0,0 +1,68 @@
@@ -85,5 +84,5 @@ index 0000000..47f64db
 +clean:
 +	rm -rf $(BUILDDIR)
 -- 
-2.17.1
+2.25.1
 
