@@ -37,6 +37,7 @@ SUMMARY:packagegroup-x-linux-ai-tflite-edgetpu = "X-LINUX-AI TensorFlow Lite Edg
 RDEPENDS:packagegroup-x-linux-ai-tflite-edgetpu = "\
     libedgetpu \
     libcoral \
+    python3-pycoral \
     python3-tensorflow-lite \
     tensorflow-lite \
     tflite-edgetpu-benchmark \

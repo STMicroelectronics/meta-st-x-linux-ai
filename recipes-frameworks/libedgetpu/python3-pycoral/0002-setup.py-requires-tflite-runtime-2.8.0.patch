@@ -1,0 +1,27 @@
+From 718e80a779e91783334cb997b121ac974a48882b Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Tue, 31 May 2022 12:58:58 +0200
+Subject: [PATCH 2/2] setup.py: requires tflite-runtime 2.8.0
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+Change-Id: Ibf2480a6b9acc375b046d7c09edee9cbbb9daf94
+---
+ setup.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/setup.py b/setup.py
+index a43cc2c..50c68a3 100644
+--- a/setup.py
++++ b/setup.py
+@@ -71,7 +71,7 @@ setup(
+     install_requires=[
+         'numpy>=1.16.0',
+         'Pillow>=4.0.0',
+-        'tflite-runtime==2.5.0.post1',
++        'tflite-runtime==2.8.0',
+     ],
+     **({
+         'has_ext_modules': lambda: True
+-- 
+2.25.1
+

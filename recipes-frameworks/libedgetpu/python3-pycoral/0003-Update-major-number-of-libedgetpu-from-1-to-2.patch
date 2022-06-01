@@ -1,0 +1,29 @@
+From d36a257ca7ceece0f254374656c6657ecf6ea09a Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Wed, 1 Jun 2022 15:09:27 +0200
+Subject: [PATCH 1/1] Update major number of libedgetpu from 1 to 2
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+Change-Id: I87701b3cd444261020ee514839348b36bdde0aa2
+---
+ pycoral/utils/edgetpu.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/pycoral/utils/edgetpu.py b/pycoral/utils/edgetpu.py
+index c69aaf1..fd7223b 100644
+--- a/pycoral/utils/edgetpu.py
++++ b/pycoral/utils/edgetpu.py
+@@ -32,8 +32,8 @@ import platform
+ import tflite_runtime.interpreter as tflite
+ 
+ _EDGETPU_SHARED_LIB = {
+-  'Linux': 'libedgetpu.so.1',
+-  'Darwin': 'libedgetpu.1.dylib',
++  'Linux': 'libedgetpu.so.2',
++  'Darwin': 'libedgetpu.2.dylib',
+   'Windows': 'edgetpu.dll'
+ }[platform.system()]
+ 
+-- 
+2.25.1
+
