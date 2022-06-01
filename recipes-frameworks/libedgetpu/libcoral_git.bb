@@ -5,7 +5,8 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d8927f3331d2b3e321b7dd1925166d25"
 
-PV = "2.8.0+git${SRCPV}"
+# Release Grouper
+PV = "2.0.0+git${SRCPV}"
 
 SRCREV = "6589d0bb49c7fdbc4194ce178d06f8cdc7b5df60"
 SRC_URI = "git://github.com/google-coral/libcoral.git;protocol=https;branch=master "
