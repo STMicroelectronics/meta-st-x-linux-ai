@@ -3,7 +3,8 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 
-PV = "2.8.0+git${SRCPV}"
+# Release Grouper
+PV = "2.0.0+git${SRCPV}"
 
 SRCREV = "ea1eaddbddece0c9ca1166e868f8fd03f4a3199e"
 SRC_URI = "git://github.com/google-coral/libedgetpu.git;protocol=https;branch=master "
