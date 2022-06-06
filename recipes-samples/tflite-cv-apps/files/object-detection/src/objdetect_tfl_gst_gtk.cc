@@ -1488,9 +1488,11 @@ static void print_help(int argc, char** argv)
 		"-l --label_file <label file path>:    name of file containing labels\n"
 		"-i --image <directory path>:          image directory with image to be classified\n"
 		"-v --video_device <n>:                video device (default /dev/video0)\n"
-		"--edgetpu                             if set, the NPU is used for the inference \n"
+#ifdef EDGETPU
+		"--edgetpu                             if set, the Coral EdgeTPU acceleration is enabled \n"
+#endif
 		"--crop:                               if set, the nn input image is cropped (with the expected nn aspect ratio) before being resized,\n"
-		"                                      else the nn imput image is only resized to the nn input size (could cause picture deformation).\n"
+		"                                      else the nn input image is only resized to the nn input size (could cause picture deformation).\n"
 		"--frame_width  <val>:                 width of the camera frame (default is 640)\n"
 		"--frame_height <val>:                 height of the camera frame (default is 480)\n"
 		"--framerate <val>:                    framerate of the camera (default is 15fps)\n"
@@ -1498,7 +1500,7 @@ static void print_help(int argc, char** argv)
 		"--input_std  <val>:                   model input standard deviation (default is 127.5)\n"
 		"--verbose:                            enable verbose mode\n"
 		"--validation:                         enable the validation mode\n"
-		"-t --threshold                        threshold of accuracy above which the boxes are displayed (default 0.60)\n"
+		"-t --threshold <val>:                 threshold of accuracy above which the boxes are displayed (default 0.60)\n"
 		"--help:                               show this help\n";
 	exit(1);
 }
@@ -1514,7 +1516,9 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_STD    1004
 #define OPT_VERBOSE      1005
 #define OPT_VALIDATION   1006
+#ifdef EDGETPU
 #define OPT_EDGETPU      1007
+#endif
 void process_args(int argc, char** argv)
 {
 	const char* const short_opts = "m:l:i:v:c:t:h";
@@ -1524,7 +1528,9 @@ void process_args(int argc, char** argv)
 		{"image",        required_argument, nullptr, 'i'},
 		{"video_device", required_argument, nullptr, 'v'},
 		{"crop",         no_argument,       nullptr, 'c'},
+#ifdef EDGETPU
 		{"edgetpu",      no_argument,       nullptr, OPT_EDGETPU},
+#endif
 		{"frame_width",  required_argument, nullptr, OPT_FRAME_WIDTH},
 		{"frame_height", required_argument, nullptr, OPT_FRAME_HEIGHT},
 		{"framerate",    required_argument, nullptr, OPT_FRAMERATE},
@@ -1564,12 +1570,10 @@ void process_args(int argc, char** argv)
 			crop = true;
 			std::cout << "nn input image will be cropped then resized" << std::endl;
 			break;
-		case OPT_EDGETPU:
 #ifdef EDGETPU
+		case OPT_EDGETPU:
 			tpu = true;
 			std::cout << "Inference launched on EdgeTPU" << std::endl;
-#else
-			std::cout << "EdgeTPU interface not supported, please re-build the app with EdgeTPU support enabled" << std::endl;
 #endif
 			break;
 		case OPT_FRAME_WIDTH:
