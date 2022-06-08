@@ -414,9 +414,11 @@ class MainUIWindow(Gtk.Window):
 
         #if args.image is empty -> camera preview mode else still picture
         if args.image == "":
+            print("camera preview mode activate")
             self.enable_camera_preview = True
             self.check_video_device()
         else:
+            print("still picture mode activate")
             self.enable_camera_preview = False
             self.still_picture_next = False
 
@@ -615,15 +617,19 @@ class MainUIWindow(Gtk.Window):
                 preview_ratio = float(args.frame_width)/float(args.frame_height)
                 preview_height = self.drawing_height
                 preview_width =  preview_ratio * preview_height
-                if preview_width > self.drawing_width:
+                if preview_width >= self.drawing_width:
                    preview_width = self.drawing_width
-                offset = (self.drawing_width - preview_width)/2
+                   offset = 0
+                else :
+                    offset = (self.drawing_width - preview_width)/2
             else :
                 preview_width = self.frame_width
                 preview_height = self.frame_height
-                if preview_width > self.drawing_width:
+                if preview_width >= self.drawing_width:
                     preview_width = self.drawing_width
-                offset = (self.drawing_width - preview_height)/2
+                    offset = 0
+                else :
+                    offset = (self.drawing_width - preview_width)/2
                 self.boxes_printed = True
                 if args.validation:
                     self.still_picture_next = True
