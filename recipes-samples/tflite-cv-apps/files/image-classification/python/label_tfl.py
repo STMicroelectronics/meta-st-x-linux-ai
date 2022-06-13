@@ -489,7 +489,10 @@ class MainUIWindow(Gtk.Window):
             # camera preview mode
             self.info_box = Gtk.VBox()
             self.info_box.set_css_name("gui_main_stbox")
-            self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
+            if args.edgetpu is False :
+                self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
+            else :
+                self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_tpu_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
             self.st_icon = Gtk.Image.new_from_file(self.st_icon_path)
             self.st_icon_event = Gtk.EventBox()
             self.st_icon_event.add(self.st_icon)
@@ -519,7 +522,10 @@ class MainUIWindow(Gtk.Window):
             # still picture mode
             self.info_box = Gtk.VBox()
             self.info_box.set_css_name("gui_main_stbox")
-            self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_next_inference_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
+            if args.edgetpu is False :
+                self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_next_inference_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
+            else :
+                self.st_icon_path = RESOURCES_DIRECTORY + 'st_icon_tpu_next_inference_' + self.ui_icon_st_width + 'x' + self.ui_icon_st_height + '.png'
             self.st_icon = Gtk.Image.new_from_file(self.st_icon_path)
             self.st_icon_event = Gtk.EventBox()
             self.st_icon_event.add(self.st_icon)
