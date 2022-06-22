@@ -1,0 +1,10 @@
+prefix=/usr
+exec_prefix=/usr
+libdir=/usr/lib
+includedir=/usr/include
+
+Name: date
+Description: date library
+Version: 3.0.0
+Cflags: -I${includedir}/date
+Libs: -L${libdir} -ldate-tz -lpthread
