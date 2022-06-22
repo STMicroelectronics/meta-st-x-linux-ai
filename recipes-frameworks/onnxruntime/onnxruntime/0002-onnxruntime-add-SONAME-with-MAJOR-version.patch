@@ -1,0 +1,10 @@
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index 603cc75fe2..952aa6d165 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -2057,3 +2057,5 @@ if (onnxruntime_ENABLE_EXTERNAL_CUSTOM_OP_SCHEMAS)
+   )
+ endif()
+ 
++message("ONNXRUNTIME_VERSION_MAJOR=${ONNXRUNTIME_VERSION_MAJOR}")
++set_target_properties(onnxruntime PROPERTIES SOVERSION "${ONNXRUNTIME_VERSION_MAJOR}")

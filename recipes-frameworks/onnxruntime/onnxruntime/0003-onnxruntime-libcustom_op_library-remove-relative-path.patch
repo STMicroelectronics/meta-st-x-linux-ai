@@ -1,0 +1,35 @@
+diff --git a/onnxruntime/test/python/onnxruntime_test_python.py b/onnxruntime/test/python/onnxruntime_test_python.py
+index e6e982aff1..e0c0367f80 100644
+--- a/onnxruntime/test/python/onnxruntime_test_python.py
++++ b/onnxruntime/test/python/onnxruntime_test_python.py
+@@ -839,7 +839,7 @@ class TestInferenceSession(unittest.TestCase):
+                 raise FileNotFoundError("Unable to find '{0}'".format(shared_library))
+ 
+         else:
+-            shared_library = './libcustom_op_library.so'
++            shared_library = '/usr/lib/libcustom_op_library.so'
+             if not os.path.exists(shared_library):
+                 raise FileNotFoundError("Unable to find '{0}'".format(shared_library))
+ 
+@@ -1132,7 +1132,7 @@ class TestInferenceSession(unittest.TestCase):
+             return
+ 
+         else:
+-            shared_library = './libtest_execution_provider.so'
++            shared_library = '/usr/lib/libtest_execution_provider.so'
+ 
+         if not os.path.exists(shared_library):
+             raise FileNotFoundError("Unable to find '{0}'".format(shared_library))
+diff --git a/onnxruntime/test/shared_lib/test_inference.cc b/onnxruntime/test/shared_lib/test_inference.cc
+index 899ea0a19e..0531d4b2aa 100644
+--- a/onnxruntime/test/shared_lib/test_inference.cc
++++ b/onnxruntime/test/shared_lib/test_inference.cc
+@@ -780,7 +780,7 @@ TEST(CApiTest, test_custom_op_library) {
+ #elif defined(__APPLE__)
+   lib_name = "libcustom_op_library.dylib";
+ #else
+-  lib_name = "./libcustom_op_library.so";
++  lib_name = "libcustom_op_library.so";
+ #endif
+ 
+   void* library_handle = nullptr;
