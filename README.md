@@ -7,32 +7,36 @@ OpenEmbedded meta layer to install AI frameworks and tools for the STM32MP1.
 It also provide application samples.
 
 ## Compatibility
-This version has been validated against the OpenSTLinux ecosystem release v2.1.0, v3.0.1.
-It supports STM32MP157x-DKx, STM32MP157x-EV1 and Avenger96 boards.
-Compatible with Yoto Project build system Dunfell.
+The X-LINUX-AI OpenSTLinux Expansion Package v2.2.0 is compatible with the Yocto Project™ build systems Kirkstone and Dunfell.
+It is validated over the OpenSTLinux Distributions v3.1 and v4.0 on STM32MP157C-DK2 with a USB image sensor, and on STM32MP157A-EV1 and STM32MP157C-EV1 with their built-in camera module
 
 ## Available frameworks and tools within the meta-layer
-[X-LINUX-AI v2.1.0 expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package):
-* TensorFlow Lite 2.5.0
-* OpenCV 4.1.x
-* Python 3.8.x (enabling Pillow module)
-* Support STM32MP15xF devices operating at up to 800MHz
-* Support of the Avenger96 board from Linaro™ 96Boards based on the STM32MP157A microprocessor, either with a USB camera or the DesignCore® OV5640 camera mezzanine board from D3 Engineering tested with the OpenSTLinux Distribution v2.1.0
-* Coral Edge TPU accelerator support
-  * libedgetpu 2.5.0 (built from master branch source code) and aligned with TensorFlow Lite 2.5.0
-* The X-LINUX-AI OpenSTLinux Expansion Package v2.1.1 is compatible with Yocto Project® build systems Dunfell. As a consequence, it is compatible with OpenSTLinux Distributions v2.x and v3.x on STM32MP157C-DK2 with a USB camera, and on STM32MP157A-EV1 and STM32MP157C-EV1 with their built-in camera module
-* Support for the OpenSTLinux AI package repository allowing the installation of prebuilt package using apt-* utilities
+[X-LINUX-AI v2.2.0 expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package):
+* TensorFlow™ Lite 2.8.0
+* OpenCV 4.5.x
+* Python™ 3.10.x (enabling Pillow module)
+* Support for the STM32MP157F devices operating at up to 800 MHz
+* Coral Edge TPU™ accelerator native support
+  * libedgetpu 2.0.0 (Gouper) aligned with TensorFlow™ Lite 2.8.0
+  * libcoral 2.0.0 (Gouper) aligned with TensorFlow™ Lite 2.8.0
+  * PyCoral 2.0.0 (Gouper) aligned with TensorFlow™ Lite 2.8.0
+* Support for the OpenSTLinux AI package repository allowing the installation of a prebuilt package using apt-* utilities
 * Application samples
-  * C++ / Python™ image classification application using TensorFlow™ Lite based on MobileNet v1 quantized model
-  * C++ / Python™ object detection application using TensorFlow™ Lite based on COCO SSD MobileNet v1 quantized model
-  * C++ / Python™ image classification application using Coral Edge TPU™ based on MobileNet v1 quantized model and compiled for the Coral Edge TPU
-  * C++ / Python™ object detection applicationusing Coral Edge TPU™ based on COCO SSD MobileNet v1 quantized model and compiled for the Coral Edge TPU
-  * C++ face recognition application using proprietary model capable of recognizing the face of a known (enrolled) user. Contact the local STMicroelectronics support for more information about this application or send a request to [edge.ai@st.com](mailto:edge.ai@st.com)
-* Application support 720p, 480p and 272p display configurations
+  * C++ / Python™ image classification example using TensorFlow™ Lite based on the MobileNet v1 quantized model
+  * C++ / Python™ object detection example using TensorFlow™ Lite based on the COCO SSD MobileNet v1 quantized model
+  * C++ / Python™ image classification example using Coral Edge TPU™ based on the MobileNet v1 quantized model and compiled for the Edge TPU™
+  * C++ / Python™ object detection example using Coral Edge TPU™ based on the COCO SSD MobileNet v1 quantized model and compiled for the Edge TPU™
+  * C++ face recognition application using proprietary model capable of recognizing the face of a known (enrolled) user. Contact the local STMicroelectronics support for more information about this application or send a request to edge.ai@st.com
+* Application support for the 720p, 480p, and 272p display configurations
 * Application user interface with updated look and feel
+* Python™ and C++ application rework for better performance
+* X-LINUX-AI SDK add-on extending the OpenSTLinux SDK with AI functionality to develop and build an AI application easily. The X-LINUX-AI SDK add-on provides support for all the above frameworks. It is available from the [X-LINUX-AI](https://www.st.com/en/embedded-software/x-linux-ai.html) product page
 
-## Further information on how to install and how to use
+## Further information on how to install and how to use X-LINUX-AI
 <https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package>
+
+## Further information on how to install and how to use X-LINUX-AI SDK add-on
+<https://wiki.st.com/stm32mpu/wiki/How_to_install_and_use_the_X-LINUX-AI_SDK_add-on>
 
 ## Application samples
 <https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_application_samples_zoo>
