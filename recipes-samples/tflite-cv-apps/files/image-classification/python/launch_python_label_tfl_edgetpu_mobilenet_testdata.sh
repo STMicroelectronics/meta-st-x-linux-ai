@@ -5,7 +5,7 @@ cmd="python3 /usr/local/demo-ai/computer-vision/tflite-image-classification-edge
 
 if [ "$weston_user" != "root" ]; then
 	echo "user : "$weston_user
-	su -l $weston_user -c "$cmd"
+	script -qc "su -l $weston_user -c '$cmd'"
 else
 	$cmd
 fi
