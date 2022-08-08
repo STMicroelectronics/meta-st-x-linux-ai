@@ -38,7 +38,7 @@ struct wrapper_tfl::Config config;
 static void print_help(int argc, char** argv)
 {
 	std::cout <<
-		"Usage: " << argv[0] << "./tflite-edgetpu-benchmark -m <model .tflite> -l <label .txt file>\n"
+		"Usage: " << argv[0] << "./tflite-edgetpu-benchmark -m <model .tflite> \n"
 		"\n"
 		"-m --model_file <.tflite file path>:  .tflite model to be executed\n"
 		"-l --loops <int>:                     provide the number of time the inference will be executed (by default nb_loops=1)\n"
