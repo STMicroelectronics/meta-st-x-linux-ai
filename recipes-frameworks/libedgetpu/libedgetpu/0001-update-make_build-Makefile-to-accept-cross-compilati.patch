@@ -10,11 +10,11 @@ generated libedgetpu libraries are link with applications.
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 ---
- makefile_build/Makefile | 111 +++++++++++++++++++++++++++++++---------
- 1 file changed, 87 insertions(+), 24 deletions(-)
+ makefile_build/Makefile | 113 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 88 insertions(+), 25 deletions(-)
 
 diff --git a/makefile_build/Makefile b/makefile_build/Makefile
-index ef7d290..fd7e3f4 100644
+index ef7d290..b40ad90 100644
 --- a/makefile_build/Makefile
 +++ b/makefile_build/Makefile
 @@ -10,37 +10,93 @@ BUILDROOT ?= $(MAKEFILE_DIR)/..
@@ -126,7 +126,27 @@ index ef7d290..fd7e3f4 100644
  
  LIBEDGETPU_FLATC_SRCS := \
  	$(BUILDROOT)/executable/executable.fbs \
-@@ -155,9 +211,18 @@ LIBEDGETPU_STD_CCSRCS := \
+@@ -59,9 +115,6 @@ LIBEDGETPU_INCLUDES := \
+ 	$(BUILDDIR)/$(BUILDROOT)
+ LIBEDGETPU_INCLUDES := $(addprefix -I,$(LIBEDGETPU_INCLUDES))
+ 
+-LIBEDGETPU_CSRCS := $(TFROOT)/tensorflow/lite/c/common.c
+-LIBEDGETPU_COBJS := $(call TOBUILDDIR,$(patsubst %.c,%.o,$(LIBEDGETPU_CSRCS)))
+-
+ LIBEDGETPU_CCSRCS := \
+ 	$(BUILDROOT)/api/allocated_buffer.cc \
+ 	$(BUILDROOT)/api/buffer.cc \
+@@ -140,7 +193,8 @@ LIBEDGETPU_CCSRCS := \
+ 	$(BUILDROOT)/tflite/edgetpu_c.cc \
+ 	$(BUILDROOT)/tflite/edgetpu_delegate_for_custom_op.cc \
+ 	$(BUILDROOT)/tflite/edgetpu_delegate_for_custom_op_tflite_plugin.cc \
+-	$(TFROOT)/tensorflow/lite/util.cc
++	$(TFROOT)/tensorflow/lite/util.cc \
++	$(TFROOT)/tensorflow/lite/c/common.cc
+ LIBEDGETPU_CCOBJS := $(call TOBUILDDIR,$(patsubst %.cc,%.o,$(LIBEDGETPU_CCSRCS)))
+ 
+ # In order to support direct and throttled mode - we need to compile two files
+@@ -155,9 +209,18 @@ LIBEDGETPU_STD_CCSRCS := \
  	$(BUILDROOT)/tflite/edgetpu_manager_direct.cc
  LIBEDGETPU_STD_CCOBJS := $(call TOBUILDDIR,$(patsubst %.cc,%-throttled.o,$(LIBEDGETPU_STD_CCSRCS)))
  
@@ -146,13 +166,25 @@ index ef7d290..fd7e3f4 100644
  
  clean:
  	rm -rf $(BUILDDIR)
-@@ -201,14 +266,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
+@@ -181,11 +244,6 @@ firmware:
+ 	@echo "} // namespace" >> $(LIBEDGETPU_FW_OUTPUT)
+ 
+ 
+-$(LIBEDGETPU_COBJS) : $(BUILDDIR)/%.o: %.c
+-	@$(MKDIR)
+-	@echo "Compiling $<"
+-	@$(CC) $(LIBEDGETPU_CFLAGS) $(LIBEDGETPU_INCLUDES) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
+-
+ $(LIBEDGETPU_CCOBJS) : $(BUILDDIR)/%.o: %.cc
+ 	@$(MKDIR)
+ 	@echo "Compiling $<"
+@@ -201,14 +259,12 @@ $(LIBEDGETPU_STD_CCOBJS) : $(BUILDDIR)/%-throttled.o: %.cc
  	@echo "Compiling $<"
  	@$(CXX) -DTHROTTLE_EDGE_TPU $(LIBEDGETPU_CXXFLAGS) $(LIBEDGETPU_INCLUDES) -c $< -MD -MT $@ -MF $(@:%o=%d) -o $@
  
 -libedgetpu: | firmware $(LIBEDGETPU_FLATC_OBJS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS)
 -	@mkdir -p $(BUILDDIR)/direct/k8
-+libedgetpu: $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS)
++libedgetpu: $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS)
 +	@mkdir -p $(LIBDIR)
  	@echo "Building libedgetpu.so"
 -	@$(CXX) $(LIBEDGETPU_CCFLAGS) $(LIBEDGETPU_LDFLAGS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_MAX_CCOBJS) -o $(BUILDDIR)/direct/k8/libedgetpu.so.1.0
@@ -161,7 +193,7 @@ index ef7d290..fd7e3f4 100644
  
 -libedgetpu-throttled: | firmware $(LIBEDGETPU_FLATC_OBJS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS)
 -	@mkdir -p $(BUILDDIR)/throttled/k8
-+libedgetpu-throttled: $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS)
++libedgetpu-throttled: $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS)
 +	@mkdir -p $(LIBDIR)
  	@echo "Building throttled libedgetpu.so"
 -	@$(CXX) $(LIBEDGETPU_CCFLAGS) $(LIBEDGETPU_LDFLAGS) $(LIBEDGETPU_COBJS) $(LIBEDGETPU_CCOBJS) $(LIBEDGETPU_STD_CCOBJS) -o $(BUILDDIR)/throttled/k8/libedgetpu.so.1.0
