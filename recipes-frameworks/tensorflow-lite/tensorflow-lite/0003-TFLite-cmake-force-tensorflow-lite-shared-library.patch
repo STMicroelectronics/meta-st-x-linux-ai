@@ -1,7 +1,7 @@
-From 5049606e637d2867313fd64bffd27dcdc049135e Mon Sep 17 00:00:00 2001
+From 2e799b0f0689458b4c16aaffde5f647b16af6dae Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 26 Apr 2022 09:52:26 +0200
-Subject: [PATCH 3/6] TFLite: cmake: force tensorflow-lite shared library
+Subject: [PATCH 3/7] TFLite: cmake: force tensorflow-lite shared library
 
 Generate libtensorflow-lite.so library by keeping static library
 dependencies. The aim of this step is to simplify the link of applications
@@ -9,6 +9,7 @@ to a single dynamic library.
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+
 ---
  tensorflow/lite/CMakeLists.txt                              | 2 +-
  .../lite/tools/pip_package/build_pip_package_with_cmake.sh  | 6 +++++-
@@ -55,6 +56,3 @@ index 069bb8d0f4c..c2bfd07d713 100755
  
  # Build python wheel.
  cd "${BUILD_DIR}"
--- 
-2.25.1
-

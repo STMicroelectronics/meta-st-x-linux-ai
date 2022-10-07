@@ -1,0 +1,63 @@
+From a12b73e32efbefc10cb5b64e721ed3c0df3d0b83 Mon Sep 17 00:00:00 2001
+From: Nilesh Agarwalla <nilesh@broadcom.com>
+Date: Fri, 5 Nov 2021 06:15:44 -0700
+Subject: [PATCH 7/7] Add external delegate support to the cmake build of benchmark
+ app
+
+Change-Id: I360dc811219948b7de53100fb4be4063a791d006
+
+---
+ tensorflow/lite/CMakeLists.txt                 | 8 ++++++++
+ tensorflow/lite/tools/benchmark/CMakeLists.txt | 6 ++++++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 4c7894e240b..2529428d9ef 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -68,6 +68,7 @@ option(TFLITE_ENABLE_MMAP "Enable MMAP (unsupported on Windows)" ON)
+ option(TFLITE_ENABLE_GPU "Enable GPU" OFF)
+ option(TFLITE_ENABLE_METAL "Enable Metal delegate (iOS only)" OFF)
+ option(TFLITE_ENABLE_XNNPACK "Enable XNNPACK backend" ON)
++option(TFLITE_ENABLE_EXTERNAL_DELEGATE "Enable External Delegate backend" ON)
+ 
+ option(TFLITE_KERNEL_TEST "Enable tflite kernel unit test" OFF)
+ if(TFLITE_KERNEL_TEST AND ${CMAKE_CROSSCOMPILING})
+@@ -398,6 +399,12 @@ if(TFLITE_ENABLE_XNNPACK)
+   )
+   list(APPEND TFLITE_TARGET_PUBLIC_OPTIONS "-DTFLITE_BUILD_WITH_XNNPACK_DELEGATE")
+ endif()
++if(TFLITE_ENABLE_EXTERNAL_DELEGATE)
++  populate_tflite_source_vars("delegates/external"
++    TFLITE_DELEGATES_EXTERNAL_SRCS
++    FILTER ".*(_test|_tester)\\.(cc|h)"
++  )
++endif()
+ if (TFLITE_ENABLE_RESOURCE)
+   populate_tflite_source_vars("experimental/resource"
+     TFLITE_EXPERIMENTAL_RESOURCE_SRCS
+@@ -467,6 +474,7 @@ add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
+   ${TFLITE_DELEGATES_NNAPI_SRCS}
+   ${TFLITE_DELEGATES_SRCS}
+   ${TFLITE_DELEGATES_XNNPACK_SRCS}
++  ${TFLITE_DELEGATES_EXTERNAL_SRCS}
+   ${TFLITE_EXPERIMENTAL_RESOURCE_SRCS}
+   ${TFLITE_EXPERIMENTAL_RUY_PROFILER_SRCS}
+   ${TFLITE_EXPERIMENTAL_RUY_SRCS}
+diff --git a/tensorflow/lite/tools/benchmark/CMakeLists.txt b/tensorflow/lite/tools/benchmark/CMakeLists.txt
+index d66af0dcd4a..de619468e0c 100644
+--- a/tensorflow/lite/tools/benchmark/CMakeLists.txt
++++ b/tensorflow/lite/tools/benchmark/CMakeLists.txt
+@@ -54,6 +54,12 @@ else()
+   set(TFLITE_BENCHMARK_CC_OPTIONS "-DTFLITE_WITHOUT_XNNPACK")
+ endif()  # TFLITE_ENABLE_XNNPACK
+ 
++if(TFLITE_ENABLE_EXTERNAL_DELEGATE)
++  list(APPEND TFLITE_BENCHMARK_SRCS
++    ${TFLITE_SOURCE_DIR}/tools/delegates/external_delegate_provider.cc
++  )
++endif()  # TFLITE_ENABLE_EXTERNAL_DELEGATE
++
+ if(CMAKE_SYSTEM_NAME MATCHES "Android")
+   if(_TFLITE_ENABLE_NNAPI)
+     list(APPEND TFLITE_BENCHMARK_SRCS

@@ -1,7 +1,7 @@
-From 3a903e8c29bf1ce8c7cd72018fc94b617e90bdb0 Mon Sep 17 00:00:00 2001
+From 83b6b89723dc329f2c2a15da991779cc58c9a4d9 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 1/6] TFLite: cmake: support cross compilation configuration
+Subject: [PATCH 1/7] TFLite: cmake: support cross compilation configuration
 
 Add new case to support cross compilation configuration.
 To allow cross-compilation for arm architecture, python3.8
@@ -9,6 +9,7 @@ pybind11 and numpy includes are now pointing to the target sysroot
 instead of the native includes.
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+
 ---
  .../pip_package/build_pip_package_with_cmake.sh      | 12 ++++++++++++
  1 file changed, 12 insertions(+)
@@ -36,6 +37,3 @@ index 35eb3a917fb..071af4602b7 100755
    armhf)
      eval $(${TENSORFLOW_LITE_DIR}/tools/cmake/download_toolchains.sh "${TENSORFLOW_TARGET}")
      ARMCC_FLAGS="${ARMCC_FLAGS} -I${PYBIND11_INCLUDE}"
--- 
-2.25.1
-

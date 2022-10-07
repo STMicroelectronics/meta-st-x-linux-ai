@@ -1,9 +1,10 @@
-From 64b30d30b6eb13e4511df5aa389cfb83c241cd0d Mon Sep 17 00:00:00 2001
+From f9fdd2fe525e3101accee809a69df75d47081c82 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 2/6] TFLite: cmake: generate benchmark_model binary
+Subject: [PATCH 2/7] TFLite: cmake: generate benchmark_model binary
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+
 ---
  .../lite/tools/pip_package/build_pip_package_with_cmake.sh      | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -21,6 +22,3 @@ index 071af4602b7..069bb8d0f4c 100755
  cd "${BUILD_DIR}"
  
  case "${TENSORFLOW_TARGET}" in
--- 
-2.25.1
-

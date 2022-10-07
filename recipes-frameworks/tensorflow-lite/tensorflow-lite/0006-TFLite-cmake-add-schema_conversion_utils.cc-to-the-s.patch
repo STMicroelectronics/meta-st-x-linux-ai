@@ -1,12 +1,13 @@
-From 079eb691bb793b02c0f106af7f5aac34ef508491 Mon Sep 17 00:00:00 2001
+From f80a083eb62763d7932ee65606361a7d77dc3eed Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 26 Apr 2022 11:41:47 +0200
-Subject: [PATCH 6/6] TFLite: cmake: add schema_conversion_utils.cc to the
- shared library
+Subject: [PATCH 6/7] TFLite: cmake: add schema_conversion_utils.cc to the shared
+ library
 
 This is needed by libcoral library.
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+
 ---
  tensorflow/lite/CMakeLists.txt | 1 +
  1 file changed, 1 insertion(+)
@@ -23,6 +24,3 @@ index 1e774576f74..4c7894e240b 100644
  )
  target_include_directories(tensorflow-lite
    PUBLIC
--- 
-2.25.1
-

@@ -1,10 +1,11 @@
-From a81d3796efd28eafecd144175ec1ed948d46c04c Mon Sep 17 00:00:00 2001
+From ea711ffcf2acae9dbc367e6ac62950310fb64a93 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Wed, 23 Feb 2022 17:55:45 +0100
-Subject: [PATCH 5/6] TFLite: cmake: support git clone shallow with specified
+Subject: [PATCH 5/7] TFLite: cmake: support git clone shallow with specified
  SHA1ID
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+
 ---
  tensorflow/lite/tools/cmake/modules/eigen.cmake    | 9 ++++++++-
  tensorflow/lite/tools/cmake/modules/farmhash.cmake | 9 ++++++++-
@@ -71,6 +72,3 @@ index da31e3c3fb8..2e7fc662727 100644
    GIT_PROGRESS TRUE
    SOURCE_DIR "${CMAKE_BINARY_DIR}/gemmlowp"
  )
--- 
-2.25.1
-

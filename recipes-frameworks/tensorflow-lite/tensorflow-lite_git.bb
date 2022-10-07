@@ -17,6 +17,7 @@ SRC_URI += " file://0003-TFLite-cmake-force-tensorflow-lite-shared-library.patch
 SRC_URI += " file://0004-TFLite-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0005-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 SRC_URI += " file://0006-TFLite-cmake-add-schema_conversion_utils.cc-to-the-s.patch "
+SRC_URI += " file://0007-Add-external-delegate-support-to-the-cmake-build-of-.patch "
 
 S = "${WORKDIR}/git"
 
