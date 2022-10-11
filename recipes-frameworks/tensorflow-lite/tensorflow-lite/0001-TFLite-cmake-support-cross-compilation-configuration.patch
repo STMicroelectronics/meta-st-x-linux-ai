@@ -1,7 +1,7 @@
-From 83b6b89723dc329f2c2a15da991779cc58c9a4d9 Mon Sep 17 00:00:00 2001
+From f5419ca68331b4cb40b3f362f9ce57de9e993637 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 1/7] TFLite: cmake: support cross compilation configuration
+Subject: [PATCH] TFLite: cmake: support cross compilation configuration
 
 Add new case to support cross compilation configuration.
 To allow cross-compilation for arm architecture, python3.8
@@ -15,10 +15,10 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-index 35eb3a917fb..071af4602b7 100755
+index 7ca118b89f9..65a268672d5 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-@@ -66,6 +66,18 @@ cd "${BUILD_DIR}/cmake_build"
+@@ -68,6 +68,18 @@ cd "${BUILD_DIR}/cmake_build"
  
  echo "Building for ${TENSORFLOW_TARGET}"
  case "${TENSORFLOW_TARGET}" in
@@ -36,4 +36,4 @@ index 35eb3a917fb..071af4602b7 100755
 +    ;;
    armhf)
      eval $(${TENSORFLOW_LITE_DIR}/tools/cmake/download_toolchains.sh "${TENSORFLOW_TARGET}")
-     ARMCC_FLAGS="${ARMCC_FLAGS} -I${PYBIND11_INCLUDE}"
+     ARMCC_FLAGS="${ARMCC_FLAGS} -I${PYBIND11_INCLUDE} -I${NUMPY_INCLUDE}"

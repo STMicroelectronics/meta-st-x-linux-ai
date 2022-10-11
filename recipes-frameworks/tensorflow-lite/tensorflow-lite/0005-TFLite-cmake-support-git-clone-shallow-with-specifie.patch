@@ -1,7 +1,7 @@
-From ea711ffcf2acae9dbc367e6ac62950310fb64a93 Mon Sep 17 00:00:00 2001
+From b5345b3720d83426d93d6f8f8c7c0075171257be Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Wed, 23 Feb 2022 17:55:45 +0100
-Subject: [PATCH 5/7] TFLite: cmake: support git clone shallow with specified
+Subject: [PATCH] TFLite: cmake: support git clone shallow with specified
  SHA1ID
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
@@ -13,7 +13,7 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
  3 files changed, 24 insertions(+), 3 deletions(-)
 
 diff --git a/tensorflow/lite/tools/cmake/modules/eigen.cmake b/tensorflow/lite/tools/cmake/modules/eigen.cmake
-index ed1ba25e690..7a6d375b2be 100644
+index ee0e6376ba2..4da1eef79cd 100644
 --- a/tensorflow/lite/tools/cmake/modules/eigen.cmake
 +++ b/tensorflow/lite/tools/cmake/modules/eigen.cmake
 @@ -28,7 +28,14 @@ OverridableFetchContent_Declare(
@@ -33,7 +33,7 @@ index ed1ba25e690..7a6d375b2be 100644
    PREFIX "${CMAKE_BINARY_DIR}"
    SOURCE_DIR "${CMAKE_BINARY_DIR}/eigen"
 diff --git a/tensorflow/lite/tools/cmake/modules/farmhash.cmake b/tensorflow/lite/tools/cmake/modules/farmhash.cmake
-index 7a5160fa7eb..9943e3735b0 100644
+index 9c8e039e6fe..f4f3c607640 100644
 --- a/tensorflow/lite/tools/cmake/modules/farmhash.cmake
 +++ b/tensorflow/lite/tools/cmake/modules/farmhash.cmake
 @@ -28,7 +28,14 @@ OverridableFetchContent_Declare(
@@ -53,7 +53,7 @@ index 7a5160fa7eb..9943e3735b0 100644
    SOURCE_DIR "${CMAKE_BINARY_DIR}/farmhash"
  )
 diff --git a/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake b/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
-index da31e3c3fb8..2e7fc662727 100644
+index 0aaea326a0a..5ab60c60f86 100644
 --- a/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
 +++ b/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
 @@ -28,7 +28,14 @@ OverridableFetchContent_Declare(

@@ -1,7 +1,7 @@
-From 2e799b0f0689458b4c16aaffde5f647b16af6dae Mon Sep 17 00:00:00 2001
+From 129ed2424e6793991725bc182cb790046a475749 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 26 Apr 2022 09:52:26 +0200
-Subject: [PATCH 3/7] TFLite: cmake: force tensorflow-lite shared library
+Subject: [PATCH] TFLite: cmake: force tensorflow-lite shared library
 
 Generate libtensorflow-lite.so library by keeping static library
 dependencies. The aim of this step is to simplify the link of applications
@@ -11,28 +11,14 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 
 ---
- tensorflow/lite/CMakeLists.txt                              | 2 +-
  .../lite/tools/pip_package/build_pip_package_with_cmake.sh  | 6 +++++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 200d1a7c46d..e2253491713 100644
---- a/tensorflow/lite/CMakeLists.txt
-+++ b/tensorflow/lite/CMakeLists.txt
-@@ -458,7 +458,7 @@ include_directories(
- )
- 
- # TFLite library
--add_library(tensorflow-lite
-+add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
-   ${TFLITE_CORE_API_SRCS}
-   ${TFLITE_CORE_SRCS}
-   ${TFLITE_C_SRCS}
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-index 069bb8d0f4c..c2bfd07d713 100755
+index 1fed719ff3d..7a27907dd44 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-@@ -132,7 +132,7 @@ case "${TENSORFLOW_TARGET}" in
+@@ -134,7 +134,7 @@ case "${TENSORFLOW_TARGET}" in
      ;;
  esac
  
@@ -41,7 +27,7 @@ index 069bb8d0f4c..c2bfd07d713 100755
  cd "${BUILD_DIR}"
  
  case "${TENSORFLOW_TARGET}" in
-@@ -146,10 +146,14 @@ esac
+@@ -148,10 +148,14 @@ esac
  
  cp "${BUILD_DIR}/cmake_build/_pywrap_tensorflow_interpreter_wrapper${LIBRARY_EXTENSION}" \
     "${BUILD_DIR}/tflite_runtime"

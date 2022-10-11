@@ -7,17 +7,17 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=4158a261ca7f2525513e31ba9c50ae98"
 
-PV = "2.8.0+git${SRCPV}"
+PV = "2.11.0+git${SRCPV}"
 
-SRCREV = "3f878cff5b698b82eea85db2b60d65a2e320850e"
-SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.8 "
+SRCREV = "5d37bd0350f0144632629c1aa2ebaef6ca76300b"
+
+SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.11 "
 SRC_URI += " file://0001-TFLite-cmake-support-cross-compilation-configuration.patch "
 SRC_URI += " file://0002-TFLite-cmake-generate-benchmark_model-binary.patch "
 SRC_URI += " file://0003-TFLite-cmake-force-tensorflow-lite-shared-library.patch "
 SRC_URI += " file://0004-TFLite-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0005-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 SRC_URI += " file://0006-TFLite-cmake-add-schema_conversion_utils.cc-to-the-s.patch "
-SRC_URI += " file://0007-Add-external-delegate-support-to-the-cmake-build-of-.patch "
 
 S = "${WORKDIR}/git"
 
@@ -71,6 +71,7 @@ do_compile() {
 	export TFLITE_VERSION_MAJOR="${MAJOR}"
 
 	unset PYTHON
+	unset FC
 	bash ${S}/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 }
 
@@ -104,7 +105,7 @@ do_install() {
 
 	# install common.c and util.cc for edgtpu build
 	cp ${S}/tensorflow/lite/util.cc ${D}${includedir}/tensorflow/lite
-	cp ${S}/tensorflow/lite/c/common.c ${D}${includedir}/tensorflow/lite/c
+	cp ${S}/tensorflow/lite/c/common.cc ${D}${includedir}/tensorflow/lite/c
 }
 
 PACKAGES += "${PN}-tools python3-${PN}"

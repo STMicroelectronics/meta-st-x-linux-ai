@@ -1,7 +1,7 @@
-From f9fdd2fe525e3101accee809a69df75d47081c82 Mon Sep 17 00:00:00 2001
+From c8edf515f19e55cf6091fe9e0c5300e6ece5c65c Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 26 Jan 2022 15:53:33 +0100
-Subject: [PATCH 2/7] TFLite: cmake: generate benchmark_model binary
+Subject: [PATCH] TFLite: cmake: generate benchmark_model binary
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 
@@ -10,10 +10,10 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-index 071af4602b7..069bb8d0f4c 100755
+index 65a268672d5..1fed719ff3d 100755
 --- a/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
 +++ b/tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
-@@ -132,7 +132,7 @@ case "${TENSORFLOW_TARGET}" in
+@@ -134,7 +134,7 @@ case "${TENSORFLOW_TARGET}" in
      ;;
  esac
  

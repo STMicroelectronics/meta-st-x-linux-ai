@@ -1,26 +1,42 @@
-From f80a083eb62763d7932ee65606361a7d77dc3eed Mon Sep 17 00:00:00 2001
+From 163473c347568f9630f6f9960382fe0c945115bb Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 26 Apr 2022 11:41:47 +0200
-Subject: [PATCH 6/7] TFLite: cmake: add schema_conversion_utils.cc to the shared
+Subject: [PATCH] TFLite: cmake: add schema_conversion_utils.cc to the shared
+
+Modified: Alexis BRISSON <alexis.brisson@st.com>
  library
 
 This is needed by libcoral library.
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+Signed-off-by: Alexis BRISSON <alexis.brisson@st.com>
 
 ---
- tensorflow/lite/CMakeLists.txt | 1 +
- 1 file changed, 1 insertion(+)
+ tensorflow/lite/CMakeLists.txt | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 1e774576f74..4c7894e240b 100644
+index 740d186ad30..32aa5728de0 100644
 --- a/tensorflow/lite/CMakeLists.txt
 +++ b/tensorflow/lite/CMakeLists.txt
-@@ -483,6 +483,7 @@ add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
-   ${TFLITE_PROFILER_SRCS}
+@@ -209,6 +209,9 @@ list(FILTER TFLITE_SRCS EXCLUDE REGEX ".*tflite_with_xnnpack\\.cc$")
+ # Exclude Flex related files.
+ list(FILTER TFLITE_SRCS EXCLUDE REGEX ".*with_selected_ops\\.cc$")
+ 
++# Exclude tensorflow_profiler_logger files.
++list(FILTER TFLITE_SRCS EXCLUDE REGEX ".*tensorflow_profiler_logger\\.cc$")
++
+ if(_TFLITE_ENABLE_MMAP)
+   list(FILTER TFLITE_SRCS EXCLUDE REGEX ".*mmap_allocation_disabled\\.cc$")
+ else()
+@@ -507,8 +510,9 @@ set(_ALL_TFLITE_SRCS
    ${TFLITE_SOURCE_DIR}/kernels/internal/utils/sparsity_format_converter.cc
    ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
+   ${TFLITE_SOURCE_DIR}/schema/schema_generated.h
 +  ${TFLITE_SOURCE_DIR}/schema/schema_conversion_utils.cc
  )
- target_include_directories(tensorflow-lite
-   PUBLIC
+-add_library(tensorflow-lite
++add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
+   ${_ALL_TFLITE_SRCS}
+ )
+ set(_ALL_TFLITE_HDRS ${_ALL_TFLITE_SRCS})
