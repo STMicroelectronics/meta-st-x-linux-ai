@@ -56,5 +56,6 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = "\
     python3-onnxruntime \
     onnx-models-mobilenet \
     onnx-models-coco-ssd-mobilenetv1 \
+    onnx-cv-apps-image-classification-python \
 "
 
