@@ -15,12 +15,14 @@ PACKAGES = "\
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
 "
+PACKAGES += "${@bb.utils.contains('DISTRO_CODENAME', 'dunfell', '', 'packagegroup-x-linux-ai-onnxruntime', d)}"
 
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS:packagegroup-x-linux-ai = "\
     packagegroup-x-linux-ai-tflite           \
     packagegroup-x-linux-ai-tflite-edgetpu   \
 "
+RDEPENDS:packagegroup-x-linux-ai += "${@bb.utils.contains('DISTRO_CODENAME', 'dunfell', '', 'packagegroup-x-linux-ai-onnxruntime', d)}"
 
 SUMMARY:packagegroup-x-linux-ai-tflite = "X-LINUX-AI TensorFlow Lite components"
 RDEPENDS:packagegroup-x-linux-ai-tflite = "\
@@ -46,3 +48,11 @@ RDEPENDS:packagegroup-x-linux-ai-tflite-edgetpu = "\
     tflite-cv-apps-edgetpu-object-detection-c++ \
     tflite-cv-apps-edgetpu-object-detection-python \
 "
+
+SUMMARY:packagegroup-x-linux-ai-onnxruntime = "X-LINUX-AI ONNX Runtime components"
+RDEPENDS:packagegroup-x-linux-ai-onnxruntime = "\
+    onnxruntime \
+    onnxruntime-tools \
+    python3-onnxruntime \
+"
+
