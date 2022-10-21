@@ -148,8 +148,6 @@ FILES:${PN}-dev = "${libdir}/libonnxruntime.so ${includedir}/*"
 FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/* ${libdir}/libcustom_op_library.so ${libdir}/libtest_execution_provider.so"
 FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
-# onnxruntime_test_python.py requires python3-numpy.
-RDEPENDS:${PN}-tools += "${PYTHON_PN}-numpy"
-
-RRECOMMENDS:${PN} = "${PYTHON_PN}-onnx"
-
+# onnxruntime_test_python.py requires Numpy and the Python onnxruntime package.
+RDEPENDS:${PN}-tools += "${PYTHON_PN} ${PYTHON_PN}-numpy ${PYTHON_PN}-${PN}"
+RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}"
