@@ -219,15 +219,12 @@ class GstWidget(Gtk.Box):
 
             # creation of the source v4l2src
             self.v4lsrc1 = Gst.ElementFactory.make("v4l2src", "source")
-            video_device = "/dev/video" + str(args.video_device)
+            video_device = "/dev/" + str(self.app.video_device)
             self.v4lsrc1.set_property("device", video_device)
 
-            print("Camera configuration : ",  str(args.frame_width), "x",str(args.frame_height), " framerate = ",str(args.framerate))
             #creation of the v4l2src caps
-            if self.app.dcmipp_camera :
-                caps = "video/x-raw,format = RGB16, width=" + str(args.frame_width) +",height=" + str(args.frame_height) + ", framerate=" + str(args.framerate)+ "/1"
-            else:
-                caps = "video/x-raw, width=" + str(args.frame_width) +",height=" + str(args.frame_height) + ", framerate=" + str(args.framerate)+ "/1"
+            caps = str(self.app.camera_caps) + ", width=" + str(args.frame_width) +",height=" + str(args.frame_height) + ", framerate=" + str(args.framerate)+ "/1"
+            print("Camera pipeline configuration : ",caps)
             camera1caps = Gst.Caps.from_string(caps)
             self.camerafilter1 = Gst.ElementFactory.make("capsfilter", "filter1")
             self.camerafilter1.set_property("caps", camera1caps)
@@ -420,7 +417,6 @@ class MainWindow(Gtk.Window):
         """
         Setup the Gtk UI of the main window
         """
-        print("main_creation_ui")
         # remove the title bar
         self.set_decorated(False)
 
@@ -610,7 +606,6 @@ class OverlayWindow(Gtk.Window):
         """
         Setup the Gtk UI of the overlay window
         """
-        print("overlay_creation_ui")
         # remove the title bar
         self.set_decorated(False)
 
@@ -838,7 +833,13 @@ class Application:
         if args.image == "":
             print("camera preview mode activate")
             self.enable_camera_preview = True
-            self.check_video_device(args)
+            #Test if a camera is connected
+            check_camera_cmd = RESOURCES_DIRECTORY + "check_camera_preview.sh"
+            check_camera = subprocess.run(check_camera_cmd)
+            if check_camera.returncode==1:
+                print("no camera connected")
+                exit(1)
+            self.video_device,self.camera_caps=self.setup_camera()
         else:
             print("still picture mode activate")
             self.enable_camera_preview = False
@@ -873,42 +874,21 @@ class Application:
         self.overlay_window = OverlayWindow(args,self)
         self.main()
    
-    def setup_dcmipp(self, args):
-        """
-        Setup for dcmipp camera
-        """
-        config_cam = "media-ctl -d /dev/media0 --set-v4l2 \"\'ov5640 1-003c\':0[fmt:RGB565_2X8_LE/" + str(args.frame_width)  + "x" + str(args.frame_height) + "@1/" + str(args.framerate) + " field:none]\""
-        os.system(config_cam)
-
-        config_dcmipp_parallel = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_parallel\':0[fmt:RGB565_2X8_LE/" + str(args.frame_width) + "x" + str(args.frame_height) + "]\""
-        os.system(config_dcmipp_parallel)
-
-        config_dcmipp_dump_postproc0 = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':0[fmt:RGB565_2X8_LE/" + str(args.frame_width) + "x" + str(args.frame_height) +"]\"";
-        os.system(config_dcmipp_dump_postproc0)
-
-        config_dcmipp_dump_postproc1 = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[fmt:RGB565_2X8_LE/" + str(args.frame_width) + "x" + str(args.frame_height) +"]\"";
-        os.system(config_dcmipp_dump_postproc1)
-
-        config_dcmipp_dump_postproc_crop = "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[crop:(0,0)/" + str(args.frame_width) + "x" + str(args.frame_height) + "]\"";
-        os.system(config_dcmipp_dump_postproc_crop)
-        self.dcmipp_camera = True
-        print("dcmipp congiguration passed ")
-
-    def check_video_device (self, args):
-        """
-        Check what kind of camera is connected to adapt the configuration
-        """
-        #Check the camera type to configure it if necessary
-        cmd = "cat /sys/class/video4linux/video" + str(args.video_device) + "/name"
-        camera_type = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).communicate()[0]
-        dcmipp = 'dcmipp_dump_capture'
-        found = re.search(dcmipp,str(camera_type))
-        if found :
-            #dcmipp camera found
-            self.setup_dcmipp();
-            return True
-        else :
-            return False
+    def setup_camera(self):
+        width = str(args.frame_width)
+        height = str(args.frame_height)
+        framerate = str(args.framerate)
+        device = str(args.video_device)
+        config_camera = RESOURCES_DIRECTORY + "setup_camera.sh " + width + " " + height + " " + framerate + " " + device
+        x = subprocess.check_output(config_camera,shell=True)
+        x = x.decode("utf-8")
+        x = x.split("\n")
+        for i in x :
+            if "V4L_DEVICE" in i:     
+                video_device = i.lstrip('V4L_DEVICE=')
+            if "V4L2_CAPS" in i:
+                camera_caps = i.lstrip('V4L2_CAPS=')
+        return video_device, camera_caps
     
     def valid_timeout_callback(self):
         """
@@ -1072,7 +1052,7 @@ if __name__ == '__main__':
     #Tensorflow Lite NN intitalisation
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--image", default="", help="image directory with image to be classified")
-    parser.add_argument("-v", "--video_device", default=0, help="video device (default /dev/video0)")
+    parser.add_argument("-v", "--video_device", default="", help="video device ex: video0")
     parser.add_argument("--frame_width", default=640, help="width of the camera frame (default is 640)")
     parser.add_argument("--frame_height", default=480, help="height of the camera frame (default is 480)")
     parser.add_argument("--framerate", default=15, help="framerate of the camera (default is 15fps)")

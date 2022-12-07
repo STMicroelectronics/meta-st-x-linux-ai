@@ -7,8 +7,8 @@ Application:
     Type: script
     Script:
         Exist:
-            File: /dev/video0
-            Msg_false: Camera is not connected (/dev/video0 doesn't exist)
+            File: /usr/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/python/resources/check_camera_preview.sh
+            Msg_false: Camera is not connected
         Start: ../demo-ai/computer-vision/tflite-image-classification-edgetpu/python/launch_python_label_tfl_edgetpu_mobilenet.sh
     Action:
         button_release_event: script_management
