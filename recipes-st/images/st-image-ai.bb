@@ -15,6 +15,8 @@ IMAGE_AI_PART = "   \
     packagegroup-x-linux-ai \
 "
 
+TOOLCHAIN_HOST_TASK:append = " nativesdk-x-linux-ai-tool "
+
 #
 # INSTALL addons
 #

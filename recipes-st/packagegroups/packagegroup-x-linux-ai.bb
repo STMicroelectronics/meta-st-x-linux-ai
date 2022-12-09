@@ -29,6 +29,7 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "\
     python3-tensorflow-lite \
     tensorflow-lite-tools \
     tensorflow-lite \
+    x-linux-ai-tool \
     tflite-cv-apps-image-classification-c++ \
     tflite-cv-apps-image-classification-python \
     tflite-cv-apps-object-detection-c++ \
@@ -42,6 +43,7 @@ RDEPENDS:packagegroup-x-linux-ai-tflite-edgetpu = "\
     python3-pycoral \
     python3-tensorflow-lite \
     tensorflow-lite \
+    x-linux-ai-tool \
     tflite-edgetpu-benchmark \
     tflite-cv-apps-edgetpu-image-classification-c++ \
     tflite-cv-apps-edgetpu-image-classification-python \
@@ -54,6 +56,7 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = "\
     onnxruntime \
     onnxruntime-tools \
     python3-onnxruntime \
+    x-linux-ai-tool \
     onnx-models-mobilenet \
     onnx-models-coco-ssd-mobilenetv1 \
     onnx-cv-apps-image-classification-python \
