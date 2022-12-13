@@ -48,6 +48,7 @@ RDEPENDS:${PN} += " \
 	python3-opencv \
 	python3-pillow \
 	python3-pygobject \
+	python3-onnxruntime \
 	onnxruntime \
 	onnx-models-mobilenet \
 "
