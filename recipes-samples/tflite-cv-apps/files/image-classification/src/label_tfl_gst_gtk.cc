@@ -31,6 +31,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <numeric>
+#include <fstream>
 #include <opencv2/opencv.hpp>
 #include <sys/types.h>
 #include <thread>
@@ -49,7 +50,7 @@ std::vector<std::string> dir_files;
 std::string model_file_str;
 std::string labels_file_str;
 std::string image_dir_str;
-std::string video_device_str  = "0";
+std::string video_device_str  = "";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
@@ -77,12 +78,19 @@ bool exit_application = false;
 #define RESOURCES_DIRECTORY "/usr/local/demo-ai/computer-vision/tflite-image-classification/bin/resources/"
 #define RESOURCES_DIRECTORY_EDGETPU "/usr/local/demo-ai/computer-vision/tflite-image-classification-edgetpu/bin/resources/"
 
+/* Structure that contains frame size/position on the screen*/
 typedef struct _FramePosition {
 	int x;
 	int y;
 	int width;
 	int height;
 } FramePosition;
+
+/* Structure that contains all camera configuration information */
+typedef struct _Config_camera {
+	std::string video_device;
+	std::string camera_caps;
+} Config_camera;
 
 /* Structure that contains all information to pass around */
 typedef struct _CustomData {
@@ -97,6 +105,9 @@ typedef struct _CustomData {
 	GtkWidget *video;
 	GstVideoOverlay *video_overlay;
 	GtkAllocation video_allocation;
+
+	/*  Camera information  */
+	Config_camera camera_info;
 
 	/* Text widget to display info about
 	 * - either the display framerate, and the inference time
@@ -168,49 +179,38 @@ typedef struct _CustomData {
 gdouble display_avg_fps = 0;
 
 /**
-* This function is called when we need to setup the dcmipp camera
-*/
-static void setup_dcmipp()
-{
-	std::stringstream config_cam_sstr;
-	std::stringstream config_dcmipp_parallel_sstr;
-	std::stringstream config_dcmipp_dump_postproc0_sstr;
-	std::stringstream config_dcmipp_dump_postproc1_sstr;
-	std::stringstream config_dcmipp_dump_postproc_crop_sstr;
+ * This function is used to setup the camera depending on the
+ * parameters defined by the user
+ */
+auto setup_camera() {
+	std::stringstream config_camera;
+	if (!tpu) {
+		config_camera << RESOURCES_DIRECTORY << "setup_camera.sh " << camera_width_str << " " << camera_height_str << " " << camera_fps_str << " " << video_device_str << " > /tmp/camera_device.txt";
+	} else {
+		config_camera << RESOURCES_DIRECTORY_EDGETPU << "setup_camera.sh " << camera_width_str << " " << camera_height_str << " " << camera_fps_str << " " << video_device_str << " > /tmp/camera_device.txt";
+	}
 
-	config_cam_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'ov5640 1-003c\':0[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str << "@1/" << camera_fps_str << " field:none]\"";
-	system(config_cam_sstr.str().c_str());
-
-	config_dcmipp_parallel_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_parallel\':0[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str <<"]\"";
-	system(config_dcmipp_parallel_sstr.str().c_str());
-
-	config_dcmipp_dump_postproc0_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':0[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str <<"]\"";
-	system(config_dcmipp_dump_postproc0_sstr.str().c_str());
-
-	config_dcmipp_dump_postproc1_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[fmt:RGB565_2X8_LE/" << camera_width_str << "x" << camera_height_str <<"]\"";
-	system(config_dcmipp_dump_postproc1_sstr.str().c_str());
-
-	config_dcmipp_dump_postproc_crop_sstr << "media-ctl -d /dev/media0 --set-v4l2 \"\'dcmipp_dump_postproc\':1[crop:(0,0)/" << camera_width_str << "x" << camera_height_str << "]\"";
-	system(config_dcmipp_dump_postproc_crop_sstr.str().c_str());
-
-g_print("dcmipp congiguration passed \n");
-}
-
-/**
-* This function is called when we need to pass a shell cmd and
-* recover the output
-* */
-std::string shell_cmd_exec(const char* cmd) {
-    std::array<char, 128> char_buff;
-    std::string cmd_output;
-    std::unique_ptr<FILE, decltype(&pclose)> cmd_pipe(popen(cmd, "r"), pclose);
-    if (!cmd_pipe) {
-        throw std::runtime_error("popen() failed!");
-    }
-    while (fgets(char_buff.data(), char_buff.size(), cmd_pipe.get()) != nullptr) {
-        cmd_output += char_buff.data();
-    }
-    return cmd_output;
+	system(config_camera.str().c_str());
+	std::string video_device_pattern = "V4L_DEVICE=";
+	std::string camera_caps_pattern = "V4L2_CAPS=";
+	Config_camera camera_info;
+	std::ifstream file("/tmp/camera_device.txt");
+	if (file.is_open()) {
+		std::string line;
+		while (std::getline(file, line)) {
+			int found_device = line.find(video_device_pattern);
+			if (found_device != -1) {
+				camera_info.video_device = line.substr((found_device + video_device_pattern.length()));
+			}
+			int found_camera = line.find(camera_caps_pattern);
+			if (found_camera != -1) {
+				camera_info.camera_caps = line.substr((found_camera+ camera_caps_pattern.length()));
+			}
+	    }
+	    file.close();
+	}
+	system("rm -rf /tmp/camera_device.txt");
+	return camera_info;
 }
 
 /**
@@ -1248,7 +1248,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 
 	/* Configure the source element */
 	std::stringstream device_sstr;
-	device_sstr << "/dev/video" << video_device_str;
+	device_sstr << "/dev/" << data->camera_info.video_device;
 	g_object_set(G_OBJECT(source), "device", device_sstr.str().c_str(), NULL);
 
 	/* Configure the display sink element */
@@ -1260,7 +1260,8 @@ static int gst_pipeline_camera_creation(CustomData *data)
 
 	/* Create caps based on application parameters */
 	std::stringstream sourceCaps_sstr;
-	sourceCaps_sstr << "video/x-raw,width=" << camera_width_str << ",height=" << camera_height_str << ",framerate=" << camera_fps_str << "/1";
+	sourceCaps_sstr << data->camera_info.camera_caps << ",width=" << camera_width_str << ",height=" << camera_height_str << ",framerate=" << camera_fps_str << "/1";
+	g_print("camera pipeline configuration : %s \n",sourceCaps_sstr.str().c_str());
 	GstCaps *sourceCaps = gst_caps_from_string(sourceCaps_sstr.str().c_str());
 	std::stringstream scaleCaps_sstr;
 	scaleCaps_sstr << "video/x-raw,format=RGB,width=" << data->nn_input_width << ",height=" << data->nn_input_height;
@@ -1351,7 +1352,7 @@ static void print_help(int argc, char** argv)
 		"-m --model_file <.tflite file path>:  .tflite model to be executed\n"
 		"-l --label_file <label file path>:    name of file containing labels\n"
 		"-i --image <directory path>:          image directory with image to be classified\n"
-		"-v --video_device <n>:                video device (default /dev/video0)\n"
+		"-v --video_device <n>:                video device is automatically detected but can be set (example video0)\n"
 #ifdef EDGETPU
 		"--edgetpu                             if set, the Coral EdgeTPU acceleration is enabled \n"
 #endif
@@ -1389,7 +1390,7 @@ void process_args(int argc, char** argv)
 		{"model_file",   required_argument, nullptr, 'm'},
 		{"label_file",   required_argument, nullptr, 'l'},
 		{"image",        required_argument, nullptr, 'i'},
-		{"video_device", required_argument, nullptr, 'v'},
+		{"video_device", no_argument      , nullptr, 'v'},
 		{"crop",         no_argument,       nullptr, 'c'},
 #ifdef EDGETPU
 		{"edgetpu",      no_argument,       nullptr, OPT_EDGETPU},
@@ -1428,7 +1429,7 @@ void process_args(int argc, char** argv)
 			break;
 		case 'v':
 			video_device_str = std::string(optarg);
-			std::cout << "camera device set to: /dev/video" << video_device_str << std::endl;
+			std::cout << "camera device set to: /dev/" << video_device_str << std::endl;
 			break;
 		case 'c':
 			crop = true;
@@ -1501,7 +1502,6 @@ int main(int argc, char *argv[])
 	int ret;
 	size_t label_count;
 
-
 	/* Catch CTRL + C signal */
 	signal(SIGINT, int_handler);
 	/* Catch kill signal */
@@ -1529,33 +1529,25 @@ int main(int argc, char *argv[])
 	data.ui_box_line_width = 2.0;
 	data.ui_weston_panel_thickness = 32;
 
-
 	/* If image_dir is set by the user, test data picture are used instead
 	 * of camera frames */
 	if (image_dir_str.empty()) {
 		data.frame_width  = std::stoi(camera_width_str);
 		data.frame_height = std::stoi(camera_height_str);
 		data.preview_enabled = true;
-
-		/* Check if the video device is present */
-		std::stringstream device_sstr;
-		device_sstr << "/dev/video" << video_device_str;
-		if (access(device_sstr.str().c_str(), F_OK) == -1) {
-			g_printerr("ERROR: No camera connected, %s does not exist.\n", device_sstr.str().c_str());
+		std::stringstream check_camera_cmd;
+		int check_camera;
+		//Test if a camera is connected
+		if (!tpu)
+			check_camera_cmd << "source " << RESOURCES_DIRECTORY << "check_camera_preview.sh";
+		else
+			check_camera_cmd << "source " << RESOURCES_DIRECTORY_EDGETPU << "check_camera_preview.sh";
+		check_camera = system(check_camera_cmd.str().c_str());
+		if (check_camera != 0){
+			g_print("no camera connected \n");
 			exit(1);
-		} else {
-			/* Check the camera type to configure it if necessary */
-			std::stringstream cmd;
-			cmd << "cat /sys/class/video4linux/video" << video_device_str << "/name";
-			std::string camera_type = shell_cmd_exec(cmd.str().c_str());
-			std::cout << "camera type : " << camera_type << std::endl;
-			std::string dcmipp = "dcmipp_dump_capture";
-			std::size_t found = camera_type.find(dcmipp);
-			if (found!=std::string::npos) {
-				/* dcmipp camera found */
-				setup_dcmipp();
-			}
 		}
+		data.camera_info = setup_camera();
 	} else {
 		data.preview_enabled = false;
 		/* Check if directory is empty */

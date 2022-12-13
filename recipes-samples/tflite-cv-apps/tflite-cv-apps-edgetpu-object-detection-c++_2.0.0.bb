@@ -27,6 +27,9 @@ SRC_URI += " file://resources/st_icon_tpu_next_inference_65x80.png;subdir=${BPN}
 SRC_URI += " file://resources/st_icon_tpu_next_inference_130x160.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_25x25.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/exit_50x50.png;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/setup_camera.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/config_board.sh;subdir=${BPN}-${PV} "
+SRC_URI += " file://resources/check_camera_preview.sh;subdir=${BPN}-${PV} "
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
@@ -85,4 +88,5 @@ RDEPENDS:${PN} += " \
 	libopencv-imgproc \
 	libopencv-imgcodecs \
 	tflite-models-coco-ssd-mobilenetv1-edgetpu \
+	bash \
 "
