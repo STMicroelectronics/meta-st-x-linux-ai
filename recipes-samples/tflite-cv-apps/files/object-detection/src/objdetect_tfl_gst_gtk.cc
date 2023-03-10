@@ -57,6 +57,7 @@ std::string video_device_str  = "";
 std::string camera_fps_str    = "15";
 std::string camera_width_str  = "640";
 std::string camera_height_str = "480";
+std::string val_run_str = "50";
 
 bool verbose = false;
 bool validation = false;
@@ -163,6 +164,7 @@ typedef struct _CustomData {
 	/* For validation purpose */
 	int valid_timeout_id;
 	int valid_draw_count;
+	int val_run;
 	std::vector<double> valid_inference_time;
 	std::string file;
 
@@ -839,7 +841,7 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 													   valid_timeout_callback,
 													   NULL);
 				data->valid_draw_count++;
-				if (data->valid_draw_count > 100) {
+				if (data->valid_draw_count > data->val_run) {
 					auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
 														data->valid_inference_time.end(), 0.0) /
 														data->valid_inference_time.size();
@@ -1501,6 +1503,7 @@ static void print_help(int argc, char** argv)
 		"--input_std  <val>:                   model input standard deviation (default is 127.5)\n"
 		"--verbose:                            enable verbose mode\n"
 		"--validation:                         enable the validation mode\n"
+		"--val_run:                            set the number of draws in the validation mode\n"
 		"-t --threshold <val>:                 threshold of accuracy above which the boxes are displayed (default 0.60)\n"
 		"--help:                               show this help\n";
 	exit(1);
@@ -1517,6 +1520,7 @@ static void print_help(int argc, char** argv)
 #define OPT_INPUT_STD    1004
 #define OPT_VERBOSE      1005
 #define OPT_VALIDATION   1006
+#define OPT_VAL_RUN      1008
 #ifdef EDGETPU
 #define OPT_EDGETPU      1007
 #endif
@@ -1539,6 +1543,7 @@ void process_args(int argc, char** argv)
 		{"input_std",    required_argument, nullptr, OPT_INPUT_STD},
 		{"verbose",      no_argument,       nullptr, OPT_VERBOSE},
 		{"validation",   no_argument,       nullptr, OPT_VALIDATION},
+		{"val_run",      required_argument, nullptr, OPT_VAL_RUN},
 		{"threshold",    required_argument, nullptr, 't'},
 		{"help",         no_argument,       nullptr, 'h'},
 		{nullptr,        no_argument,       nullptr, 0}
@@ -1605,6 +1610,10 @@ void process_args(int argc, char** argv)
 			validation = true;
 			std::cout << "application started in validation mode" << std::endl;
 			break;
+		case OPT_VAL_RUN:
+			val_run_str = std::string(optarg);
+			std::cout << "number of draws has been set" << val_run_str << std::endl;
+			break;
 		case 't':
 			threshold = std::stof(optarg);
 			std::cout << "threshold value set to: " << threshold << std::endl;
@@ -1663,6 +1672,7 @@ int main(int argc, char *argv[])
 	data.new_inference = false;
 	data.frame_width  = std::stoi(camera_width_str);
 	data.frame_height = std::stoi(camera_height_str);
+	data.val_run  = std::stoi(val_run_str);
 	data.ui_cairo_font_size = 25;
 	data.ui_box_line_width = 2.0;
 	data.ui_weston_panel_thickness = 32;

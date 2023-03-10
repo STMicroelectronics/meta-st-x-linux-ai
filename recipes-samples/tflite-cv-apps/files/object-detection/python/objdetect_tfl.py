@@ -343,12 +343,12 @@ class GstWidget(Gtk.Box):
 
     def msg_error_cb(self, bus, message):
         print('error message -> {}'.format(message.parse_error()))
-        
+
     def msg_state_changed_cb(self, bus, message):
         oldstate,newstate,pending = message.parse_state_changed()
         if (oldstate == Gst.State.NULL) and (newstate == Gst.State.READY):
             Gst.debug_bin_to_dot_file(self.pipeline, Gst.DebugGraphDetails.ALL,"pipeline_py_NULL_READY")
-            
+
     def msg_application_cb(self, bus, message):
         if message.get_structure().get_name() == 'inference-done':
             self.app.update_ui();
@@ -393,14 +393,14 @@ class GstWidget(Gtk.Box):
         """
         self.instant_fps = fps
         return self.instant_fps
-    
+
 class MainWindow(Gtk.Window):
     """
     This class handles all the functions necessary
     to display video stream in GTK GUI or still
     pictures using OpenCVS
     """ 
-    
+
     def __init__(self,args,app):
         """
         Setup instances of class and shared variables
@@ -409,7 +409,7 @@ class MainWindow(Gtk.Window):
         Gtk.Window.__init__(self)
         self.app = app
         self.main_ui_creation(args)
-       
+
     def set_ui_param(self):
         """
         Setup all the UI parameter depending
@@ -549,7 +549,7 @@ class MainWindow(Gtk.Window):
         self.main_box.pack_start(self.exit_box,False,False,0)
         self.add(self.main_box)
         return True
-    
+
     def update_frame(self, frame):
         """
         update frame in still picture mode
@@ -581,14 +581,14 @@ class OverlayWindow(Gtk.Window):
         Gtk.Window.__init__(self)
         self.app = app
         self.overlay_ui_creation(args)
-    
+
     def exit_icon_cb(self,eventbox, event):
         """
         Exit callback to close application
         """
         self.destroy()
         Gtk.main_quit()
-        
+
     def update_label_still(self, label, inference_time):
         """
         update inference results in still picture mode
@@ -625,7 +625,7 @@ class OverlayWindow(Gtk.Window):
                self.ui_icon_exit_height = '50';
                self.ui_icon_st_width = '65';
                self.ui_icon_st_height = '80';
-    
+
     def overlay_ui_creation(self,args):
         """
         Setup the Gtk UI of the overlay window
@@ -718,7 +718,7 @@ class OverlayWindow(Gtk.Window):
         self.drawing_area.set_name("overlay_draw")
         self.drawing_area.set_app_paintable(True)
         self.video_box.pack_start(self.drawing_area, True, True, 0)
-        
+
         # setup the exit box which contains the exit button
         self.exit_box = Gtk.VBox()
         self.exit_box.set_name("gui_overlay_exit")
@@ -756,7 +756,7 @@ class OverlayWindow(Gtk.Window):
                 else:
                     self.app.process_picture()
             return False
-        
+
         if (self.app.label_to_display == ""):
             # waiting screen
             text = "Loading NN model"
@@ -824,7 +824,7 @@ class OverlayWindow(Gtk.Window):
                     text_to_display = label + " " + str(int(accuracy)) + "%"
                     cr.show_text(text_to_display)
         return True
-    
+
     # Updating the labels and the inference infos displayed on the GUI interface - camera input
     def update_label_preview(self):
         """
@@ -835,11 +835,11 @@ class OverlayWindow(Gtk.Window):
         display_fps = self.app.gst_widget.instant_fps
         labels = self.app.nn.get_labels()
         label = labels[self.app.nn_result_label]
-        
+
         if (args.validation) and (inference_time != 0) and (self.app.valid_draw_count > 5):
             self.app.valid_preview_fps.append(round(self.app.gst_widget.instant_fps))
             self.app.valid_inference_time.append(round(self.app.nn_inference_time * 1000, 4))
-        
+
         str_inference_time = str("{0:0.1f}".format(inference_time))
         str_display_fps = str("{0:.1f}".format(display_fps))
         str_inference_fps = str("{0:.1f}".format(inference_fps))
@@ -857,8 +857,8 @@ class OverlayWindow(Gtk.Window):
                                                      self.app.valid_timeout_callback)
 
             self.app.valid_draw_count = self.app.valid_draw_count + 1
-            # stop the application after 150 draws
-            if self.app.valid_draw_count > 150:
+            # stop the application after a certain amount of draws
+            if self.app.valid_draw_count > int(args.val_run):
                 avg_prev_fps = sum(self.app.valid_preview_fps) / len(self.app.valid_preview_fps)
                 avg_inf_time = sum(self.app.valid_inference_time) / len(self.app.valid_inference_time)
                 avg_inf_fps = (1000/avg_inf_time)
@@ -868,14 +868,14 @@ class OverlayWindow(Gtk.Window):
                 GLib.source_remove(self.app.valid_timeout_id)
                 self.destroy()
                 Gtk.main_quit()    
-    
+
     def still_picture(self,  widget, event):
         """
         ST icon cb which trigger a new inference
         """
         self.app.still_picture_next = True
         return self.app.process_picture()
-    
+
 class Application:
     """
     Class that handles the whole application 
@@ -909,7 +909,7 @@ class Application:
         self.valid_inference_fps = []
         self.valid_preview_fps = []
         self.valid_draw_count = 0
-        
+
         #instantiate the Neural Network class
         self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std), args.edgetpu, args.perf, args.ext_delegate, args.maximum_detection)
         self.shape = self.nn.get_img_size()
@@ -920,7 +920,7 @@ class Application:
         self.nn_inference_fps = 0.0
         self.nn_result_label = 0
         self.label_to_display = ""
-        
+
         #instantiate the Gstreamer pipeline
         self.gst_widget = GstWidget(self,self.nn) 
         #instantiate the main window
@@ -928,7 +928,7 @@ class Application:
         #instantiate the overlay window
         self.overlay_window = OverlayWindow(args,self)
         self.main()
-   
+
     def setup_camera(self):
         width = str(args.frame_width)
         height = str(args.frame_height)
@@ -944,7 +944,7 @@ class Application:
             if "V4L2_CAPS" in i:
                 camera_caps = i.lstrip('V4L2_CAPS=')
         return video_device, camera_caps
-    
+
     def valid_timeout_callback(self):
         """
         if timeout occurs that means that camera preview and the gtk is not
@@ -978,7 +978,7 @@ class Application:
         file_path = self.files[index]
         self.files.pop(index)
         return file_path
-    
+
     def load_valid_results_from_json_file(self, json_file):
         """
         Load json files containing expected results for the validation mode
@@ -999,7 +999,7 @@ class Application:
                 y1.append(obj['y1'])
 
         return name, x0, y0, x1, y1  
-    
+
     def process_picture(self):
         """
         Still picture inference function
@@ -1133,7 +1133,7 @@ class Application:
     def update_ui(self):
         self.overlay_window.update_label_preview()
         self.overlay_window.queue_draw()
-     
+
     def main(self):
     
         self.main_window.connect("delete-event", Gtk.main_quit)
@@ -1166,6 +1166,7 @@ if __name__ == '__main__':
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
+    parser.add_argument("--val_run", default=50, help="set the number of draws in the validation mode")
     parser.add_argument("--num_threads", default=None, help="Select the number of threads used by tflite interpreter to run inference")
     parser.add_argument("--maximum_detection", default=10, type=int, help="Adjust the maximum number of object detected in a frame accordingly to your NN model (default is 10)")
     parser.add_argument("--threshold", default=0.60, type=float, help="threshold of accuracy above which the boxes are displayed (default 0.60)")
@@ -1181,5 +1182,3 @@ if __name__ == '__main__':
     print("gtk main finished")
     print("application exited properly")
     os._exit(0)
- 
-    
