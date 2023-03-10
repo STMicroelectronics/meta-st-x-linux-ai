@@ -742,8 +742,8 @@ class OverlayWindow(Gtk.Window):
                                                      self.app.valid_timeout_callback)
 
             self.app.valid_draw_count = self.app.valid_draw_count + 1
-            # stop the application after 150 draws
-            if self.app.valid_draw_count > 150:
+            # stop the application after a certain amount of draws
+            if self.app.valid_draw_count > int(args.val_run):
                 avg_prev_fps = sum(self.app.valid_preview_fps) / len(self.app.valid_preview_fps)
                 avg_inf_time = sum(self.app.valid_inference_time) / len(self.app.valid_inference_time)
                 avg_inf_fps = (1000/avg_inf_time)
@@ -1018,6 +1018,7 @@ if __name__ == '__main__':
     parser.add_argument("--input_mean", default=127.5, help="input mean")
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
+    parser.add_argument("--val_run", default=50, help="set the number of draws in the validation mode")
     parser.add_argument("--num_threads", default=None, help="Select the number of threads used by ONNX interpreter to run inference")
     args = parser.parse_args()
 
