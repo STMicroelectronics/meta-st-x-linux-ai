@@ -130,6 +130,14 @@ do_install() {
 	# Install the Python package.
 	mkdir -p ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime
 	cp -r    ${B}/onnxruntime ${D}${PYTHON_SITEPACKAGES_DIR}
+
+	# Install header files
+	install -d ${D}${includedir}/onnxruntime
+	cd ${S}/onnxruntime
+	cp --parents $(find . -name "*.h*" -not -path "*cmake_build/*") ${D}${includedir}/onnxruntime
+	cp  ${S}/cmake/external/onnxruntime-extensions/includes/onnxruntime/onnxruntime_cxx_api.h  ${D}${includedir}/onnxruntime
+	cp  ${S}/cmake/external/onnxruntime-extensions/includes/onnxruntime/onnxruntime_c_api.h  ${D}${includedir}/onnxruntime
+	cp  ${S}/cmake/external/onnxruntime-extensions/includes/onnxruntime/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
 }
 
 # The package_qa() task does not like the fact that this library is present in both onnxruntime-tools
