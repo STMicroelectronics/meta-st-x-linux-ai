@@ -90,6 +90,7 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
     media-ctl -d $mediadev --set-v4l2 "'$interfacesubdev':1[fmt:RGB565_2X8_LE/${CAMERA_WIDTH}x${CAMERA_HEIGHT}]"
     media-ctl -d $mediadev --set-v4l2 "'dcmipp_dump_postproc':1[fmt:RGB565_2X8_LE/${CAMERA_WIDTH}x${CAMERA_HEIGHT}]"
     media-ctl -d $mediadev --set-v4l2 "'dcmipp_dump_postproc':0[compose: (0,0)/${WIDTH}x${HEIGHT}]"
+    v4l2-ctl -d /dev/v4l-subdev6 --set-ctrl=horizontal_flip=1
     V4L2_CAPS="video/x-raw,format=RGB16"
     V4L_OPT=""
 else
