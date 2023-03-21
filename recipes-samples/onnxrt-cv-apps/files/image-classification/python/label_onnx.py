@@ -91,12 +91,10 @@ class NeuralNetwork:
     def get_labels(self):
         return self._labels
 
-
     def softmax(self,x):
         y = np.exp(x - np.max(x))
         f_x = y / np.sum(np.exp(x))
         return f_x
-
 
     def get_img_size(self):
         """
@@ -285,14 +283,34 @@ class GstWidget(Gtk.Box):
         """
         buf = sample.get_buffer()
         caps = sample.get_caps()
+        #get gstreamer buffer size
+        buffer_size = buf.get_size()
+        #determine the shape of the numpy array
+        number_of_column = caps.get_structure(0).get_value('width')
+        number_of_lines = caps.get_structure(0).get_value('height')
+        channels = 3
+        #buffer size without padding
+        expected_buff_size = number_of_column * number_of_lines * channels
+        #byte added by the padding
+        extra_bytes = buffer_size - expected_buff_size
+        extra_offset_per_line = int(extra_bytes/number_of_lines)
+        # number of bytes to pass from a line to another
+        line_stride = number_of_column * channels
+        # pixel_stride : number of bytes to pass from a pixel to another
+        # pixel_stride = number of bits per pixel / number of bits in one byte
+        # in RBG888 case (24/8)
+        pixel_stride = 3
+        # number of bytes to pass from a channel to another
+        channel_stride = 1
+        #stride for each channels line / pixels / channel
+        strides = (line_stride+extra_offset_per_line,pixel_stride,channel_stride)
         arr = np.ndarray(
-                (caps.get_structure(0).get_value('height'),
-                caps.get_structure(0).get_value('width'),
-                3),
-                buffer=buf.extract_dup(0, buf.get_size()),
-                dtype=np.uint8)
-        if self.app.nn.channel_first :
-            arr = arr.transpose(2,0,1)
+            (number_of_lines,
+             number_of_column,
+             channels),
+            strides=strides,
+            buffer=buf.extract_dup(0, buf.get_size()),
+            dtype=np.uint8)
         return arr
 
     def new_sample(self,*data):
@@ -343,7 +361,6 @@ class MainWindow(Gtk.Window):
         Setup all the UI parameter depending
         on the screen size
         """
-        self.ui_cairo_font_size_label = 35
         self.ui_cairo_font_size = 20
         self.ui_icon_exit_width = '50'
         self.ui_icon_exit_height = '50'
@@ -351,20 +368,26 @@ class MainWindow(Gtk.Window):
         self.ui_icon_st_height = '160'
         if self.screen_height <= 272:
                # Display 480x272 */
-               self.ui_cairo_font_size_label = 15
                self.ui_cairo_font_size = 7
                self.ui_icon_exit_width = '25'
                self.ui_icon_exit_height = '25'
                self.ui_icon_st_width = '42'
                self.ui_icon_st_height = '52'
-        elif self.screen_height <= 480:
+        elif self.screen_height <= 600:
                #Display 800x480 */
-               self.ui_cairo_font_size_label = 25
+               #Display 1024x600 */
                self.ui_cairo_font_size = 13
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '65'
                self.ui_icon_st_height = '80'
+        elif self.screen_height <= 1080:
+               #Display 1920x1080 */
+               self.ui_cairo_font_size = 30
+               self.ui_icon_exit_width = '50'
+               self.ui_icon_exit_height = '50'
+               self.ui_icon_st_width = '130'
+               self.ui_icon_st_height = '160'
 
     def main_ui_creation(self,args):
         """
@@ -403,7 +426,7 @@ class MainWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,False,False,2)
             self.label_disp = Gtk.Label()
             self.label_disp.set_justify(Gtk.Justification.LEFT)
-            self.label_disp.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>disp.fps:    \n</b></span>" % self.ui_cairo_font_size)
+            self.label_disp.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>disp.fps:     \n</b></span>" % self.ui_cairo_font_size)
             self.info_box.pack_start(self.label_disp,True,False,2)
             self.disp_fps = Gtk.Label()
             self.disp_fps.set_justify(Gtk.Justification.FILL)
@@ -434,7 +457,7 @@ class MainWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,False,False,20)
             self.label_inftime = Gtk.Label()
             self.label_inftime.set_justify(Gtk.Justification.LEFT)
-            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:\n</b></span>" % self.ui_cairo_font_size)
+            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:     \n</b></span>" % self.ui_cairo_font_size)
             self.info_box.pack_start(self.label_inftime,False,False,20)
             self.inf_time = Gtk.Label()
             self.inf_time.set_justify(Gtk.Justification.FILL)
@@ -511,44 +534,42 @@ class OverlayWindow(Gtk.Window):
         self.destroy()
         Gtk.main_quit()
 
-    def update_label_still(self, label, accuracy, inference_time):
-        """
-        update inference results in still picture mode
-        """
-        str_accuracy = str("{0:.2f}".format(accuracy))
-        str_inference_time = str("{0:0.1f}".format(inference_time))
-
-        self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.ui_cairo_font_size,str_inference_time))
-        self.acc.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s&#37;\n\n</b></span>" % (self.ui_cairo_font_size,str_accuracy))
-        self.app.label_to_display = label
-
     def set_ui_param(self):
         """
         Setup all the UI parameter depending
         on the screen size
         """
-        self.ui_cairo_font_size_label = 35
         self.ui_cairo_font_size = 20
+        self.ui_cairo_font_size_label = 35
         self.ui_icon_exit_width = '50'
         self.ui_icon_exit_height = '50'
         self.ui_icon_st_width = '130'
         self.ui_icon_st_height = '160'
         if self.screen_height <= 272:
                # Display 480x272 */
-               self.ui_cairo_font_size_label = 15
                self.ui_cairo_font_size = 7
+               self.ui_cairo_font_size_label = 15
                self.ui_icon_exit_width = '25'
                self.ui_icon_exit_height = '25'
                self.ui_icon_st_width = '42'
                self.ui_icon_st_height = '52'
-        elif self.screen_height <= 480:
+        elif self.screen_height <= 600:
                #Display 800x480 */
-               self.ui_cairo_font_size_label = 25
+               #Display 1024x600 */
                self.ui_cairo_font_size = 13
+               self.ui_cairo_font_size_label = 26
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '65'
                self.ui_icon_st_height = '80'
+        elif self.screen_height <= 1080:
+               #Display 1920x1080 */
+               self.ui_cairo_font_size = 30
+               self.ui_cairo_font_size_label = 45
+               self.ui_icon_exit_width = '50'
+               self.ui_icon_exit_height = '50'
+               self.ui_icon_st_width = '130'
+               self.ui_icon_st_height = '160'
 
     def overlay_ui_creation(self,args):
         """
@@ -589,7 +610,7 @@ class OverlayWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,False,False,2)
             self.label_disp = Gtk.Label()
             self.label_disp.set_justify(Gtk.Justification.LEFT)
-            self.label_disp.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>disp.fps:    \n</b></span>" % self.ui_cairo_font_size)
+            self.label_disp.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>disp.fps:     \n</b></span>" % self.ui_cairo_font_size)
             self.info_box.pack_start(self.label_disp,True,False,2)
             self.disp_fps = Gtk.Label()
             self.disp_fps.set_justify(Gtk.Justification.FILL)
@@ -620,7 +641,7 @@ class OverlayWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,True,False,2)
             self.label_inftime = Gtk.Label()
             self.label_inftime.set_justify(Gtk.Justification.LEFT)
-            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:\n</b></span>" % self.ui_cairo_font_size)
+            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:     \n</b></span>" % self.ui_cairo_font_size)
             self.info_box.pack_start(self.label_inftime,True,False,2)
             self.inf_time = Gtk.Label()
             self.inf_time.set_justify(Gtk.Justification.FILL)
@@ -672,7 +693,7 @@ class OverlayWindow(Gtk.Window):
             self.app.first_drawing_call = False
             self.drawing_width = widget.get_allocated_width()
             self.drawing_height = widget.get_allocated_height()
-            cr.set_font_size(self.ui_cairo_font_size_label)
+            cr.set_font_size(self.ui_cairo_font_size)
             self.label_printed = True
             if self.app.enable_camera_preview == False :
                 self.app.still_picture_next = True
@@ -683,15 +704,15 @@ class OverlayWindow(Gtk.Window):
             return False
         if (self.app.label_to_display == ""):
             # waiting screen
-            text = "Load nn_model"
-            cr.set_font_size(self.ui_cairo_font_size_label)
+            text = "Loading NN model"
+            cr.set_font_size(self.ui_cairo_font_size*3)
             xbearing, ybearing, width, height, xadvance, yadvance = cr.text_extents(text)
             cr.move_to((self.drawing_width/2-width/2),(self.drawing_height/2))
             cr.text_path(text)
-            cr.set_source_rgb(0.235, 0.71, 0.90)
+            cr.set_source_rgb(0.012,0.137,0.294)
             cr.fill_preserve()
-            cr.set_source_rgb(0.012, 0.137, 0.294)
-            cr.set_line_width(1)
+            cr.set_source_rgb(1, 1, 1)
+            cr.set_line_width(0.2)
             cr.stroke()
             return True
         else :
@@ -709,50 +730,6 @@ class OverlayWindow(Gtk.Window):
             cr.set_line_width(0.7)
             cr.stroke()
             return True
-
-    # Updating the labels and the inference infos displayed on the GUI interface - camera input
-    def update_label_preview(self):
-        """
-        Updating the labels and the inference infos displayed on the GUI interface - camera input
-        """
-        inference_time = self.app.nn_inference_time * 1000
-        inference_fps = self.app.nn_inference_fps
-        display_fps = self.app.gst_widget.instant_fps
-        labels = self.app.nn.get_labels()
-        label = labels[self.app.nn_result_label]
-
-        if (args.validation) and (inference_time != 0) and (self.app.valid_draw_count > 5):
-            self.app.valid_preview_fps.append(round(self.app.gst_widget.instant_fps))
-            self.app.valid_inference_time.append(round(self.app.nn_inference_time * 1000, 4))
-
-        str_inference_time = str("{0:0.1f}".format(inference_time))
-        str_display_fps = str("{0:.1f}".format(display_fps))
-        str_inference_fps = str("{0:.1f}".format(inference_fps))
-
-        self.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.ui_cairo_font_size,str_inference_time))
-        self.inf_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.ui_cairo_font_size,str_inference_fps))
-        self.disp_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.ui_cairo_font_size,str_display_fps))
-        self.app.label_to_display = label
-
-
-        if args.validation:
-            # reload the timeout
-            GLib.source_remove(self.app.valid_timeout_id)
-            self.app.valid_timeout_id = GLib.timeout_add(10000,
-                                                     self.app.valid_timeout_callback)
-
-            self.app.valid_draw_count = self.app.valid_draw_count + 1
-            # stop the application after a certain amount of draws
-            if self.app.valid_draw_count > int(args.val_run):
-                avg_prev_fps = sum(self.app.valid_preview_fps) / len(self.app.valid_preview_fps)
-                avg_inf_time = sum(self.app.valid_inference_time) / len(self.app.valid_inference_time)
-                avg_inf_fps = (1000/avg_inf_time)
-                print("avg display fps= " + str(avg_prev_fps))
-                print("avg inference fps= " + str(avg_inf_fps))
-                print("avg inference time= " + str(avg_inf_time) + " ms")
-                GLib.source_remove(self.app.valid_timeout_id)
-                self.destroy()
-                Gtk.main_quit()
 
     def still_picture(self,  widget, event):
         """
@@ -826,7 +803,7 @@ class Application:
         x = x.decode("utf-8")
         x = x.split("\n")
         for i in x :
-            if "V4L_DEVICE" in i:     
+            if "V4L_DEVICE" in i:
                 video_device = i.lstrip('V4L_DEVICE=')
             if "V4L2_CAPS" in i:
                 camera_caps = i.lstrip('V4L2_CAPS=')
@@ -903,6 +880,67 @@ class Application:
 
         return name, x0, y0, x1, y1
 
+    # Updating the labels and the inference infos displayed on the GUI interface - camera input
+    def update_label_preview(self):
+        """
+        Updating the labels and the inference infos displayed on the GUI interface - camera input
+        """
+        inference_time = self.nn_inference_time * 1000
+        inference_fps = self.nn_inference_fps
+        display_fps = self.gst_widget.instant_fps
+        labels = self.nn.get_labels()
+        label = labels[self.nn_result_label]
+
+        if (args.validation) and (inference_time != 0) and (self.valid_draw_count > 5):
+            self.valid_preview_fps.append(round(self.gst_widget.instant_fps))
+            self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
+
+        str_inference_time = str("{0:0.1f}".format(inference_time))
+        str_display_fps = str("{0:.1f}".format(display_fps))
+        str_inference_fps = str("{0:.1f}".format(inference_fps))
+
+        self.main_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.main_window.ui_cairo_font_size,str_inference_time))
+        self.main_window.inf_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.main_window.ui_cairo_font_size,str_inference_fps))
+        self.main_window.disp_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.main_window.ui_cairo_font_size,str_display_fps))
+
+        self.overlay_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.overlay_window.ui_cairo_font_size,str_inference_time))
+        self.overlay_window.inf_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.overlay_window.ui_cairo_font_size,str_inference_fps))
+        self.overlay_window.disp_fps.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sfps\n</b></span>" % (self.overlay_window.ui_cairo_font_size,str_display_fps))
+
+        self.label_to_display = label
+
+        if args.validation:
+            # reload the timeout
+            GLib.source_remove(self.valid_timeout_id)
+            self.valid_timeout_id = GLib.timeout_add(10000,
+                                                     self.valid_timeout_callback)
+
+            self.valid_draw_count = self.valid_draw_count + 1
+            # stop the application after defined amount of draws
+            if self.valid_draw_count > int(args.val_run):
+                avg_prev_fps = sum(self.valid_preview_fps) / len(self.valid_preview_fps)
+                avg_inf_time = sum(self.valid_inference_time) / len(self.valid_inference_time)
+                avg_inf_fps = (1000/avg_inf_time)
+                print("avg display fps= " + str(avg_prev_fps))
+                print("avg inference fps= " + str(avg_inf_fps))
+                print("avg inference time= " + str(avg_inf_time) + " ms")
+                GLib.source_remove(self.valid_timeout_id)
+                Gtk.main_quit()
+                return True
+        return True
+
+    def update_label_still(self, label, accuracy, inference_time):
+        """
+        update inference results in still picture mode
+        """
+        str_accuracy = str("{0:.2f}".format(accuracy))
+        str_inference_time = str("{0:0.1f}".format(inference_time))
+
+        self.main_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.main_window.ui_cairo_font_size,str_inference_time))
+        self.overlay_window.inf_time.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%sms\n</b></span>" % (self.overlay_window.ui_cairo_font_size,str_inference_time))
+        self.overlay_window.acc.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>%s&#37;\n\n</b></span>" % (self.overlay_window.ui_cairo_font_size,str_accuracy))
+        self.label_to_display = label
+
     def process_picture(self):
         """
         Still picture inference function
@@ -917,23 +955,32 @@ class Application:
             # get randomly a picture in the directory
             rfile = self.getRandomFile(args.image)
             img = Image.open(args.image + rfile)
+
+            # recover drawing box size and picture size
+            screen_width = self.overlay_window.drawing_width
+            screen_height = self.overlay_window.drawing_height
             picture_width, picture_height = img.size
 
-            # display the picture in the screen
-            frame_ratio = picture_width/picture_height
-            frame_height = self.main_window.screen_height - 32
-            frame_width = int(frame_ratio * frame_height)
+            #adapt the frame to the screen with with the preservation of the aspect ratio
+            width_ratio = float(screen_width/picture_width)
+            height_ratio = float(screen_height/picture_height)
 
-            # trying to keep aspect ratio of the image if possible but
-            # if not fill the drawing space as possible
-            if (frame_width > self.overlay_window.drawing_width):
-                frame_width = self.overlay_window.drawing_width
-            prev_frame = cv2.resize(np.array(img), (frame_width, frame_height))
+            if width_ratio >= height_ratio :
+                self.frame_height = height_ratio * picture_height
+                self.frame_width = height_ratio * picture_width
+            else :
+                self.frame_height = width_ratio * picture_height
+                self.frame_width = width_ratio * picture_width
+
+            self.frame_height = int(self.frame_height)
+            self.frame_width = int(self.frame_width)
+            prev_frame = cv2.resize(np.array(img), (self.frame_width, self.frame_height))
+
             # update the preview frame
             self.main_window.update_frame(prev_frame)
             self.overlay_window.label_printed = False
 
-            # execute the inference
+            #resize the frame to feed the NN model
             nn_frame = cv2.resize(np.array(img), (self.nn_input_width, self.nn_input_height))
             if self.nn.channel_first :
                 nn_frame = nn_frame.transpose(2,0,1)
@@ -979,14 +1026,19 @@ class Application:
                     print("avg inference time= " + str(avg_inf_time) + " ms")
                     self.exit_app = True
             #update label
-            self.overlay_window.update_label_still(str(label), accuracy, inference_time)
+            self.update_label_still(label,accuracy,inference_time)
+            self.main_window.queue_draw()
             self.overlay_window.queue_draw()
             return True
         else :
             return False
 
     def update_ui(self):
-        self.overlay_window.update_label_preview()
+        """
+        refresh overlay UI
+        """
+        self.update_label_preview()
+        self.main_window.queue_draw()
         self.overlay_window.queue_draw()
 
     def main(self):
