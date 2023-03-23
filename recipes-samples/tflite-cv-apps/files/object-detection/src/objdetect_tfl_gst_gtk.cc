@@ -1,3 +1,4 @@
+
 /*
  * objdetect_tfl_gst_gtk.cc
  *
@@ -131,6 +132,7 @@ typedef struct _CustomData {
 
 	/* UI parameters (values will depends on display size) */
 	int ui_cairo_font_size;
+	int ui_cairo_font_size_label;
 	double ui_box_line_width;
 	int ui_weston_panel_thickness;
 
@@ -580,29 +582,47 @@ static void gui_gtk_style(CustomData *data)
 static void gui_set_ui_parameters(CustomData *data)
 {
 	int window_height = data->window_height;
-	/* Default UI parameter to target 720p display */
+	/* Default UI parameter */
 	int ui_icon_exit_width = 50;
 	int ui_icon_exit_height = 50;
 	int ui_icon_st_width = 130;
 	int ui_icon_st_height = 160;
-	data->ui_cairo_font_size = 25;
+	data->ui_cairo_font_size = 20;
+	data->ui_cairo_font_size_label = 35;
 
 	if (window_height <= 272) {
 		/* Display 480x272 */
-		std::cout << "Adjust UI param to 272p display" <<  std::endl;
-		data->ui_cairo_font_size = 12;
+		data->ui_cairo_font_size_label = 7;
+		data->ui_cairo_font_size = 15;
 		ui_icon_exit_width = 25;
 		ui_icon_exit_height = 25;
 		ui_icon_st_width = 42;
 		ui_icon_st_height = 52;
-	} else if (window_height <= 480) {
+	} else if (window_height <= 600) {
 		/* Display 800x480 */
-		std::cout << "Adjust UI param to 480p display" <<  std::endl;
-		data->ui_cairo_font_size = 25;
+		/* Display 1024x600 */
+		data->ui_cairo_font_size_label = 26;
+		data->ui_cairo_font_size = 13;
 		ui_icon_exit_width = 50;
 		ui_icon_exit_height = 50;
 		ui_icon_st_width = 65;
 		ui_icon_st_height = 80;
+	} else if (window_height <= 720) {
+		/* Display 1280x720 */
+		ui_icon_exit_width = 50;
+		ui_icon_exit_height = 50;
+		ui_icon_st_width = 130;
+		ui_icon_st_height = 160;
+		data->ui_cairo_font_size = 20;
+		data->ui_cairo_font_size_label = 35;
+	} else if (window_height <= 1080) {
+		/* Display 1920x1080 */
+		data->ui_cairo_font_size_label = 45;
+		data->ui_cairo_font_size = 30;
+		ui_icon_exit_width = 50;
+		ui_icon_exit_height = 50;
+		ui_icon_st_width = 130;
+		ui_icon_st_height = 160;
 	}
 
 	gui_gtk_style(data);
@@ -917,11 +937,11 @@ static void gui_create_overlay(CustomData *data)
 				 G_CALLBACK(gui_draw_overlay_cb), data);
 
 		/* Create the gtk labels to display nn inference information*/
-		title_disp_fps = gtk_label_new("disp. fps:   ");
+		title_disp_fps = gtk_label_new("disp. fps:     ");
 		gtk_widget_set_halign(title_disp_fps,GTK_ALIGN_START);
-		title_inf_fps = gtk_label_new("inf. fps:    ");
+		title_inf_fps = gtk_label_new("inf. fps:     ");
 		gtk_widget_set_halign(title_inf_fps,GTK_ALIGN_START);
-		title_inf_time = gtk_label_new("inf. time:   ");
+		title_inf_time = gtk_label_new("inf. time:     ");
 		gtk_widget_set_halign(title_inf_time,GTK_ALIGN_START);
 
 		data->info_disp_fps = gtk_label_new(NULL);
@@ -1125,11 +1145,11 @@ static void gui_create_main(CustomData *data)
 				 G_CALLBACK(gui_draw_main_cb), data);
 
 		/* Create the gtk labels to display nn inference information*/
-		title_disp_fps = gtk_label_new("disp. fps:   ");
+		title_disp_fps = gtk_label_new("disp. fps:     ");
 		gtk_widget_set_halign(title_disp_fps,GTK_ALIGN_START);
-		title_inf_fps = gtk_label_new("inf. fps:    ");
+		title_inf_fps = gtk_label_new("inf. fps:     ");
 		gtk_widget_set_halign(title_inf_fps,GTK_ALIGN_START);
-		title_inf_time = gtk_label_new("inf. time:   ");
+		title_inf_time = gtk_label_new("inf. time:     ");
 		gtk_widget_set_halign(title_inf_time,GTK_ALIGN_START);
 
 		data->info_disp_fps = gtk_label_new(NULL);
@@ -1290,7 +1310,7 @@ static void gst_application_cb (GstBus *bus, GstMessage *msg, CustomData *data) 
 
 /**
  * This function is called every time a new message is posted on the bus. This
- * function is also used to assign the video to a video overlay which can be 
+ * function is also used to assign the video to a video overlay which can be
  * display in a gtk UI
  */
 static GstBusSyncReply gst_bus_sync_handler(GstBus * bus, GstMessage * message, gpointer user_data)
