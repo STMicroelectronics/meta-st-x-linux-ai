@@ -1,5 +1,15 @@
+From 1479a14b6f6ede948f9cc4810f678aee177b3bc3 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Fri, 24 Mar 2023 11:09:32 +0100
+Subject: [PATCH 2/4] onnxruntime: add SONAME with MAJOR version
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ cmake/CMakeLists.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 603cc75fe2..952aa6d165 100644
+index 603cc75fe2..39e749517e 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
 @@ -2057,3 +2057,5 @@ if (onnxruntime_ENABLE_EXTERNAL_CUSTOM_OP_SCHEMAS)
@@ -8,3 +18,6 @@ index 603cc75fe2..952aa6d165 100644
  
 +message("ONNXRUNTIME_VERSION_MAJOR=${ONNXRUNTIME_VERSION_MAJOR}")
 +set_target_properties(onnxruntime PROPERTIES SOVERSION "${ONNXRUNTIME_VERSION_MAJOR}")
+-- 
+2.25.1
+

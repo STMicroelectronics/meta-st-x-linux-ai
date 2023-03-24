@@ -10,9 +10,14 @@ PV = "1.11.0+git${SRCPV}"
 
 SRCREV = "b713855a980056d89a1e550ad81dc3c19573d7a0"
 SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.11.0;protocol=https"
-SRC_URI += "file://0001-remove-AVX-specific-micro-benchmark.patch"
+SRC_URI += "file://0001-onnxruntime-test-remove-AVX-specific-micro-benchmark.patch"
 SRC_URI += "file://0002-onnxruntime-add-SONAME-with-MAJOR-version.patch"
-SRC_URI += "file://0003-onnxruntime-libcustom_op_library-remove-relative-path.patch"
+SRC_URI += "file://0003-onnxruntime-test-libcustom_op_library-remove-relativ.patch"
+SRC_URI += "file://0004-onnxruntime-rely-on-pybind11-package-from-Yocto-buil.patch"
+
+PROTOC_VERSION = "3.18.1"
+SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"
+SRC_URI[protoc.sha256sum] = "220bd1704c73dbf4d0a91399a2ecf9d19938b5cd80c8a38839a023d8b87bb772"
 
 S = "${WORKDIR}/git"
 
@@ -23,12 +28,6 @@ DEPENDS = "\
 	${PYTHON_PN}-pybind11 \
 	${PYTHON_PN}-native \
 	${PYTHON_PN} \
-	protobuf-native \
-	protobuf \
-	nsync \
-	boost \
-	re2 \
-	date \
 	"
 
 python () {
@@ -51,8 +50,8 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -Donnxruntime_BUILD_SHARED_LIB=ON \
 		      -Donnxruntime_BUILD_BENCHMARKS=ON \
 		      -DCMAKE_PREFIX_PATH="${STAGING_LIBDIR};${STAGING_INCDIR};${STAGING_INCDIR}/${PYTHON_DIR}" \
-		      -DONNX_CUSTOM_PROTOC_EXECUTABLE="${STAGING_BINDIR_NATIVE}/protoc" \
-		      -Donnxruntime_PREFER_SYSTEM_LIB=ON \
+		      -DONNX_CUSTOM_PROTOC_EXECUTABLE="${WORKDIR}/protoc-${PROTOC_VERSION}/bin/protoc" \
+		      -Donnxruntime_PREFER_SYSTEM_LIB=OFF \
 		      -Donnxruntime_ENABLE_PYTHON=ON \
 		      -DPYTHON_EXECUTABLE="${STAGING_BINDIR_NATIVE}/${PYTHON_PN}-native/${PYTHON_PN}" \
 		      -DPython_EXECUTABLE="${STAGING_BINDIR_NATIVE}/${PYTHON_PN}-native/${PYTHON_PN}" \
@@ -110,10 +109,8 @@ do_install() {
 	ln -sf libonnxruntime.so.${PVB} ${D}${libdir}/libonnxruntime.so.${MAJOR}
 	ln -sf libonnxruntime.so.${PVB} ${D}${libdir}/libonnxruntime.so
 
-	# Move the onnx_test_runner executable that was installed in /usr instead of /usr/local.
-	mv ${B}/onnx_test_runner ${D}${prefix}/local/bin/${PN}-${PVB}/tools
-
 	# These are not included in the base installation, so we install them manually.
+	install -m 755 ${B}/onnx_test_runner				${D}${prefix}/local/bin/${PN}-${PVB}/tools
 	install -m 755 ${B}/onnxruntime_perf_test			${D}${prefix}/local/bin/${PN}-${PVB}/tools
 	install -m 755 ${B}/onnxruntime_test_all			${D}${prefix}/local/bin/${PN}-${PVB}/tools
 	install -m 755 ${B}/onnxruntime_shared_lib_test			${D}${prefix}/local/bin/${PN}-${PVB}/tools

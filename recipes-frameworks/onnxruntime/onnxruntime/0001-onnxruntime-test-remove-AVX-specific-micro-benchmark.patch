@@ -1,3 +1,13 @@
+From 9621bd472c21e5b1604e24b578fbd0e591590953 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Fri, 24 Mar 2023 11:09:00 +0100
+Subject: [PATCH 1/4] onnxruntime: test: remove AVX specific micro benchmark
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ .../test/onnx/microbenchmark/reduceminmax.cc  | 24 -------------------
+ 1 file changed, 24 deletions(-)
+
 diff --git a/onnxruntime/test/onnx/microbenchmark/reduceminmax.cc b/onnxruntime/test/onnx/microbenchmark/reduceminmax.cc
 index 06a7f50c9a..eeaa9e0067 100644
 --- a/onnxruntime/test/onnx/microbenchmark/reduceminmax.cc
@@ -31,3 +41,6 @@ index 06a7f50c9a..eeaa9e0067 100644
 -    ->Arg(98304)
 -    ->Arg(160000);
  
+-- 
+2.25.1
+

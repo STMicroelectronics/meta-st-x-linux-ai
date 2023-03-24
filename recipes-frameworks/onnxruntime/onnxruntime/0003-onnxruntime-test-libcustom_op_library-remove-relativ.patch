@@ -1,3 +1,15 @@
+From 13afc81d84044ca9f3fd25e82401402f0c756702 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Fri, 24 Mar 2023 11:19:57 +0100
+Subject: [PATCH 3/4] onnxruntime: test: libcustom_op_library remove relative
+ path
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ onnxruntime/test/python/onnxruntime_test_python.py | 4 ++--
+ onnxruntime/test/shared_lib/test_inference.cc      | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
 diff --git a/onnxruntime/test/python/onnxruntime_test_python.py b/onnxruntime/test/python/onnxruntime_test_python.py
 index e6e982aff1..e0c0367f80 100644
 --- a/onnxruntime/test/python/onnxruntime_test_python.py
@@ -33,3 +45,6 @@ index 899ea0a19e..0531d4b2aa 100644
  #endif
  
    void* library_handle = nullptr;
+-- 
+2.25.1
+

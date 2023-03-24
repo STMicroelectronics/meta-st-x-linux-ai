@@ -1,0 +1,27 @@
+From 6380f563acaba752b09ff5772ad46292464bc2e1 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Fri, 24 Mar 2023 11:21:13 +0100
+Subject: [PATCH 4/4] onnxruntime: rely on pybind11 package from Yocto build
+ system
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ cmake/external/pybind11.cmake | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/cmake/external/pybind11.cmake b/cmake/external/pybind11.cmake
+index 86aee98efa..955c510ad0 100644
+--- a/cmake/external/pybind11.cmake
++++ b/cmake/external/pybind11.cmake
+@@ -1,7 +1,5 @@
+ 
+-if(onnxruntime_PREFER_SYSTEM_LIB)
+-  find_package(pybind11)
+-endif()
++find_package(pybind11)
+ 
+ if(NOT TARGET pybind11::module)
+   include(ExternalProject)
+-- 
+2.25.1
+
