@@ -1,7 +1,8 @@
-From 163473c347568f9630f6f9960382fe0c945115bb Mon Sep 17 00:00:00 2001
+From 2d8d291d04214c06add8f65ce6a12f2d967188df Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 26 Apr 2022 11:41:47 +0200
-Subject: [PATCH] TFLite: cmake: add schema_conversion_utils.cc to the shared
+Subject: [PATCH 2/5] TFLite: cmake: add schema_conversion_utils.cc to the
+ shared
 
 Modified: Alexis BRISSON <alexis.brisson@st.com>
  library
@@ -10,13 +11,12 @@ This is needed by libcoral library.
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 Signed-off-by: Alexis BRISSON <alexis.brisson@st.com>
-
 ---
  tensorflow/lite/CMakeLists.txt | 6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 740d186ad30..32aa5728de0 100644
+index 4d571be119a..43e4f68a755 100644
 --- a/tensorflow/lite/CMakeLists.txt
 +++ b/tensorflow/lite/CMakeLists.txt
 @@ -209,6 +209,9 @@ list(FILTER TFLITE_SRCS EXCLUDE REGEX ".*tflite_with_xnnpack\\.cc$")
@@ -40,3 +40,6 @@ index 740d186ad30..32aa5728de0 100644
    ${_ALL_TFLITE_SRCS}
  )
  set(_ALL_TFLITE_HDRS ${_ALL_TFLITE_SRCS})
+-- 
+2.25.1
+

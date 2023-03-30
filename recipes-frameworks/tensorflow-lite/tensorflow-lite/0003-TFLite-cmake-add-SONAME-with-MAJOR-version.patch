@@ -1,0 +1,28 @@
+From ddaf4fed606e86c7939cbb761ece3cb3cee8b8a3 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Thu, 17 Mar 2022 10:27:59 +0100
+Subject: [PATCH 3/5] TFLite: cmake: add SONAME with MAJOR version
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ tensorflow/lite/CMakeLists.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 43e4f68a755..9ac75b91c01 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -588,6 +588,10 @@ if(TFLITE_ENABLE_INSTALL)
+   )
+ endif()
+ 
++# To add SONAME with the MAJOR
++message("TFLITE_VERSION_MAJOR=${TFLITE_VERSION_MAJOR}")
++set_target_properties(tensorflow-lite PROPERTIES VERSION "${TFLITE_VERSION_MAJOR}")
++
+ # The kernel tests.
+ if(TFLITE_KERNEL_TEST)
+   enable_testing()
+-- 
+2.25.1
+

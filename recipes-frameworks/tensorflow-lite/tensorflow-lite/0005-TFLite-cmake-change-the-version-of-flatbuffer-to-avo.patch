@@ -1,0 +1,27 @@
+From de0de17b0d5568c5ec84504adb14c6794940aa1c Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Thu, 30 Mar 2023 21:12:19 +0200
+Subject: [PATCH 5/5] TFLite: cmake: change the version of flatbuffer to avoid
+ flatc exec issue
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ tensorflow/lite/tools/cmake/modules/flatbuffers.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake b/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake
+index 54b413f69ac..d7a2f8ce0f2 100644
+--- a/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake
++++ b/tensorflow/lite/tools/cmake/modules/flatbuffers.cmake
+@@ -23,7 +23,7 @@ OverridableFetchContent_Declare(
+   flatbuffers
+   GIT_REPOSITORY https://github.com/google/flatbuffers
+   # Sync with tensorflow/third_party/flatbuffers/workspace.bzl
+-  GIT_TAG v2.0.6
++  GIT_TAG v2.0.8
+   GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+   SOURCE_DIR "${CMAKE_BINARY_DIR}/flatbuffers"
+-- 
+2.25.1
+
