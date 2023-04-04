@@ -1,7 +1,7 @@
-From 152db7485dfe1bb3c8a3ac16e9ef1b7c4338eec7 Mon Sep 17 00:00:00 2001
+From 5299539af5f9e8a9dbb1d182a757eea50a00455d Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 31 May 2022 12:58:22 +0200
-Subject: [PATCH 1/2] Makefile to support Yocto build system
+Subject: [PATCH 1/1] Makefile to support Yocto build system
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 Change-Id: Ib7c6bab0e48eef19d35f425a748b346e0a1ed62a
@@ -12,7 +12,7 @@ Change-Id: Ib7c6bab0e48eef19d35f425a748b346e0a1ed62a
 
 diff --git a/makefile_build/Makefile b/makefile_build/Makefile
 new file mode 100644
-index 0000000..4b856e3
+index 0000000..65d385e
 --- /dev/null
 +++ b/makefile_build/Makefile
 @@ -0,0 +1,109 @@
@@ -104,7 +104,7 @@ index 0000000..4b856e3
 +
 +$(CORAL_WRAPPER_OBJS): $(CORAL_WRAPPER_SRCS)
 +	@$(MKDIR)
-+	$(CXX) $(CORAL_CXXFLAGS) $(CORAL_INCLUDES) -c $< -o $@
++	$(CXX) $(CORAL_CXXFLAGS) $(CORAL_INCLUDES) -ffile-prefix-map=$(WORKDIR)= -c $< -o $@
 +
 +$(CORAL_WRAPPER_PATH): $(CORAL_WRAPPER_OBJS)
 +	@$(MKDIR)
