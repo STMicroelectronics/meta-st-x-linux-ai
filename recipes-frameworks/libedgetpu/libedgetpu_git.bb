@@ -8,8 +8,9 @@ PV = "2.0.0+git${SRCPV}"
 
 SRCREV = "ea1eaddbddece0c9ca1166e868f8fd03f4a3199e"
 SRC_URI = "git://github.com/google-coral/libedgetpu.git;protocol=https;branch=master "
-SRC_URI += " file://0001-update-make_build-Makefile-to-accept-cross-compilati.patch "
+SRC_URI += " file://0001-makefile_build-Makefile-update-to-accept-cross-compi.patch "
 SRC_URI += " file://0002-fix-build-issue-with-gcc-v11.x.patch "
+SRC_URI += " file://0003-makefile_build-Makefile-remove-absolute-path-from-th.patch "
 
 S = "${WORKDIR}/git"
 
@@ -38,16 +39,10 @@ EXTRA_OEMAKE += 'EXTRA_CXXFLAGS="${TARGET_CC_ARCH} ${TOOLCHAIN_OPTIONS}"'
 EXTRA_OEMAKE += 'TFROOT="${RECIPE_SYSROOT}/usr/include/"'
 EXTRA_OEMAKE += 'LIBEDGETPU_VERSION="${PVB}"'
 EXTRA_OEMAKE += 'LIBEDGETPU_VERSION_MAJOR="${MAJOR}"'
+EXTRA_OEMAKE += 'WORKDIR=${WORKDIR}'
 
 do_compile () {
-	#Check if abseil-cpp version use static or shared libraries
-	ABSL_SHARED_LIB=0
-	FILE=${RECIPE_SYSROOT}/${libdir}/pkgconfig/absl_status.pc
-	if [ -f "$FILE" ]; then
-		ABSL_SHARED_LIB=1
-	fi
-
-	oe_runmake ABSL_SHARED_LIB=${ABSL_SHARED_LIB} -C ${S} -f makefile_build/Makefile
+	oe_runmake -C ${S} -f makefile_build/Makefile
 }
 
 do_install () {
