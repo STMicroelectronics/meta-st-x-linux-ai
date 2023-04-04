@@ -43,6 +43,7 @@ EXTRA_OEMAKE += 'FLATBUFFERS_INCL="${RECIPE_SYSROOT}/usr/include/"'
 EXTRA_OEMAKE += 'EIGEN_INCL="${RECIPE_SYSROOT}/usr/include/eigen3"'
 EXTRA_OEMAKE += 'LIBCORAL_VERSION="${PVB}"'
 EXTRA_OEMAKE += 'LIBCORAL_VERSION_MAJOR="${MAJOR}"'
+EXTRA_OEMAKE += 'WORKDIR=${WORKDIR}'
 
 do_compile () {
 	oe_runmake -C ${S} -f makefile_build/Makefile

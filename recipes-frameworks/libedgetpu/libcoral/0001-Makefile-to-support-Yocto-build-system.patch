@@ -1,4 +1,4 @@
-From 29d728d903dc8311c6793cbaab349dd515098380 Mon Sep 17 00:00:00 2001
+From 3696e67039945a4031a4e562e66559c5099e5653 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Tue, 5 Apr 2022 21:16:05 +0200
 Subject: [PATCH 1/4] Makefile to support Yocto build system
@@ -11,7 +11,7 @@ Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 
 diff --git a/makefile_build/Makefile b/makefile_build/Makefile
 new file mode 100644
-index 0000000..c4eb9c2
+index 0000000..2433f30
 --- /dev/null
 +++ b/makefile_build/Makefile
 @@ -0,0 +1,68 @@
@@ -75,7 +75,7 @@ index 0000000..c4eb9c2
 +
 +$(LIBCORAL_CCOBJS): $(BUILDDIR)/%.o: %.cc
 +	@$(MKDIR)
-+	$(CXX) $(LIBCORAL_CXXFLAGS) $(LIBCORAL_INCLUDES) -c $< -o $@
++	$(CXX) $(LIBCORAL_CXXFLAGS) $(LIBCORAL_INCLUDES) -ffile-prefix-map=$(WORKDIR)= -c $< -o $@
 +
 +$(LIBCORAL_PATH): $(LIBCORAL_CCOBJS)
 +	@$(MKDIR)
