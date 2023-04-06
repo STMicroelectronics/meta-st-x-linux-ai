@@ -18,6 +18,10 @@ ifneq (,$(findstring TRUE,$(EDGETPU)))
 	LDFLAGS += -ledgetpu
 endif
 
+ifeq ($(NEW_GST_WAYLAND_API), 1)
+	CXXFLAGS += -DNEW_GST_WAYLAND_API
+endif
+
 SRCS = objdetect_tfl_gst_gtk.cc
 OBJS = $(SRCS:.cc=.o)
 

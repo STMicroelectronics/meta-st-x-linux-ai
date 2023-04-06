@@ -46,7 +46,18 @@ do_compile() {
         OPENCV_VERSION=opencv
     fi
 
-    oe_runmake OPENCV_PKGCONFIG=${OPENCV_VERSION} -C ${S}/image-classification/src
+    #Check the gstreamer-wayland version and change API accordingly
+    NEW_GST_WAYLAND_API=0
+    NEW_GST_WAYLAND_API_VERSION="1.22.0"
+    GST_WAYLAND_PC_FILE=${RECIPE_SYSROOT}/${libdir}/pkgconfig/gstreamer-wayland-1.0.pc
+    if [ -f "$GST_WAYLAND_PC_FILE" ]; then
+        GST_WAYLAND_VERSION=$(grep 'Version:' $GST_WAYLAND_PC_FILE | sed 's/^.*: //')
+        if [ "$(printf '%s\n' "$GST_WAYLAND_VERSION" "$NEW_GST_WAYLAND_API_VERSION" | sort -V | head -n1)" = "$NEW_GST_WAYLAND_API_VERSION" ]; then
+            NEW_GST_WAYLAND_API=1
+        fi
+    fi
+
+    oe_runmake OPENCV_PKGCONFIG=${OPENCV_VERSION} NEW_GST_WAYLAND_API=${NEW_GST_WAYLAND_API} -C ${S}/image-classification/src
 }
 
 do_install() {
@@ -74,10 +85,8 @@ RDEPENDS:${PN} += " \
 	gstreamer1.0-plugins-bad-waylandsink \
 	gstreamer1.0-plugins-bad-debugutilsbad \
 	gstreamer1.0-plugins-base-app \
-	gstreamer1.0-plugins-base-videoconvert \
 	gstreamer1.0-plugins-base-videorate \
 	gstreamer1.0-plugins-good-video4linux2 \
-	gstreamer1.0-plugins-base-videoscale \
 	gtk+3 \
 	libopencv-core \
 	libopencv-imgproc \
@@ -86,3 +95,6 @@ RDEPENDS:${PN} += " \
 	tflite-models-mobilenetv1 \
 	bash \
 "
+
+#Depending of the Gstreamer version supported by the Yocto version the RDEPENDS differs
+RDEPENDS:${PN} += "${@bb.utils.contains('DISTRO_CODENAME', 'kirkstone', ' gstreamer1.0-plugins-base-videoscale gstreamer1.0-plugins-base-videoconvert ', ' gstreamer1.0-plugins-base-videoconvertscale ',  d)}"
