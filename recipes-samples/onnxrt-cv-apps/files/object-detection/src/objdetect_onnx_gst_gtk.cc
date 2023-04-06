@@ -1306,6 +1306,20 @@ static GstBusSyncReply gst_bus_sync_handler(GstBus * bus, GstMessage * message, 
 {
 	CustomData *data = (CustomData *)user_data;
 
+#ifdef NEW_GST_WAYLAND_API
+	if (gst_is_wl_display_handle_need_context_message(message)) {
+		GstContext *context;
+		GdkDisplay *display;
+		struct wl_display *display_handle;
+
+		display = gtk_widget_get_display(data->video);
+		display_handle = gdk_wayland_display_get_wl_display(display);
+		context = gst_wl_display_handle_context_new(display_handle);
+		gst_element_set_context(GST_ELEMENT(GST_MESSAGE_SRC(message)), context);
+		gst_context_unref(context);
+
+		goto drop;
+#else
 	if (gst_is_wayland_display_handle_need_context_message(message)) {
 		GstContext *context;
 		GdkDisplay *display;
@@ -1318,6 +1332,7 @@ static GstBusSyncReply gst_bus_sync_handler(GstBus * bus, GstMessage * message, 
 		gst_context_unref(context);
 
 		goto drop;
+#endif
 	} else if (gst_is_video_overlay_prepare_window_handle_message(message)) {
 		GdkWindow *window;
 		struct wl_surface *window_handle;
