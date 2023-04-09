@@ -20,6 +20,7 @@ inherit python3-dir cmake
 
 DEPENDS = "\
 	${PYTHON_PN}-numpy-native \
+	${PYTHON_PN}-numpy \
 	${PYTHON_PN}-pybind11 \
 	${PYTHON_PN}-native \
 	${PYTHON_PN} \
@@ -57,6 +58,7 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -DPYTHON_EXECUTABLE="${STAGING_BINDIR_NATIVE}/${PYTHON_PN}-native/${PYTHON_PN}" \
 		      -DPython_EXECUTABLE="${STAGING_BINDIR_NATIVE}/${PYTHON_PN}-native/${PYTHON_PN}" \
 		      -DPYTHON_LIBRARY="${STAGING_LIBDIR}" \
+		      -DPython_NumPy_INCLUDE_DIR="${STAGING_LIBDIR}/${PYTHON_DIR}/site-packages/numpy/core/include" \
 		      -Dpybind11_INCLUDE_DIR="${STAGING_INCDIR}/${PYTHON_DIR}/pybind11" \
 		      -DONNXRUNTIME_VERSION_MAJOR=${MAJOR}  \
 "
