@@ -106,18 +106,19 @@ namespace wrapper_onnx {
 				exit(-1);
 			}
 
-			// create an environment
+			/* create an environment */
 			Ort::Env 								 m_env(ORT_LOGGING_LEVEL_WARNING, "Onnx_environment");
-			// create session options
+			/* create session options */
 			Ort::SessionOptions 					 m_session_options;
 
-			// Define number of threads
+			/* Define number of threads */
 			if (m_numberOfThreads != -1) {
 				m_session_options.SetIntraOpNumThreads(m_numberOfThreads);
 
 			}
 
-			// create a session from the ONNX model file
+			m_session_options.DisableCpuMemArena();
+			/* create a session from the ONNX model file */
 
 			Ort::Session session(m_env,conf->model_name.c_str(), m_session_options);
 			if (session==nullptr)
@@ -132,7 +133,6 @@ namespace wrapper_onnx {
 				m_inputFloating = true;
 				LOG(INFO) << "Floating point Onnx Model\n";
 		    }
-
 	        m_session=std::move(session) ;
 
 		}
@@ -160,7 +160,7 @@ namespace wrapper_onnx {
 
 
 
-			// Log information about input tensors
+			/* Log information about input tensors */
 			size_t numInputNodes = m_session.GetInputCount();
             for (size_t i = 0; i < numInputNodes; i++) {
 				Ort::TypeInfo inputTypeInfo = m_session.GetInputTypeInfo(i);
@@ -175,7 +175,7 @@ namespace wrapper_onnx {
             }
 
 
-			// Log information about output tensors
+			/* Log information about output tensors */
             size_t numOutputNodes = m_session.GetOutputCount();
 		    for (size_t i = 0; i < numOutputNodes; i++)
 		    {
@@ -201,12 +201,14 @@ namespace wrapper_onnx {
 		int GetInputWidth()
 		{
 			std::vector<int64_t> input_shape = m_session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+
 			return input_shape[2];
 		}
 
 		int GetInputHeight()
 		{
 			std::vector<int64_t> input_shape = m_session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+
 			return input_shape[1];
 		}
 
@@ -263,25 +265,24 @@ namespace wrapper_onnx {
 				LOG(INFO) << "number of outputs: " << GetNumberOfOutputs() << "\n";
 			}
 
-			// Prepare input output tensors
+			/* Prepare input output tensors */
 			std::vector<Ort::Value> inputTensors;
 			std::vector<Ort::Value> outputTensors;
 
-			auto inputTensorInfo = m_session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo();
-			std::vector<int64_t> inputDims = inputTensorInfo.GetShape();
-			size_t inputTensorSize = Vector_Product(inputDims); //sizeInBytes
 
-			auto outputTensorInfo = m_session.GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo();
-			std::vector<int64_t> outputDims = outputTensorInfo.GetShape();
+			std::vector< int64_t > inputDims=m_session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+			size_t inputTensorSize =Vector_Product(inputDims); //sizeInBytes
+			std::vector<int64_t> outputDims = m_session.GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
 			size_t outputTensorSize = Vector_Product(outputDims);
+
 
 			Ort::MemoryInfo memoryInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
-			// Prepare empty output tensor
+			/* Prepare empty output tensor */
 			std::vector<float> outputTensorValues(outputTensorSize);
 			outputTensors.push_back(Ort::Value::CreateTensor(memoryInfo, outputTensorValues.data(), outputTensorSize,outputDims.data(), outputDims.size()));
 
-			// Get input
+			/* Get input */
 			float*  in  ;
 			if (m_inputFloating) {
 				for (int i = 0; i < sizeInBytes; i++){
@@ -292,7 +293,7 @@ namespace wrapper_onnx {
 				   inputTensors.push_back(Ort::Value::CreateTensor(memoryInfo, &(img[i]), inputTensorSize, inputDims.data(),inputDims.size()));
 			}
 
-		       // Get input names
+		    /* Get input names */
 		 	std::vector<const char*> inputNames;
 			size_t num_input_nodes = GetNumberOfInputs() ;
 			inputNames.resize(num_input_nodes);
@@ -302,7 +303,7 @@ namespace wrapper_onnx {
 					inputNames[i]=input_name;
 				}
 
-			// Get output names
+			/* Get output names */
 			std::vector<const char*> outputNames;
 			size_t num_output_nodes=m_session.GetOutputCount() ;
 			outputNames.resize(num_output_nodes);
@@ -315,8 +316,13 @@ namespace wrapper_onnx {
 			struct timeval start_time, stop_time;
 			gettimeofday(&start_time, nullptr);
 
-			// Run Inference
-			outputTensors=m_session.Run(nullptr, inputNames.data(),inputTensors.data(),num_input_nodes, outputNames.data(), num_output_nodes);
+			/* Run Inference */
+			Ort::RunOptions run_options;
+			if (m_verbose) {
+				run_options.SetRunLogSeverityLevel(0);
+				}
+			outputTensors=m_session.Run(run_options, inputNames.data(),inputTensors.data(),num_input_nodes, outputNames.data(), num_output_nodes);
+
 
 			gettimeofday(&stop_time, nullptr);
 			m_inferenceTime = (get_ms(stop_time) - get_ms(start_time));
@@ -326,15 +332,15 @@ namespace wrapper_onnx {
 			float *classes = outputTensors[1].GetTensorMutableData<float>();
 			float *scores = outputTensors[2].GetTensorMutableData<float>();
 
-			// get the output size by geting the size of the
-			// output tensor 1 that represente the classes
+			// get the output size by getting the size of the
+			// output tensor 1 that represents the classes
 			auto output_size = GetOutputSize(1);
 
 			// creation of an ObjDetect_Results struct to store values
-			// of detected object the frame
+			// of detected object of the frame
 			ObjDetect_Results Obj_detected;
 
-			// the outputs are already sort by descending order
+			// the outputs are already sorted by descending order
 			if (first_call){
 				for (unsigned int i = 0; i < output_size; i++) {
 					Obj_detected.classe =(int)classes[i];
