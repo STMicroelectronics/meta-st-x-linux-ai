@@ -686,7 +686,7 @@ class OverlayWindow(Gtk.Window):
             self.info_box.pack_start(self.st_icon_event,False,False,20)
             self.label_inftime = Gtk.Label()
             self.label_inftime.set_justify(Gtk.Justification.LEFT)
-            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:\n</b></span>" % self.ui_cairo_font_size)
+            self.label_inftime.set_markup("<span font=\'%d\' color='#FFFFFFFF'><b>inf.time:     \n</b></span>" % self.ui_cairo_font_size)
             self.info_box.pack_start(self.label_inftime,False,False,20)
             self.inf_time = Gtk.Label()
             self.inf_time.set_justify(Gtk.Justification.FILL)
