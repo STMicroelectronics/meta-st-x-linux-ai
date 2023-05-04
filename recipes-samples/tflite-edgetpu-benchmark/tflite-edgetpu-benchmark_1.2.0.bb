@@ -21,13 +21,13 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}${prefix}/local/demo-ai/benchmark/tflite-edgetpu
+    install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools
 
     # install application binaries and launcher scripts
-    install -m 0755 ${S}/tflite_edgetpu_benchmark	${D}${prefix}/local/demo-ai/benchmark/tflite-edgetpu
+    install -m 0755 ${S}/tflite_edgetpu_benchmark	${D}${prefix}/local/bin/${PN}-${PV}/tools
 }
 
-FILES:${PN} += "${prefix}/local/"
+FILES:${PN} += "${prefix}/local/bin/${PN}-${PV}/tools/tflite_edgetpu_benchmark"
 
 INSANE_SKIP:${PN} = "ldflags"
 
