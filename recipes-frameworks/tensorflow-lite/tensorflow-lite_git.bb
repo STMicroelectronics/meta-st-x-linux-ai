@@ -17,6 +17,7 @@ SRC_URI += " file://0002-TFLite-cmake-add-schema_conversion_utils.cc-to-the-s.pa
 SRC_URI += " file://0003-TFLite-cmake-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0004-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 SRC_URI += " file://0005-TFLite-cmake-change-the-version-of-flatbuffer-to-avo.patch "
+SRC_URI += " file://0006-TFLite-cmake-add-XNNPACK-delegate-u8-and-i8-definition.patch "
 
 S = "${WORKDIR}/git"
 
@@ -56,7 +57,7 @@ OECMAKE_CXX_FLAGS_RELEASE = "-O3 -DNDEBUG"
 OECMAKE_TARGET_COMPILE =  "tensorflow-lite _pywrap_tensorflow_interpreter_wrapper benchmark_model"
 
 EXTRA_OECMAKE += " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF \
-		   -DTFLITE_ENABLE_XNNPACK=OFF \
+		   -DTFLITE_ENABLE_XNNPACK=ON \
 		   -DPYTHON_TARGET_INCLUDE=${RECIPE_SYSROOT}${includedir}/${PYTHON_DIR} \
 		   -DNUMPY_TARGET_INCLUDE=${RECIPE_SYSROOT}${PYTHON_SITEPACKAGES_DIR}/numpy/core/include \
 		   -DPYBIND11_TARGET_INCLUDE=${RECIPE_SYSROOT}${PYTHON_SITEPACKAGES_DIR}/pybind11/include \
