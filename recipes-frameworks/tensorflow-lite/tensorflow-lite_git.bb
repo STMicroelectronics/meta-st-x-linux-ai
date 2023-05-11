@@ -49,6 +49,11 @@ TENSORFLOW_TARGET="${@bb.utils.contains('TARGET_OS', 'linux-gnueabi', 'linux', '
 TENSORFLOW_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7l', '', d)}"
 
 OECMAKE_SOURCEPATH = "${S}/tensorflow/lite"
+# Activate -O3 optimization and disable debug symbols
+OECMAKE_C_FLAGS_RELEASE = "-O3 -DNDEBUG"
+OECMAKE_CXX_FLAGS_RELEASE = "-O3 -DNDEBUG"
+# Build tensorflow-lite.so library, _pywrap_tensorflow_interpreter_wrapper.so library and the benchmark_model application
+OECMAKE_TARGET_COMPILE =  "tensorflow-lite _pywrap_tensorflow_interpreter_wrapper benchmark_model"
 
 EXTRA_OECMAKE += " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF \
 		   -DTFLITE_ENABLE_XNNPACK=OFF \
@@ -93,9 +98,6 @@ do_compile:prepend() {
 SETUPTOOLS_SETUP_PATH = "${WORKDIR}/build"
 
 do_compile:append() {
-	# Build tensorflow-lite.so library, _pywrap_tensorflow_interpreter_wrapper.so library and the benchmark_model application
-	cmake --build . --verbose -j 2 -t tensorflow-lite _pywrap_tensorflow_interpreter_wrapper benchmark_model
-
 	# Build the python wheel (procedure extract form the build_pip_package_with_cmake.sh)
 	BUILD_DIR=${WORKDIR}/build
 	TENSORFLOW_DIR=${S}
