@@ -465,46 +465,63 @@ static gboolean infer_new_picture(CustomData *data)
 				exit(1);
 			}
 
-			for (unsigned int i = 0; i < objects_info.size(); i++) {
-				std::cout << "\t"
-					<< std::left  << std::setw(12)
-					<< labels[results.vect_ObjDetect_Results[i].classe]
-					<< " (x0 y0 x1 y1) "
-					<< std::left  << std::setw(12)
-					<< results.vect_ObjDetect_Results[i].location.x0
-					<< std::left  << std::setw(12)
-					<< results.vect_ObjDetect_Results[i].location.y0
-					<< std::left  << std::setw(12)
-					<< results.vect_ObjDetect_Results[i].location.x1
-					<< std::left  << std::setw(12)
-					<< results.vect_ObjDetect_Results[i].location.y1
-					<< "  expected result: "
-					<< std::left  << std::setw(12)
-					<< objects_info[i].name
-					<< " (x0 y0 x1 y1) "
-					<< std::left  << std::setw(12)
-					<< objects_info[i].location.x0
-					<< std::left  << std::setw(12)
-					<< objects_info[i].location.y0
-					<< std::left  << std::setw(12)
-					<< objects_info[i].location.x1
-					<< objects_info[i].location.y1 << std::endl;
-
-				if (objects_info[i].name.compare(labels[results.vect_ObjDetect_Results[i].classe]) != 0) {
-
-					std::cout << "Inference result not aligned with the expected validation result\n";
-					exit(1);
-				}
-
-				float error_epsilon = 0.02;
-				if ((fabs(results.vect_ObjDetect_Results[i].location.x0 - objects_info[i].location.x0) > error_epsilon) ||
-				    (fabs(results.vect_ObjDetect_Results[i].location.y0 - objects_info[i].location.y0) > error_epsilon) ||
-				    (fabs(results.vect_ObjDetect_Results[i].location.x1 - objects_info[i].location.x1) > error_epsilon) ||
-				    (fabs(results.vect_ObjDetect_Results[i].location.y1 - objects_info[i].location.y1) > error_epsilon)) {
-					std::cout << "Inference result not aligned with the expected validation result\n";
-					exit(1);
+			unsigned int valid_count=0;
+			for (unsigned int i = 0; i < count; i++) {
+				for (unsigned int j = 0; j < objects_info.size(); j++) {
+					if (objects_info[i].name.compare(labels[results.vect_ObjDetect_Results[j].classe]) == 0){
+						valid_count ++;
+						break;
+					}
 				}
 			}
+			if (valid_count != objects_info.size()) {
+				std::cout << "Inference result not aligned with the expected validation result\n";
+				exit(1);
+			} else {
+				valid_count =0;
+			}
+
+			float error_epsilon = 0.02;
+			for (unsigned int i = 0; i < count; i++) {
+				for (unsigned int j = 0; j < objects_info.size(); j++) {
+					if ((fabs(results.vect_ObjDetect_Results[i].location.x0 - objects_info[j].location.x0) <= error_epsilon) ||
+						(fabs(results.vect_ObjDetect_Results[i].location.y0 - objects_info[j].location.y0) <= error_epsilon) ||
+						(fabs(results.vect_ObjDetect_Results[i].location.x1 - objects_info[j].location.x1) <= error_epsilon) ||
+						(fabs(results.vect_ObjDetect_Results[i].location.y1 - objects_info[j].location.y1) <= error_epsilon)){
+						valid_count ++;
+						std::cout << "\t"
+							<< std::left  << std::setw(12)
+							<< labels[results.vect_ObjDetect_Results[i].classe]
+							<< " (x0 y0 x1 y1) "
+							<< std::left  << std::setw(12)
+							<< results.vect_ObjDetect_Results[i].location.x0
+							<< std::left  << std::setw(12)
+							<< results.vect_ObjDetect_Results[i].location.y0
+							<< std::left  << std::setw(12)
+							<< results.vect_ObjDetect_Results[i].location.x1
+							<< std::left  << std::setw(12)
+							<< results.vect_ObjDetect_Results[i].location.y1
+							<< "  expected result: "
+							<< std::left  << std::setw(12)
+							<< objects_info[j].name
+							<< " (x0 y0 x1 y1) "
+							<< std::left  << std::setw(12)
+							<< objects_info[j].location.x0
+							<< std::left  << std::setw(12)
+							<< objects_info[j].location.y0
+							<< std::left  << std::setw(12)
+							<< objects_info[j].location.x1
+							<< objects_info[j].location.y1 << std::endl;
+						break;
+					}
+				}
+			}
+			if (valid_count != objects_info.size()) {
+				std::cout << "Inference result not aligned with the expected validation result\n";
+				exit(1);
+			}
+			valid_count = 0;
+
 			/* Continue over all files */
 			if (dir_files.size() == 0) {
 				auto avg_inf_time = std::accumulate(data->valid_inference_time.begin(),
