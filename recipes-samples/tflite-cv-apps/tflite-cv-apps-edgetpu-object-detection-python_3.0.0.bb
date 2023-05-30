@@ -7,7 +7,7 @@ SRC_URI  = " file://object-detection/python/210-tflite-object-detection-python-e
 SRC_URI += " file://object-detection/python/objdetect_tfl.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/python/launch_python_objdetect_tfl_edgetpu_coco_ssd_mobilenet.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/python/launch_python_objdetect_tfl_edgetpu_coco_ssd_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://object-detection/python/py_widgets.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/python/Default.css;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_tpu_42x52.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_tpu_65x80.png;subdir=${BPN}-${PV} "

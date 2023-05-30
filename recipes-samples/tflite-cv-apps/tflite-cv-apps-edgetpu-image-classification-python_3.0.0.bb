@@ -7,7 +7,7 @@ SRC_URI  = " file://image-classification/python/200-tflite-image-classification-
 SRC_URI += " file://image-classification/python/label_tfl.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/launch_python_label_tfl_edgetpu_mobilenet.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/launch_python_label_tfl_edgetpu_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://image-classification/python/py_widgets.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/python/Default.css;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/TensorFlowLite_EdgeTPU_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_tpu_42x52.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_tpu_65x80.png;subdir=${BPN}-${PV} "
