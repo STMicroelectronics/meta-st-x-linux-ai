@@ -7,7 +7,7 @@ SRC_URI  = " file://object-detection/python/310-onnx-object-detection-python.yam
 SRC_URI += " file://object-detection/python/objdetect_onnx.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/python/launch_python_objdetect_onnx_coco_ssd_mobilenet.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/python/launch_python_objdetect_onnx_coco_ssd_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://object-detection/python/py_widgets.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/python/Default.css;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/Onnxruntime_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_42x52_onnx.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_65x80_onnx.png;subdir=${BPN}-${PV} "

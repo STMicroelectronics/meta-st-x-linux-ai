@@ -7,7 +7,7 @@ SRC_URI  = " file://image-classification/python/300-onnx-image-classification-py
 SRC_URI += " file://image-classification/python/label_onnx.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/launch_python_label_onnx_mobilenet.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/launch_python_label_onnx_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
-SRC_URI += " file://image-classification/python/py_widgets.css;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/python/Default.css;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/Onnxruntime_Python.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_42x52_onnx.png;subdir=${BPN}-${PV} "
 SRC_URI += " file://resources/st_icon_65x80_onnx.png;subdir=${BPN}-${PV} "
