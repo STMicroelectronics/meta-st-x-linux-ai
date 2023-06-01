@@ -114,7 +114,9 @@ namespace wrapper_onnx {
 			/* Define number of threads */
 			if (m_numberOfThreads != -1) {
 				m_session_options.SetIntraOpNumThreads(m_numberOfThreads);
-
+				if (m_verbose) {
+					m_session_options.SetLogSeverityLevel(0);
+				}
 			}
 
 			m_session_options.DisableCpuMemArena();
@@ -152,22 +154,23 @@ namespace wrapper_onnx {
 		void DisplayModelInformation()
 		{
 
-			LOG(INFO) << "tensors size: " <<  m_session.GetInputCount() + m_session.GetOutputCount()<< "\n";
-			LOG(INFO) << "inputs: " << m_session.GetInputCount() << "\n";
-			LOG(INFO) << "input(0) name: " << m_session.GetInputName(0,m_allocator)<< "\n";
+			auto input_name = m_session.GetInputNameAllocated(0, m_allocator);
+			const size_t num_input_nodes = m_session.GetInputCount();
+			size_t num_output_nodes = m_session.GetOutputCount();
 
-
-
-
+			LOG(INFO) << "tensors size: " <<  num_input_nodes + num_output_nodes << "\n";
+			LOG(INFO) << "inputs: " << num_input_nodes << "\n";
+			LOG(INFO) << "input(0) name: " << input_name.get() << "\n";
 
 			/* Log information about input tensors */
 			size_t numInputNodes = m_session.GetInputCount();
             for (size_t i = 0; i < numInputNodes; i++) {
 				Ort::TypeInfo inputTypeInfo = m_session.GetInputTypeInfo(i);
 				auto tensor_info = inputTypeInfo.GetTensorTypeAndShapeInfo();
-				if (m_session.GetInputName(i,m_allocator))
+				auto tensor_input_name = m_session.GetInputNameAllocated(i, m_allocator);
+				if (tensor_input_name.get())
 				{
-					LOG(INFO) << i << ": " << m_session.GetInputName(i,m_allocator) << ", "
+					LOG(INFO) << i << ": " << tensor_input_name.get() << ", "
 							  << tensor_info.GetElementCount() << ", "   // the number of elements specified by the tensor shape (all dimensions multiplied by each other)
 							  << tensor_info.GetElementType() << ", "
 							  << tensor_info.GetDimensionsCount() << "\n" ;
@@ -181,16 +184,15 @@ namespace wrapper_onnx {
 		    {
 				Ort::TypeInfo outputTypeInfo = m_session.GetOutputTypeInfo(i);
 				auto tensor_info = outputTypeInfo.GetTensorTypeAndShapeInfo();
-				if (m_session.GetOutputName(i,m_allocator))
+				auto tensor_output_name = m_session.GetOutputNameAllocated(i, m_allocator);
+				if (tensor_output_name.get())
 				{
-					LOG(INFO) << i << ": " << m_session.GetOutputName(i,m_allocator) << ", "
+					LOG(INFO) << i << ": " << tensor_output_name.get() << ", "
 				              << tensor_info.GetElementCount()<< ", "
 				              << tensor_info.GetElementType()<< ", "
 							  << tensor_info.GetDimensionsCount() << "\n" ;
-
                 }
 		    }
-
 		}
 
 		bool IsModelQuantized()
@@ -201,14 +203,12 @@ namespace wrapper_onnx {
 		int GetInputWidth()
 		{
 			std::vector<int64_t> input_shape = m_session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
-
 			return input_shape[2];
 		}
 
 		int GetInputHeight()
 		{
 			std::vector<int64_t> input_shape = m_session.GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
-
 			return input_shape[1];
 		}
 
@@ -258,9 +258,9 @@ namespace wrapper_onnx {
 			int input_width = GetInputWidth();
 			int input_channels = GetInputChannels();
 			auto sizeInBytes = input_height * input_width * input_channels;
-			const char* input = m_session.GetInputName(0,m_allocator) ;
+			auto input_name = m_session.GetInputNameAllocated(0, m_allocator);
 			if (m_verbose) {
-				LOG(INFO) << "input: " << input << "\n";
+				LOG(INFO) << "input: " << input_name.get() << "\n";
 				LOG(INFO) << "number of inputs: " << GetNumberOfInputs() << "\n";
 				LOG(INFO) << "number of outputs: " << GetNumberOfOutputs() << "\n";
 			}
@@ -280,7 +280,7 @@ namespace wrapper_onnx {
 
 			/* Prepare empty output tensor */
 			std::vector<float> outputTensorValues(outputTensorSize);
-			outputTensors.push_back(Ort::Value::CreateTensor(memoryInfo, outputTensorValues.data(), outputTensorSize,outputDims.data(), outputDims.size()));
+			outputTensors.push_back(Ort::Value::CreateTensor(memoryInfo, outputTensorValues.data(), outputTensorSize, outputDims.data(), outputDims.size()));
 
 			/* Get input */
 			float*  in  ;
@@ -294,35 +294,36 @@ namespace wrapper_onnx {
 			}
 
 		    /* Get input names */
-		 	std::vector<const char*> inputNames;
-			size_t num_input_nodes = GetNumberOfInputs() ;
-			inputNames.resize(num_input_nodes);
-				for (size_t i = 0; i < num_input_nodes; i++)
-				{
-					char* input_name=m_session.GetInputName(i,m_allocator) ;
-					inputNames[i]=input_name;
-				}
+			size_t num_input_nodes = GetNumberOfInputs();
+			input_name = m_session.GetInputNameAllocated(0, m_allocator);
+			const char* inputNames[] = {input_name.get()};
 
-			/* Get output names */
-			std::vector<const char*> outputNames;
-			size_t num_output_nodes=m_session.GetOutputCount() ;
-			outputNames.resize(num_output_nodes);
-				for (size_t i = 0; i < num_output_nodes; i++)
-				{
-					char* output_name=m_session.GetOutputName(i,m_allocator) ;
-					outputNames[i]=	output_name;
+			/* Get Output names */
+			size_t num_output_nodes = m_session.GetOutputCount();
+			std::vector<std::string> output_names(num_output_nodes);
+			for (size_t i = 0; i != num_output_nodes; ++i) {
+				auto output_name = m_session.GetOutputNameAllocated(i, m_allocator);
+				assert(output_name != nullptr);
+				output_names[i] = output_name.get();
+			}
+			std::vector<const char*> outputNames(num_output_nodes);
+			{
+				for (size_t i = 0; i != num_output_nodes; ++i) {
+					outputNames[i] = output_names[i].c_str();
 				}
-
-			struct timeval start_time, stop_time;
-			gettimeofday(&start_time, nullptr);
+			}
 
 			/* Run Inference */
 			Ort::RunOptions run_options;
 			if (m_verbose) {
 				run_options.SetRunLogSeverityLevel(0);
-				}
-			outputTensors=m_session.Run(run_options, inputNames.data(),inputTensors.data(),num_input_nodes, outputNames.data(), num_output_nodes);
+			}
 
+			struct timeval start_time, stop_time;
+			gettimeofday(&start_time, nullptr);
+
+			std::cout << "Running inference ..." << std::endl;
+			outputTensors = m_session.Run(run_options, inputNames, inputTensors.data(), num_input_nodes, outputNames.data(), num_output_nodes);
 
 			gettimeofday(&stop_time, nullptr);
 			m_inferenceTime = (get_ms(stop_time) - get_ms(start_time));
