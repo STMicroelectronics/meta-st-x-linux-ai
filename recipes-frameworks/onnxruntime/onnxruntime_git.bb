@@ -60,6 +60,7 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -Dpybind11_INCLUDE_DIR="${STAGING_INCDIR}/${PYTHON_DIR}/pybind11" \
 		      -DONNXRUNTIME_VERSION_MAJOR=${MAJOR}  \
 		      -DBENCHMARK_ENABLE_GTEST_TESTS=OFF \
+		      -Donnxruntime_USE_XNNPACK=ON \
 "
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
