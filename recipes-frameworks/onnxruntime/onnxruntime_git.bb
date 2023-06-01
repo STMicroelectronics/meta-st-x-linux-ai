@@ -6,18 +6,19 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=0f7e3b1308cb5c00b372a6e78835732d"
 
-PV = "1.11.0+git${SRCPV}"
+PV = "1.14.0+git${SRCPV}"
 
-SRCREV = "b713855a980056d89a1e550ad81dc3c19573d7a0"
-SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.11.0;protocol=https"
+SRCREV = "6ccaeddefa65ccac402a47fa4d9cad8229794bb2"
+SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.14.0;protocol=https"
 SRC_URI += "file://0001-onnxruntime-test-remove-AVX-specific-micro-benchmark.patch"
 SRC_URI += "file://0002-onnxruntime-add-SONAME-with-MAJOR-version.patch"
-SRC_URI += "file://0003-onnxruntime-test-libcustom_op_library-remove-relativ.patch"
-SRC_URI += "file://0004-onnxruntime-rely-on-pybind11-package-from-Yocto-buil.patch"
+SRC_URI += "file://0003-onnxruntime-test-libcustom-library-remove-relative.patch"
+SRC_URI += "file://0004-onnxruntime-fix-imcompatibility-with-compiler-GCC12.patch"
+SRC_URI += "file://0005-onnxruntime-avoid-using-unsupported-Eigen-headers.patch"
 
-PROTOC_VERSION = "3.18.1"
+PROTOC_VERSION = "3.20.2"
 SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"
-SRC_URI[protoc.sha256sum] = "220bd1704c73dbf4d0a91399a2ecf9d19938b5cd80c8a38839a023d8b87bb772"
+SRC_URI[protoc.sha256sum] = "d97227fd8bc840dcb1cf7332c8339a2d8f0fc381a98b028006e5c9a911d07c2a"
 
 S = "${WORKDIR}/git"
 
@@ -58,6 +59,7 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -DPYTHON_LIBRARY="${STAGING_LIBDIR}" \
 		      -Dpybind11_INCLUDE_DIR="${STAGING_INCDIR}/${PYTHON_DIR}/pybind11" \
 		      -DONNXRUNTIME_VERSION_MAJOR=${MAJOR}  \
+		      -DBENCHMARK_ENABLE_GTEST_TESTS=OFF \
 "
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
@@ -135,9 +137,9 @@ do_install() {
 	install -d ${D}${includedir}/onnxruntime
 	cd ${S}/onnxruntime
 	cp --parents $(find . -name "*.h*" -not -path "*cmake_build/*") ${D}${includedir}/onnxruntime
-	cp  ${S}/cmake/external/onnxruntime-extensions/includes/onnxruntime/onnxruntime_cxx_api.h  ${D}${includedir}/onnxruntime
-	cp  ${S}/cmake/external/onnxruntime-extensions/includes/onnxruntime/onnxruntime_c_api.h  ${D}${includedir}/onnxruntime
-	cp  ${S}/cmake/external/onnxruntime-extensions/includes/onnxruntime/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_api.h  ${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_c_api.h  ${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
 }
 
 # The package_qa() task does not like the fact that this library is present in both onnxruntime-tools

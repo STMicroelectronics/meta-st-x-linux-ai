@@ -1,23 +1,26 @@
-From 1479a14b6f6ede948f9cc4810f678aee177b3bc3 Mon Sep 17 00:00:00 2001
-From: Vincent ABRIOU <vincent.abriou@st.com>
-Date: Fri, 24 Mar 2023 11:09:32 +0100
-Subject: [PATCH 2/4] onnxruntime: add SONAME with MAJOR version
+From cb9bd5d833845a5e12c38b5b457fd232498efeb7 Mon Sep 17 00:00:00 2001
+From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+Date: Tue, 9 May 2023 13:33:14 +0200
+Subject: [PATCH 2/5] onnxruntime: add SONAME with MAJOR version
 
-Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+
+%% original patch: 0002-onnxruntime-add-SONAME-with-MAJOR-version.patch
 ---
- cmake/CMakeLists.txt | 2 ++
- 1 file changed, 2 insertions(+)
+ cmake/CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
 
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 603cc75fe2..39e749517e 100644
+index a5d28fb516..08a4c6af52 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
-@@ -2057,3 +2057,5 @@ if (onnxruntime_ENABLE_EXTERNAL_CUSTOM_OP_SCHEMAS)
+@@ -1617,3 +1617,6 @@ if (onnxruntime_ENABLE_EXTERNAL_CUSTOM_OP_SCHEMAS)
+     COMMENT "Installing protobuf"
    )
  endif()
- 
++
 +message("ONNXRUNTIME_VERSION_MAJOR=${ONNXRUNTIME_VERSION_MAJOR}")
 +set_target_properties(onnxruntime PROPERTIES SOVERSION "${ONNXRUNTIME_VERSION_MAJOR}")
--- 
+--
 2.25.1
 
