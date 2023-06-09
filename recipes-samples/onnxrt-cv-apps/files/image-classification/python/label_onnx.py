@@ -368,16 +368,17 @@ class MainWindow(Gtk.Window):
             window_constraint = self.app.window_width
         else :
             window_constraint = self.app.window_height
-        self.ui_cairo_font_size = 20
-        self.ui_cairo_font_size_label = 35
+
+        self.ui_cairo_font_size = 23
+        self.ui_cairo_font_size_label = 37
         self.ui_icon_exit_width = '50'
         self.ui_icon_exit_height = '50'
         self.ui_icon_st_width = '130'
         self.ui_icon_st_height = '160'
         if window_constraint <= 272:
                # Display 480x272
-               self.ui_cairo_font_size = 7
-               self.ui_cairo_font_size_label = 15
+               self.ui_cairo_font_size = 11
+               self.ui_cairo_font_size_label = 18
                self.ui_icon_exit_width = '25'
                self.ui_icon_exit_height = '25'
                self.ui_icon_st_width = '42'
@@ -385,24 +386,24 @@ class MainWindow(Gtk.Window):
         elif window_constraint <= 600:
                #Display 800x480
                #Display 1024x600
-               self.ui_cairo_font_size = 13
-               self.ui_cairo_font_size_label = 26
+               self.ui_cairo_font_size = 16
+               self.ui_cairo_font_size_label = 29
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '65'
                self.ui_icon_st_height = '80'
         elif window_constraint <= 720:
                #Display 1280x720
-               self.ui_cairo_font_size = 20
-               self.ui_cairo_font_size_label = 35
+               self.ui_cairo_font_size = 23
+               self.ui_cairo_font_size_label = 38
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
                self.ui_icon_st_height = '160'
         elif window_constraint <= 1080:
                #Display 1920x1080
-               self.ui_cairo_font_size = 30
-               self.ui_cairo_font_size_label = 45
+               self.ui_cairo_font_size = 33
+               self.ui_cairo_font_size_label = 48
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
@@ -543,16 +544,17 @@ class OverlayWindow(Gtk.Window):
             window_constraint = self.app.window_width
         else :
             window_constraint = self.app.window_height
-        self.ui_cairo_font_size = 20
-        self.ui_cairo_font_size_label = 35
+
+        self.ui_cairo_font_size = 23
+        self.ui_cairo_font_size_label = 37
         self.ui_icon_exit_width = '50'
         self.ui_icon_exit_height = '50'
         self.ui_icon_st_width = '130'
         self.ui_icon_st_height = '160'
         if window_constraint <= 272:
                # Display 480x272
-               self.ui_cairo_font_size = 7
-               self.ui_cairo_font_size_label = 15
+               self.ui_cairo_font_size = 11
+               self.ui_cairo_font_size_label = 18
                self.ui_icon_exit_width = '25'
                self.ui_icon_exit_height = '25'
                self.ui_icon_st_width = '42'
@@ -560,24 +562,24 @@ class OverlayWindow(Gtk.Window):
         elif window_constraint <= 600:
                #Display 800x480
                #Display 1024x600
-               self.ui_cairo_font_size = 13
-               self.ui_cairo_font_size_label = 26
+               self.ui_cairo_font_size = 16
+               self.ui_cairo_font_size_label = 29
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '65'
                self.ui_icon_st_height = '80'
         elif window_constraint <= 720:
                #Display 1280x720
-               self.ui_cairo_font_size = 20
-               self.ui_cairo_font_size_label = 35
+               self.ui_cairo_font_size = 23
+               self.ui_cairo_font_size_label = 38
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
                self.ui_icon_st_height = '160'
         elif window_constraint <= 1080:
                #Display 1920x1080
-               self.ui_cairo_font_size = 30
-               self.ui_cairo_font_size_label = 45
+               self.ui_cairo_font_size = 33
+               self.ui_cairo_font_size_label = 48
                self.ui_icon_exit_width = '50'
                self.ui_icon_exit_height = '50'
                self.ui_icon_st_width = '130'
