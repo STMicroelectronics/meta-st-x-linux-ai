@@ -21,13 +21,13 @@ do_compile() {
 }
 
 do_install() {
-    install -d ${D}${prefix}/local/bin/${PN}-${PV}/tools
+    install -d ${D}${prefix}/local/bin/coral-edgetpu-${PV}/tools
 
     # install application binaries and launcher scripts
-    install -m 0755 ${S}/tflite_edgetpu_benchmark	${D}${prefix}/local/bin/${PN}-${PV}/tools
+    install -m 0755 ${S}/tflite_edgetpu_benchmark	${D}${prefix}/local/bin/coral-edgetpu-${PV}/tools
 }
 
-FILES:${PN} += "${prefix}/local/bin/${PN}-${PV}/tools/tflite_edgetpu_benchmark"
+FILES:${PN} += "${prefix}/local/bin/coral-edgetpu-${PV}/tools/tflite_edgetpu_benchmark"
 
 INSANE_SKIP:${PN} = "ldflags"
 
