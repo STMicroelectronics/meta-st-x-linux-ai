@@ -61,6 +61,7 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -DONNXRUNTIME_VERSION_MAJOR=${MAJOR}  \
 		      -DBENCHMARK_ENABLE_GTEST_TESTS=OFF \
 		      -Donnxruntime_USE_XNNPACK=ON \
+		      -Donnxruntime_BUILD_UNIT_TESTS=ON \
 "
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
@@ -106,6 +107,7 @@ do_install() {
 	# And this one only by onnxruntime_test_python.py
 	install -m 644 ${B}/libtest_execution_provider.so		 ${D}${libdir}
 	install -m 644 ${B}/libonnxruntime_providers_shared.so		 ${D}${libdir}/libonnxruntime_providers_shared.so
+	install -m 644 ${B}/libcustom_op_invalid_library.so		 ${D}${libdir}/libcustom_op_invalid_library.so
 	install -m 644 ${B}/onnxruntime_pybind11_state.so		 ${D}${libdir}/onnxruntime_pybind11_state.so
 
 	# Install the symlinks.
@@ -153,7 +155,7 @@ PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tools"
 
 FILES:${PN} = "${libdir}/pkgconfig/* ${libdir}/libonnxruntime_providers_shared.so ${libdir}/libonnxruntime.so.* ${libdir}/onnxruntime_pybind11_state.so"
 FILES:${PN}-dev = "${libdir}/libonnxruntime.so ${includedir}/*"
-FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/* ${libdir}/libcustom_op_library.so ${libdir}/libtest_execution_provider.so"
+FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/* ${libdir}/libcustom_op_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_invalid_library.so"
 FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
 # onnxruntime_test_python.py requires Numpy and the Python onnxruntime package.
