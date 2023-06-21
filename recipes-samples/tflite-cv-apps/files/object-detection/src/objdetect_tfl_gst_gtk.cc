@@ -350,7 +350,7 @@ gint valid_timeout_callback(gpointer data)
 	/* If timeout occurs that means that camera preview and the gtk is not
 	 * behaving as expected */
 	g_print("Timeout: application is not behaving has expected\n");
-        return 0;
+    exit(1);
 }
 
 /**
