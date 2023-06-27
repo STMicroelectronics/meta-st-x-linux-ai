@@ -102,36 +102,39 @@ do_install() {
 	# Install onnxruntime dynamic library
 	install -d ${D}${libdir}
 	install -d ${D}${prefix}/local/bin/${PN}-${PVB}/tools
+	install -d ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+
 	install -m 0644 ${B}/libonnxruntime.so				 ${D}${libdir}/libonnxruntime.so.${PVB}
 
 	# This shared lib is used by onnxruntime_shared_lib_test and onnxruntime_test_python.py
 	install -m 644 ${B}/libcustom_op_library.so			 ${D}${libdir}
+
 	# And this one only by onnxruntime_test_python.py
-	install -m 644 ${B}/libtest_execution_provider.so		 ${D}${libdir}
-	install -m 644 ${B}/libonnxruntime_providers_shared.so		 ${D}${libdir}/libonnxruntime_providers_shared.so
-	install -m 644 ${B}/libcustom_op_invalid_library.so		 ${D}${libdir}/libcustom_op_invalid_library.so
-	install -m 644 ${B}/onnxruntime_pybind11_state.so		 ${D}${libdir}/onnxruntime_pybind11_state.so
+	install -m 644 ${B}/libtest_execution_provider.so		${D}${libdir}
+	install -m 644 ${B}/libonnxruntime_providers_shared.so	${D}${libdir}/libonnxruntime_providers_shared.so
+	install -m 644 ${B}/libcustom_op_invalid_library.so		${D}${libdir}/libcustom_op_invalid_library.so
+	install -m 644 ${B}/onnxruntime_pybind11_state.so		${D}${libdir}/onnxruntime_pybind11_state.so
 
 	# Install the symlinks.
 	ln -sf libonnxruntime.so.${PVB} ${D}${libdir}/libonnxruntime.so.${MAJOR}
 	ln -sf libonnxruntime.so.${PVB} ${D}${libdir}/libonnxruntime.so
 
 	# These are not included in the base installation, so we install them manually.
-	install -m 755 ${B}/onnx_test_runner				${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/onnxruntime_perf_test			${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/onnxruntime_test_all			${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/onnxruntime_shared_lib_test			${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/onnxruntime_api_tests_without_env		${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/onnxruntime_global_thread_pools_test	${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/onnxruntime_test_python.py			${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	install -m 755 ${B}/helper.py					${D}${prefix}/local/bin/${PN}-${PVB}/tools
-	cp -r ${B}/testdata						${D}${prefix}/local/bin/${PN}-${PVB}/tools
+	install -m 755 ${B}/onnx_test_runner						${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	install -m 755 ${B}/onnxruntime_perf_test					${D}${prefix}/local/bin/${PN}-${PVB}/tools
+	install -m 755 ${B}/onnxruntime_test_all					${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	install -m 755 ${B}/onnxruntime_shared_lib_test				${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	install -m 755 ${B}/onnxruntime_api_tests_without_env		${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	install -m 755 ${B}/onnxruntime_global_thread_pools_test	${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	install -m 755 ${B}/onnxruntime_test_python.py				${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	install -m 755 ${B}/helper.py								${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+	cp -r ${B}/testdata											${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 
 	# We have to change some of the RPATH as well.
 	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_perf_test
-	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_shared_lib_test
-	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_api_tests_without_env
-	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_global_thread_pools_test
+	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/onnxruntime_shared_lib_test
+	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/onnxruntime_api_tests_without_env
+	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/onnxruntime_global_thread_pools_test
 	chrpath -r '$ORIGIN' ${D}${libdir}/libtest_execution_provider.so
 
 	# Install the Python package.
@@ -141,9 +144,9 @@ do_install() {
 	# Install header files
 	install -d ${D}${includedir}/onnxruntime
 	cd ${S}/onnxruntime
-	cp --parents $(find . -name "*.h*" -not -path "*cmake_build/*") ${D}${includedir}/onnxruntime
-	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_api.h  ${D}${includedir}/onnxruntime
-	cp  ${S}/include/onnxruntime/core/session/onnxruntime_c_api.h  ${D}${includedir}/onnxruntime
+	cp --parents $(find . -name "*.h*" -not -path "*cmake_build/*") 	${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_api.h  	${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_c_api.h  		${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
 }
 
@@ -152,12 +155,13 @@ do_install() {
 # So we simply mark the lib as a "private lib", to prevent the task from outputting an error.
 PRIVATE_LIBS = "libonnxruntime_providers_shared.so"
 
-PACKAGES += "${PYTHON_PN}-${PN} ${PN}-tools"
-PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tools"
+PACKAGES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
+PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
 
 FILES:${PN} = "${libdir}/pkgconfig/* ${libdir}/libonnxruntime_providers_shared.so ${libdir}/libonnxruntime.so.* ${libdir}/onnxruntime_pybind11_state.so"
 FILES:${PN}-dev = "${libdir}/libonnxruntime.so ${includedir}/*"
-FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/* ${libdir}/libcustom_op_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_invalid_library.so"
+FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_perf_test"
+FILES:${PN}-unit-tests = "${prefix}/local/bin/${PN}-${PVB}/unit-tests/* ${libdir}/libcustom_op_invalid_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_library.so"
 FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
 # onnxruntime_test_python.py requires Numpy and the Python onnxruntime package.
