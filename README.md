@@ -12,20 +12,27 @@ It is a complete ecosystem that allow developers working with OpenSTLinux to cre
 * **C++ API** for embedded high-performance applications
 * Optimized **open-source solutions** provided with source codes that allow extensive **code reuse** and **time savings**
 
-
-# meta-st-stm32mpu-ai
+# meta-st-x-linux-ai
 X-LINUX-AI OpenEmbedded meta layer to be integrated into OpenSTLinux distribution.
 It contains recipes for AI frameworks, tools and application examples for STM32MPx series
 
 ## Compatibility
-The X-LINUX-AI OpenSTLinux Expansion Package v3.0.0 is compatible with the Yocto Project™ build systems Kirkston.
-It is validated over the OpenSTLinux Distributions v4.1 on STM32MP157F-DK2 with a USB image sensor and on STM32MP157F-EV1 with its built-in camera module
+The X-LINUX-AI OpenSTLinux Expansion Package v5.0.0 is compatible with the Yocto Project™ build system Mickledore.
+It is validated over the OpenSTLinux Distribution v5.0 on STM32MP157F-DK2 with a USB image sensor, on STM32MP157F-EV1 with its built-in camera module, and on STM32MP135F-DK with its built-in camera module
+
+## Versioning
+Since its release v5.0.0, the major versioning of the X-LINUX-AI OpenSTLinux Expansion Package is aligned on the major versioning of the OpenSTLinux Distribution. This prevents painful backward compatibility attempts and makes dependencies straightforward.
+The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
+* **x**: major version matching the OpenSTLinux Distribution major version. Each new major version is incompatible with previous OpenSTLinux Distribution versions.
+* **y**: minor version, which is changed when new functionalities are added to the X-LINUX-AI OpenSTLinux Expansion Package in a backward compatible manner.
+* **z**: patch version to introduce bug fixes. A patch version is implemented in a backward compatible manner.
 
 ## Available frameworks and tools within the meta-layer
-[X-LINUX-AI v3.0.0 expansion package](https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package):
-* TensorFlow™ Lite 2.11.0
-* ONNX Runtime 1.11.0
-* OpenCV 4.5.x
+[X-LINUX-AI v5.0.0 expansion package](https://wiki.st.com/stm32mpu/wiki/Category:X-LINUX-AI_expansion_package):
+* XNNPACK support for TensorFlow™ Lite and ONNX Runtime, with about 20% to 30% performance gain for quantized networks on a 32-bit system
+* TensorFlow™ Lite 2.11.0 with XNNPACK delegate activated
+* ONNX Runtime 1.14.0 with XNNPACK execution engine activated
+* OpenCV 4.7.x
 * Python™ 3.10.x (enabling Pillow module)
 * Coral Edge TPU™ accelerator native support
   * libedgetpu 2.0.0 (Gouper) aligned with TensorFlow™ Lite 2.11.0
@@ -39,14 +46,18 @@ It is validated over the OpenSTLinux Distributions v4.1 on STM32MP157F-DK2 with 
   * C++ / Python™ object detection example using Coral Edge TPU™ based on the COCO SSD MobileNet v1 quantized model and compiled for the Edge TPU™
   * C++ face recognition application using proprietary model capable of recognizing the face of a known (enrolled) user. Contact the local STMicroelectronics support for more information about this application or send a request to edge.ai@st.com
   * Python™ image classification example using ONNX Runtime based on the MobileNet v1 quantized model
+  * C++ / Python™ object detection example using ONNX Runtime based on the COCO SSD MobileNet v1 quantized model
 * Application support for the 720p, 480p, and 272p display configurations
 * X-LINUX-AI SDK add-on extending the OpenSTLinux SDK with AI functionality to develop and build an AI application easily. The X-LINUX-AI SDK add-on provides support for all the above frameworks. It is available from the [X-LINUX-AI](https://www.st.com/en/embedded-software/x-linux-ai.html) product page
 
-## Further information on how to install and how to use X-LINUX-AI
-<https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package>
+## Further information on how to install and how to use X-LINUX-AI Starter package
+<https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_Starter_package>
 
-## Further information on how to install and how to use X-LINUX-AI SDK add-on
-<https://wiki.st.com/stm32mpu/wiki/How_to_install_and_use_the_X-LINUX-AI_SDK_add-on>
+## Further information on how to install and how to use X-LINUX-AI Developer package
+<https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_Developer_package>
+
+## Further information on how to install and how to use X-LINUX-AI Distribution package
+<https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_Distribution_package>
 
 ## Application samples
-<https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_application_samples_zoo>
+<https://wiki.st.com/stm32mpu/wiki/Category:AI_-_Application_examples>
