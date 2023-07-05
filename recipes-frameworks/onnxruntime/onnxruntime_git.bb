@@ -164,6 +164,6 @@ FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_perf_tes
 FILES:${PN}-unit-tests = "${prefix}/local/bin/${PN}-${PVB}/unit-tests/* ${libdir}/libcustom_op_invalid_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_library.so"
 FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
-# onnxruntime_test_python.py requires Numpy and the Python onnxruntime package.
-RDEPENDS:${PN}-tools += "${PYTHON_PN} ${PYTHON_PN}-numpy ${PYTHON_PN}-${PN}"
-RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}"
+# onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
+RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
+RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN} ${PYTHON_PN}-numpy"
