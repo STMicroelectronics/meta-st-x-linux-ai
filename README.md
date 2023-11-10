@@ -1,6 +1,9 @@
+
 <p align="center">
     <img width="720" src="https://raw.githubusercontent.com/STMicroelectronics/meta-st-stm32mpu-ai/master/x-linux-ai-logo.png">
 </p>
+
+X-LINUX-AI version: v5.0.0
 
 X-LINUX-AI is a free of charge open-source software package dedicated to AI.
 It is a complete ecosystem that allow developers working with OpenSTLinux to create AI-based application very easily.
