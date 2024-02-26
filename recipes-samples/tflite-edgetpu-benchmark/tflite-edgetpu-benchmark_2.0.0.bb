@@ -1,12 +1,15 @@
 # Copyright (C) 2020, STMicroelectronics - All Rights Reserved
 SUMMARY = "TfLite-edgetpu benchmark application"
-LICENSE = "BSD-3-Clause & Apache-2.0"
-LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
-LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+LICENSE = "SLA0044"
+LIC_FILES_CHKSUM  = "file://LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
+
+NO_GENERIC_LICENSE[SLA0044] = "LICENSE"
+LICENSE:${PN} = "SLA0044"
 
 DEPENDS += "tensorflow-lite libedgetpu"
 
-SRC_URI  = " file://tflite_edgetpu_benchmark.cc;subdir=${BPN}-${PV} "
+SRC_URI  = " file://LICENSE;subdir=${BPN}-${PV} "
+SRC_URI += " file://tflite_edgetpu_benchmark.cc;subdir=${BPN}-${PV} "
 SRC_URI += " file://wrapper_tfl_edgetpu.hpp;subdir=${BPN}-${PV} "
 SRC_URI += " file://Makefile;subdir=${BPN}-${PV} "
 

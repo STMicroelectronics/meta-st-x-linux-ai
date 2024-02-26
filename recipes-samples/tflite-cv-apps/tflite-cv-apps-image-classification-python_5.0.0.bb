@@ -1,9 +1,13 @@
 # Copyright (C) 2022, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite Python Computer Vision image classification application example"
-LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
+LICENSE = "SLA0044"
+LIC_FILES_CHKSUM  = "file://image-classification/python/LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
 
-SRC_URI  = " file://image-classification/python/100-tflite-image-classification-python.yaml;subdir=${BPN}-${PV} "
+NO_GENERIC_LICENSE[SLA0044] = "image-classification/python/LICENSE"
+LICENSE:${PN} = "SLA0044"
+
+SRC_URI  = " file://image-classification/python/LICENSE;subdir=${BPN}-${PV} "
+SRC_URI += " file://image-classification/python/100-tflite-image-classification-python.yaml;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/label_tfl.py;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/launch_python_label_tfl_mobilenet.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://image-classification/python/launch_python_label_tfl_mobilenet_testdata.sh;subdir=${BPN}-${PV} "

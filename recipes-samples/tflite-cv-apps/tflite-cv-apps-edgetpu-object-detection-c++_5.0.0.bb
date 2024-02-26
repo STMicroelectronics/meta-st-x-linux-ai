@@ -1,14 +1,17 @@
 # Copyright (C) 2020, STMicroelectronics - All Rights Reserved
 SUMMARY = "TensorFlowLite C++ API Computer Vision object detection application example running on the EdgeTPU"
-LICENSE = "BSD-3-Clause & Apache-2.0"
-LIC_FILES_CHKSUM  = "file://${COMMON_LICENSE_DIR}/BSD-3-Clause;md5=550794465ba0ec5312d6919e203a55f9"
-LIC_FILES_CHKSUM += "file://${COMMON_LICENSE_DIR}/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
+LICENSE = "SLA0044"
+LIC_FILES_CHKSUM  = "file://object-detection/src/LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
+
+NO_GENERIC_LICENSE[SLA0044] = "object-detection/src/LICENSE"
+LICENSE:${PN} = "SLA0044"
 
 inherit pkgconfig
 
 DEPENDS += "tensorflow-lite libedgetpu gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-base gstreamer1.0-plugins-bad "
 
-SRC_URI  = " file://object-detection/src/211-tflite-object-detection-C++-edgetpu.yaml;subdir=${BPN}-${PV} "
+SRC_URI  = " file://object-detection/src/LICENSE;subdir=${BPN}-${PV} "
+SRC_URI += " file://object-detection/src/211-tflite-object-detection-C++-edgetpu.yaml;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/src/objdetect_tfl_gst_gtk.cc;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/src/launch_bin_objdetect_tfl_edgetpu_coco_ssd_mobilenet.sh;subdir=${BPN}-${PV} "
 SRC_URI += " file://object-detection/src/launch_bin_objdetect_tfl_edgetpu_coco_ssd_mobilenet_testdata.sh;subdir=${BPN}-${PV} "
