@@ -1,9 +1,14 @@
 DESCRIPTION = "Verify X-LINUX-AI version, features and application"
 AUTHOR = "STMicroelectronics"
 SUMMARY = "X-LINUX-AI version binary"
-LICENSE = "CLOSED"
+LICENSE = "SLA0044"
+LIC_FILES_CHKSUM  = "file://LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
 
-SRC_URI = "	file://x-linux-ai-tool/x-linux-ai-tool.cc \
+NO_GENERIC_LICENSE[SLA0044] = "LICENSE"
+LICENSE:${PN} = "SLA0044"
+
+SRC_URI = "	file://x-linux-ai-tool/LICENSE \
+		file://x-linux-ai-tool/x-linux-ai-tool.cc \
 		file://x-linux-ai-tool/README_sym \
 		file://x-linux-ai-tool/Makefile \
 "
