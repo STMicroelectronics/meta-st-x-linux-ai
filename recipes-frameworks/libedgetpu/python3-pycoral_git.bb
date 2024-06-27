@@ -22,8 +22,8 @@ DEPENDS = " \
 	tensorflow-lite \
 	abseil-cpp \
 	libeigen \
-	python3-numpy \
-	python3-pybind11 \
+	${PYTHON_PN}-numpy \
+	${PYTHON_PN}-pybind11 \
 "
 
 inherit setuptools3
@@ -43,4 +43,4 @@ do_compile:prepend () {
 
 INSANE_SKIP:${PN} = "ldflags"
 
-RDEPENDS:${PN} += "libcoral python3-tensorflow-lite python3-pillow"
+RDEPENDS:${PN} += "libcoral ${PYTHON_PN}-tensorflow-lite ${PYTHON_PN}-pillow"

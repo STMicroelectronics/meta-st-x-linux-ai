@@ -10,11 +10,13 @@ PV = "1.14.0+git${SRCPV}"
 
 SRCREV = "6ccaeddefa65ccac402a47fa4d9cad8229794bb2"
 SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.14.0;protocol=https"
-SRC_URI += "file://0001-onnxruntime-test-remove-AVX-specific-micro-benchmark.patch"
-SRC_URI += "file://0002-onnxruntime-add-SONAME-with-MAJOR-version.patch"
-SRC_URI += "file://0003-onnxruntime-test-libcustom-library-remove-relative.patch"
-SRC_URI += "file://0004-onnxruntime-fix-imcompatibility-with-compiler-GCC12.patch"
-SRC_URI += "file://0005-onnxruntime-avoid-using-unsupported-Eigen-headers.patch"
+SRC_URI += " file://0001-onnxruntime-test-remove-AVX-specific-micro-benchmark.patch "
+SRC_URI += " file://0002-onnxruntime-add-SONAME-with-MAJOR-version.patch "
+SRC_URI += " file://0003-onnxruntime-test-libcustom-library-remove-relative.patch "
+SRC_URI += " file://0004-onnxruntime-fix-imcompatibility-with-compiler-GCC12.patch "
+SRC_URI += " file://0005-onnxruntime-avoid-using-unsupported-Eigen-headers.patch "
+SRC_URI += " file://0007-onnxruntime-cmake-change-visibility-compilation-opti.patch "
+SRC_URI:append:stm32mp2common = " file://0006-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 
 PROTOC_VERSION = "3.20.2"
 SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"
@@ -68,6 +70,7 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
 ONNX_TARGET_ARCH:armv7a="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7a', '', d)}"
+ONNX_TARGET_ARCH:aarch64="${@bb.utils.contains('TUNE_FEATURES', 'cortexa35', 'aarch64', '', d)}"
 
 do_generate_toolchain_file:append() {
 	echo "set( CMAKE_SYSTEM_PROCESSOR ${ONNX_TARGET_ARCH} )" >> ${WORKDIR}/toolchain.cmake
@@ -166,4 +169,5 @@ FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
 # onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
-RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN} ${PYTHON_PN}-numpy"
+RDEPENDS:${PN} += " x-linux-ai-benchmark "
+RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}-numpy"

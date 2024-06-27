@@ -18,19 +18,21 @@ SRC_URI += " file://0003-TFLite-cmake-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0004-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 SRC_URI += " file://0005-TFLite-cmake-change-the-version-of-flatbuffer-to-avo.patch "
 SRC_URI += " file://0006-TFLite-cmake-add-XNNPACK-delegate-u8-and-i8-definition.patch "
+SRC_URI += " file://0008-TFLite-cmake-change-visibility-compilation-options.patch "
+SRC_URI:append:stm32mp2common = " file://0007-TFLite-fix-aarch64-support-for-XNNPACK.patch "
 
 S = "${WORKDIR}/git"
 
 inherit setuptools3 cmake
 
 DEPENDS = "zlib \
-	   python3-numpy-native \
-	   python3-pybind11-native \
-	   python3-wheel-native \
-	   python3-pybind11 \
-	   python3-numpy \
+	   ${PYTHON_PN}-numpy-native \
+	   ${PYTHON_PN}-pybind11-native \
+	   ${PYTHON_PN}-wheel-native \
+	   ${PYTHON_PN}-pybind11 \
+	   ${PYTHON_PN}-numpy \
 	   swig-native \
-	   python3 \
+	   ${PYTHON_PN} \
 	   gzip-native \
 	  "
 
@@ -48,6 +50,8 @@ python () {
 # Set building environment variables
 TENSORFLOW_TARGET="${@bb.utils.contains('TARGET_OS', 'linux-gnueabi', 'linux', '', d)}"
 TENSORFLOW_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7l', '', d)}"
+TENSORFLOW_TARGET:aarch64="linux"
+TENSORFLOW_TARGET_ARCH:aarch64="aarch64"
 
 OECMAKE_SOURCEPATH = "${S}/tensorflow/lite"
 # Activate -O3 optimization and disable debug symbols
@@ -157,16 +161,17 @@ do_install() {
 	cp ${S}/tensorflow/lite/c/common.cc ${D}${includedir}/tensorflow/lite/c
 }
 
-PACKAGES += "${PN}-tools python3-${PN}"
+PACKAGES += "${PN}-tools ${PYTHON_PN}-${PN}"
 
 FILES:${PN}  = "${libdir}/libtensorflow-lite.so.${MAJOR}"
 FILES:${PN} += "${libdir}/libtensorflow-lite.so.${PVB}"
 
 FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/*"
 
-FILES:python3-${PN}  = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
-FILES:python3-${PN} += "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info"
+FILES:${PYTHON_PN}-${PN}  = "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime"
+FILES:${PYTHON_PN}-${PN} += "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info"
 
-RDEPENDS:python3-${PN} += " python3-ctypes python3-numpy "
+RDEPENDS:${PYTHON_PN}-${PN} += " ${PYTHON_PN}-ctypes ${PYTHON_PN}-numpy "
+RDEPENDS:${PN} += " x-linux-ai-benchmark "
 
-PROVIDES += "python3-${PN}"
+PROVIDES += "${PYTHON_PN}-${PN}"
