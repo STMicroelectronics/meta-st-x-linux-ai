@@ -1,0 +1,15 @@
+Application:
+    Name: Semantic Segmentation
+    Description: DeepLab V3
+    Icon: ../x-linux-ai/resources/stai_mpu_ovx_semantic_seg_py.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /usr/local/x-linux-ai/resources/check_camera_preview.sh
+            Msg_false: Camera is not connected
+        Start: ../x-linux-ai/semantic-segmentation/launch_python_semantic_segmentation.sh nbg
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
