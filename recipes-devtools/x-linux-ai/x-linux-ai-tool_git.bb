@@ -1,5 +1,13 @@
-DESCRIPTION = "X-LINUX-AI tool manager"
-AUTHOR = "STMicroelectronics"
+# Copyright (C) 2024, STMicroelectronics - All Rights Reserved
+
+SUMMARY = "X-LINUX-AI tool manager"
+DESCRIPTION = "X-LINUX-AI is a free of charge open-source software \
+package dedicated to AI. It is a complete ecosystem that allow \
+developers working with OpenSTLinux to create AI-based application \
+very easily."
+
+HOMEPAGE = "https://github.com/stmicroelectronics/meta-st-x-linux-ai"
+
 LICENSE = "SLA0044"
 LIC_FILES_CHKSUM  = "file://LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
 
@@ -10,11 +18,8 @@ SRC_URI = " file://x-linux-ai-tool/LICENSE \
             file://x-linux-ai-tool/x-linux-ai-tool.cc \
             file://x-linux-ai-tool/README_sym \
             file://x-linux-ai-tool/Makefile \
-            file://x-linux-ai-tool/x_linux_ai_installation.service \
-            file://x-linux-ai-tool/x_linux_ai_installation.py \
 "
 
-inherit systemd
 BBCLASSEXTEND = " nativesdk "
 
 S = "${WORKDIR}/${BPN}"
@@ -44,16 +49,10 @@ EOF
 
 do_install() {
     install -d ${D}${bindir}
-    install -d ${D}${systemd_system_unitdir}
-    install -m 0755 ${S}/x_linux_ai_installation.py ${D}${bindir}/pkg-install-ai
     install -m 0755 ${S}/x-linux-ai ${D}${bindir}
-    install -m 644 ${S}/x_linux_ai_installation.service ${D}${systemd_system_unitdir}
 }
 
-FILES:${PN} = "${bindir} ${systemd_system_unitdir} "
+FILES:${PN} = "${bindir}"
 
-SYSTEMD_PACKAGES = "${PN}"
-SYSTEMD_SERVICE:${PN} = "x_linux_ai_installation.service"
-SYSTEMD_AUTO_ENABLE:${PN} = "enable"
-
-RDEPENDS:${PN} += "python3-core"
+# Add dependency on the apt configuration for x-linux-ai
+RDEPENDS:${PN}:class-target += "apt-openstlinux-x-linux-ai"

@@ -45,9 +45,9 @@ static void print_help(int argc, char** argv)
         "-v --version            : Show X-LINUX-AI current version if it is installed\n"
         "-f --supported-features : Print all supported frameworks in this X-LINUX-AI version\n"
         "-l --list               : Print installed and ready-to-install packages\n"
-        "-i --install <pkg>      : Install   X-LINUX-AI  package\n"
-        "-r --remove  <pkg>      : Remove    X-LINUX-AI  package\n"
-        "-h --help               : Show    this help\n";
+        "-i --install <pkg>      : Install X-LINUX-AI package\n"
+        "-r --remove  <pkg>      : Remove X-LINUX-AI package\n"
+        "-h --help               : Show this help\n";
     exit(0);
 }
 
@@ -150,7 +150,6 @@ void print_pkgs(const std::string& ostl_pkg_path, const std::string& x_pkg_path)
                       << std::endl;
         }
     }
-
     x_pkg = _get_x_pkg(ostl_pkg, x_pkg);
     if (x_pkg.empty()) {
         std::cout << "\n All X-LINUX-AI packages are already installed and up to date.\n" << std::endl;
@@ -171,7 +170,7 @@ void print_pkgs(const std::string& ostl_pkg_path, const std::string& x_pkg_path)
 
 /* This function is used to install and uninstall pkgs */
 void manage_pkgs(int argc, char** argv, bool install = true) {
-    std::string command = (install ? "apt-get install -y " : "apt-get autoremove -y ") + std::string(argv[2]);
+    std::string command = (install ? "apt-get update && apt-get install -y " : "apt-get autoremove -y ") + std::string(argv[2]);
     int result = system(command.c_str());
     if (result == 0) {
         std::cout << std::string(argv[2])
@@ -204,7 +203,6 @@ std::string exec_command(const char* cmd) {
 }
 
 /// Main function ///
-
 int main(int argc, char *argv[])
 {
     process_args(argc, argv);
