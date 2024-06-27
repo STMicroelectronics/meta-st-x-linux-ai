@@ -1,0 +1,15 @@
+Application:
+    Name: Image Classification
+    Description: Mobilenet v2
+    Icon: ../x-linux-ai/resources/stai_mpu_ovx_img_cpp.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /usr/local/x-linux-ai/resources/check_camera_preview.sh
+            Msg_false: Camera is not connected
+        Start: ../x-linux-ai/image-classification/launch_bin_image_classification.sh nbg
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
