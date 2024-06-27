@@ -1,0 +1,15 @@
+Application:
+    Name: Pose Estimation
+    Description: YoloV8n Pose
+    Icon: ../x-linux-ai/resources/stai_mpu_ovx_pose_py.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /usr/local/x-linux-ai/resources/check_camera_preview.sh
+            Msg_false: Camera is not connected
+        Start: ../x-linux-ai/pose-estimation/launch_python_pose_estimation.sh nbg
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox
