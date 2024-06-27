@@ -7,5 +7,5 @@ STM32MP_USERFS_IMAGE = "st-image-ai-userfs"
 IMAGE_PARTITION_MOUNTPOINT = "/usr/local"
 
 PACKAGE_INSTALL += "\
-    packagegroup-x-linux-ai \
+    packagegroup-x-linux-ai-demo \
 "
