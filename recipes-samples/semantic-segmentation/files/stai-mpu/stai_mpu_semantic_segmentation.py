@@ -697,7 +697,7 @@ class OverlayWindow(Gtk.Window):
                self.ui_icon_label_size = '64'
         elif window_constraint <= 600:
                #Display 1024x600
-               self.ui_cairo_font_size = 19
+               self.ui_cairo_font_size = 16
                self.ui_cairo_font_size_label = 32
                self.ui_icon_exit_size = '50'
                self.ui_icon_st_size = '120'
