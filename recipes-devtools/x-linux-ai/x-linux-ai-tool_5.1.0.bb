@@ -29,10 +29,10 @@ do_configure() {
     xpkg_ver=$(sed -n 's/^.*X-LINUX-AI version: //p' README_sym)
 
     # Get features
-    xpkg_fea=$(sed -n '/^*.TensorFlow/,${p;/^*.Application.samples/q}' README_sym | sed '$d' | sed '1s/^//;$!s/$/ \\n \\/;$s/$//')
+    xpkg_fea=$(sed -n '/^* AI Frameworks:/,/^* Out of the box applications:/{/^* Out of the box applications:/!p}' README_sym | sed '$d' | sed '1d; $!s/$/ \\n \\/')
 
     # Get applications
-    xpkg_app=$(sed -n '/^*.Application.samples/,${p;/^*.Application.support/q}' README_sym | sed '1d;$d' | sed '1s/^//;$!s/$/ \\n \\/;$s/$//' | sed 's/^\ *//g' )
+    xpkg_app=$(sed -n '/^* Out of the box applications:/,/^* Utilities:/{/^* Utilities:/!p}' README_sym | sed '$d' | sed '1d; $!s/$/ \\n \\/')
 
     # Get wiki link
     xpkg_link=$(grep -o 'https://wiki.st.com/stm32mp.*Starter_package>' README_sym | sed 's/>$//')

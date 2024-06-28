@@ -206,15 +206,15 @@ std::string exec_command(const char* cmd) {
 int main(int argc, char *argv[])
 {
     process_args(argc, argv);
-    std::string command = "ls /var/lib/apt/lists/*_AI_*_main_*";
-    std::string ostl_pkg_path = "/var/lib/dpkg/status";
-    std::string x_pkg_path = exec_command(command.c_str());
-
-    if (!x_pkg_path.empty() && x_pkg_path.back() == '\n') {
-        x_pkg_path.pop_back();
-    }
 
     if (list) {
+        std::string command = "ls /var/lib/apt/lists/*_AI_*_main_*";
+        std::string ostl_pkg_path = "/var/lib/dpkg/status";
+        std::string x_pkg_path = exec_command(command.c_str());
+
+        if (!x_pkg_path.empty() && x_pkg_path.back() == '\n') {
+            x_pkg_path.pop_back();
+        }
         print_pkgs(ostl_pkg_path, x_pkg_path);
     }
     else if (to_install && argc == 3) {
@@ -224,12 +224,12 @@ int main(int argc, char *argv[])
         manage_pkgs(argc, argv,false);
     }
     else if (version) {
-        std::cout << "\nX-LINUX-AI version: " << README_VERSION << std::endl;
+        std::cout << "\nX-LINUX-AI version: " << README_VERSION << "\n" << std::endl;
     }
     else if (features) {
         std::cout << "\nFeatures:\n " << README_FEATURES << std::endl;
         std::cout << "\nFind more information on the wiki page: https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_OpenSTLinux_Expansion_Package" << std::endl;
-        std::cout << "\nApplications:\n " << README_APPLI << std::endl;
+        std::cout << "\nApplications:\n " << README_APPLI << "\n" << std::endl;
     }
     else{
         print_help(argc, argv);
