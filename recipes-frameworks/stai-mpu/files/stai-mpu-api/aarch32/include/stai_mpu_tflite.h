@@ -8,7 +8,6 @@
  *
  */
 
-
 #ifndef STAI_MPU_TFLITE_H_
 #define STAI_MPU_TFLITE_H_
 

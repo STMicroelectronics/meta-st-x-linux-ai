@@ -8,7 +8,6 @@
  *
  */
 
-
 #ifndef STAI_MPU_TENSOR_H
 #define STAI_MPU_TENSOR_H
 

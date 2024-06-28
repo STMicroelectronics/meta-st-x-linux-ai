@@ -8,7 +8,6 @@
  *
  */
 
-
 #ifndef STAI_MPU_TYPES_H
 #define STAI_MPU_TYPES_H
 

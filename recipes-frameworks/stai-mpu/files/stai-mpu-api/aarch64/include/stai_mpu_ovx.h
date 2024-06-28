@@ -8,7 +8,6 @@
  *
  */
 
-
 #ifndef STAI_MPU_OVX_H_
 #define STAI_MPU_OVX_H_
 
