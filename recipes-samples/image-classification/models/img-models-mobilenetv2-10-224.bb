@@ -7,7 +7,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=2ceadd15836145e138bc85f4eb50bd15"
 
 SRC_URI = "	file://LICENSE \
 			file://mobilenet_v2_1.0_224_int8_per_tensor.tflite   \
-			file://mobilenet_v2_1.0_224_int8_per_tensor_edgetpu.tflite   \
 			file://mobilenet_v2_1.0_224_int8_per_tensor.onnx 	 \
 			file://mobilenet_v2_1.0_224_int8_per_tensor.nb		 \
 			file://labels_imagenet_2012.txt "

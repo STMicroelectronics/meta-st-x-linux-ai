@@ -38,7 +38,6 @@ do_install() {
     # install applications into the demo launcher
     install -m 0755 ${S}/stai-mpu/101-stai-mpu-image-classification-cpp-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/102-stai-mpu-image-classification-cpp-ort.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/104-stai-mpu-image-classification-cpp-coral.yaml ${D}${prefix}/local/demo/gtk-application
 
     # install application binaries and launcher scripts
     install -m 0755 ${S}/stai-mpu/stai_mpu_image_classification ${D}${prefix}/local/x-linux-ai/image-classification/
@@ -49,13 +48,12 @@ do_install:append:stm32mp25common(){
     install -m 0755 ${S}/stai-mpu/103-stai-mpu-image-classification-cpp-ovx.yaml ${D}${prefix}/local/demo/gtk-application/
 }
 
-PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx ${PN}-coral"
-PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx ${PN}-coral"
+PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
+PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/image-classification/ "
 FILES:${PN}-tfl += "${prefix}/local/demo/gtk-application/101-stai-mpu-image-classification-cpp-tfl.yaml "
 FILES:${PN}-ort += "${prefix}/local/demo/gtk-application/102-stai-mpu-image-classification-cpp-ort.yaml "
-FILES:${PN}-coral += "${prefix}/local/demo/gtk-application/104-stai-mpu-image-classification-cpp-coral.yaml "
 FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/103-stai-mpu-image-classification-cpp-ovx.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
@@ -82,5 +80,4 @@ RDEPENDS:${PN}:append:stm32mp1common  = " img-models-mobilenetv1-05-128 "
 
 RDEPENDS:${PN}-tfl += " ${PN} stai-mpu-tflite "
 RDEPENDS:${PN}-ort += " ${PN} stai-mpu-ort "
-RDEPENDS:${PN}-coral += " ${PN} stai-mpu-tflite "
 RDEPENDS:${PN}-ovx:append:stm32mp25common = " ${PN} stai-mpu-ovx "

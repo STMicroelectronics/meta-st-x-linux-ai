@@ -1,7 +1,7 @@
 DESCRIPTION = "STAI_MPU unified API is a software integration module provided by STMicroelectronics to facilitate \
 deployment of Neural-Networks on all the STM32MPx product families through a unified API for all \
 Hardwares accelerators and inference engines. It serves as the backend binding for runtime frameworks \
-such as Tensorflow-Lite, Onnxruntime, Libedgetpu, OpenVX and more."
+such as Tensorflow-Lite, Onnxruntime, OpenVX and more."
 AUTHOR = "STMicroelectronics"
 SUMMARY = "STAI_MPU unified API libraries and headers"
 LICENSE = "SLA0044"
@@ -137,9 +137,6 @@ RDEPENDS:${PN}-tools += "${PYTHON_PN}-${PN} \
 
 RDEPENDS:${PN}-tflite += " ${PYTHON_PN}-${PN} \
                            ${PN} \
-                           libedgetpu \
-                           libcoral \
-                           ${PYTHON_PN}-pycoral \
                            ${PYTHON_PN}-tensorflow-lite \
                            tensorflow-lite \
                          "

@@ -7,7 +7,6 @@ from enum import Enum
 
 class stai_mpu_backend_engine(Enum):
     STAI_MPU_TFLITE_CPU_ENGINE = 0
-    STAI_MPU_CORAL_TPU_ENGINE = 1
     STAI_MPU_ORT_CPU_ENGINE = 2
     STAI_MPU_OVX_NPU_ENGINE = 3
 

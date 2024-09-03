@@ -44,29 +44,25 @@ do_install:append:stm32mp1common(){
     # install applications into the demo launcher
     install -m 0755 ${S}/stai-mpu/*cpp-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/*cpp-ort.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/*cpp-coral.yaml ${D}${prefix}/local/demo/gtk-application
 }
 
 do_install:append:stm32mp25common(){
     # install applications into the demo launcher
     install -m 0755 ${S}/stai-mpu/*cpp-tfl-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/*cpp-ort-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/*cpp-coral-mp2.yaml ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/*cpp-ovx-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
 }
 
-PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx ${PN}-coral"
-PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx ${PN}-coral"
+PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
+PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/object-detection/"
 
 FILES:${PN}-tfl:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-tfl.yaml "
 FILES:${PN}-ort:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-ort.yaml "
-FILES:${PN}-coral:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-coral.yaml "
 
 FILES:${PN}-tfl:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-tfl-mp2.yaml "
 FILES:${PN}-ort:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-ort-mp2.yaml "
-FILES:${PN}-coral:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-coral-mp2.yaml "
 FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-ovx-mp2.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
@@ -89,15 +85,12 @@ RDEPENDS:${PN} += " \
 
 RDEPENDS:${PN}-tfl += " ${PN} stai-mpu-tflite "
 RDEPENDS:${PN}-ort += " ${PN} stai-mpu-ort "
-RDEPENDS:${PN}-coral += " ${PN} stai-mpu-tflite "
 RDEPENDS:${PN}-ovx:append:stm32mp25common = " ${PN} stai-mpu-ovx "
 
 RDEPENDS:${PN}-tfl:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v2-10-256-fpnlite "
 RDEPENDS:${PN}-ort:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v2-10-256-fpnlite "
-RDEPENDS:${PN}-coral:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v1-10-300 "
 RDEPENDS:${PN}-ovx:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v2-10-256-fpnlite "
 
 RDEPENDS:${PN}-tfl:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "
 RDEPENDS:${PN}-ort:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "
-RDEPENDS:${PN}-coral:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "
 RDEPENDS:${PN}-ovx:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "

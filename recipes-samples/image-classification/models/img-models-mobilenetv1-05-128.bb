@@ -9,7 +9,6 @@ SRC_URI[mobilenet_v1_0.5_128_quant.md5sum] = "5cc8484cf04a407fc90993296f3f02db"
 SRC_URI[mobilenet_v1_0.5_128_quant.sha256sum] = "0a5b18571d3df4d85a5ac6cb5be829d141dd5855243ea04422ca7d19f730a506"
 
 SRC_URI += " file://LICENSE \
-			 file://mobilenet_v1_0.5_128_quant_edgetpu.tflite \
 			 file://mobilenet_v1_0.5_128_quant.onnx \
 			 file://labels_imagenet.txt "
 

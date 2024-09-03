@@ -27,7 +27,6 @@ do_install() {
     # install applications into the demo launcher
     install -m 0755 ${S}/stai-mpu/105-stai-mpu-image-classification-py-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/106-stai-mpu-image-classification-py-ort.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/108-stai-mpu-image-classification-py-coral.yaml ${D}${prefix}/local/demo/gtk-application
 
     # install application binaries and launcher scripts
     install -m 0755 ${S}/stai-mpu/*.py              ${D}${prefix}/local/x-linux-ai/image-classification/
@@ -38,13 +37,12 @@ do_install:append:stm32mp25common(){
     install -m 0755 ${S}/stai-mpu/107-stai-mpu-image-classification-py-ovx.yaml ${D}${prefix}/local/demo/gtk-application/
 }
 
-PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx ${PN}-coral"
-PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx ${PN}-coral"
+PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
+PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/image-classification/ "
 FILES:${PN}-tfl += "${prefix}/local/demo/gtk-application/105-stai-mpu-image-classification-py-tfl.yaml "
 FILES:${PN}-ort += "${prefix}/local/demo/gtk-application/106-stai-mpu-image-classification-py-ort.yaml "
-FILES:${PN}-coral += "${prefix}/local/demo/gtk-application/108-stai-mpu-image-classification-py-coral.yaml "
 FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/107-stai-mpu-image-classification-py-ovx.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
@@ -65,5 +63,4 @@ RDEPENDS:${PN}:append:stm32mp1common  = " img-models-mobilenetv1-05-128 "
 
 RDEPENDS:${PN}-tfl += " ${PN} stai-mpu-tflite "
 RDEPENDS:${PN}-ort += " ${PN} stai-mpu-ort "
-RDEPENDS:${PN}-coral += " ${PN} stai-mpu-tflite "
 RDEPENDS:${PN}-ovx:append:stm32mp25common = " ${PN} stai-mpu-ovx "

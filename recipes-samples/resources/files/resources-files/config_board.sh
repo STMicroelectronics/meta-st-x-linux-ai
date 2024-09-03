@@ -22,8 +22,6 @@ elif [[ "$FRAMEWORK" == "tflite" ]]; then
   NN_EXT=".tflite"
 elif [[ "$FRAMEWORK" == "onnx" ]]; then
   NN_EXT=".onnx"
-elif [[ "$FRAMEWORK" == "coral" ]]; then
-  NN_EXT="_edgetpu.tflite"
 else
   #define a default value if no framework is specified
   if [[ "$COMPATIBLE" == *"$STM32MP1"* ]]; then
@@ -93,9 +91,6 @@ if [[ "$COMPATIBLE" == *"$STM32MP257"* ]]; then
     if [[ "$NN_EXT" == ".nb" ]]; then
       OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v2_fpnlite_10_256_int8_per_tensor$NN_EXT"
       OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset_80"
-    elif [[ "$NN_EXT" == "_edgetpu.tflite" ]]; then
-      OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v1_10_300$NN_EXT"
-      OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset"
     else
       OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v2_fpnlite_10_256_int8$NN_EXT"
       OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset_80"
@@ -114,9 +109,6 @@ if [[ "$COMPATIBLE" == *"$STM32MP257"* ]]; then
     if [[ "$NN_EXT" == ".nb" ]]; then
       OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v2_fpnlite_10_256_int8_per_tensor$NN_EXT"
       OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset_80"
-    elif [[ "$NN_EXT" == "_edgetpu.tflite" ]]; then
-      OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v1_10_300$NN_EXT"
-      OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset"
     else
       OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v2_fpnlite_10_256_int8$NN_EXT"
       OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset_80"

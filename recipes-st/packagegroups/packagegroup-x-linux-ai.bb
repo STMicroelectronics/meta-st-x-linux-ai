@@ -9,7 +9,6 @@ PACKAGES = "                                 \
     packagegroup-x-linux-ai                  \
     packagegroup-x-linux-ai-demo             \
     packagegroup-x-linux-ai-tflite           \
-    packagegroup-x-linux-ai-coral            \
     packagegroup-x-linux-ai-onnxruntime      \
 "
 PACKAGES:append:stm32mp25common = " packagegroup-x-linux-ai-npu"
@@ -21,7 +20,6 @@ RDEPENDS:packagegroup-x-linux-ai-demo:append:stm32mp25common = " packagegroup-x-
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS:packagegroup-x-linux-ai = "         \
     packagegroup-x-linux-ai-tflite           \
-    packagegroup-x-linux-ai-coral            \
     packagegroup-x-linux-ai-onnxruntime      \
 "
 RDEPENDS:packagegroup-x-linux-ai:append:stm32mp25common = " packagegroup-x-linux-ai-npu"
@@ -40,25 +38,6 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "  \
     stai-mpu-image-classification-python-tfl \
     stai-mpu-object-detection-cpp-tfl        \
     stai-mpu-object-detection-python-tfl     \
-"
-
-SUMMARY:packagegroup-x-linux-ai-coral = "X-LINUX-AI TensorFlow Lite Edge TPU components"
-RDEPENDS:packagegroup-x-linux-ai-coral = "      \
-    stai-mpu-tflite                             \
-    stai-mpu-tools                              \
-    ${PYTHON_PN}-stai-mpu                       \
-    libedgetpu                                  \
-    libcoral                                    \
-    ${PYTHON_PN}-pycoral                        \
-    ${PYTHON_PN}-tensorflow-lite                \
-    tensorflow-lite                             \
-    x-linux-ai-tool                             \
-    x-linux-ai-benchmark                        \
-    coral-edgetpu-benchmark                     \
-    stai-mpu-image-classification-cpp-coral     \
-    stai-mpu-image-classification-python-coral  \
-    stai-mpu-object-detection-python-coral      \
-    stai-mpu-object-detection-cpp-coral         \
 "
 
 SUMMARY:packagegroup-x-linux-ai-onnxruntime = "X-LINUX-AI ONNX Runtime components"

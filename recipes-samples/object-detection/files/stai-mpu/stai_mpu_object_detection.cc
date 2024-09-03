@@ -426,9 +426,6 @@ static int load_valid_results_from_json_file(std::string file_name,
 	if (results.ai_backend ==  stai_mpu_backend_engine::STAI_MPU_OVX_NPU_ENGINE)
 		backend = "OVX";
 
-	if (results.ai_backend ==  stai_mpu_backend_engine::STAI_MPU_CORAL_TPU_ENGINE)
-		backend = "CORAL";
-
 	if (results.ai_backend ==  stai_mpu_backend_engine::STAI_MPU_TFLITE_CPU_ENGINE)
 		backend = "TFLITE";
 
@@ -449,7 +446,7 @@ static int load_valid_results_from_json_file(std::string file_name,
 			}
 		}
 	} else if (results.model_type == "ssd_mobilenet_v2"){
-		if(json_value.HasMember("objects_info_ssd_mobilenet_v2_tflite") && (backend=="TFLITE" || backend=="CORAL")) {
+		if(json_value.HasMember("objects_info_ssd_mobilenet_v2_tflite") && (backend=="TFLITE")) {
 			const rapidjson::Value& obj_info_array = json_value["objects_info_ssd_mobilenet_v2_tflite"];
 			for (unsigned int i = 0; i < obj_info_array.Size(); i++) {
 				ValidObjectInfo valid_obj_info;

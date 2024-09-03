@@ -17,7 +17,6 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/c/c_api_types.h"
-#include "tflite/public/edgetpu.h"
 
 /**
  * @brief A class that wraps TensorFlow Lite model inference functionality.
@@ -107,8 +106,6 @@ private:
     std::unique_ptr<tflite::FlatBufferModel> model_;
     /** \brief A unique pointer to the TensorFlow Lite interpreter. */
     std::unique_ptr<tflite::Interpreter> interpreter_;
-    /** \brief EdgeTPU context */
-    std::shared_ptr<edgetpu::EdgeTpuContext> edgetpu_ctx_;
     /** \brief A vector of input tensor indices. */
     std::vector<int> input_indices_;
     /** \brief A vector of output tensor indices. */
@@ -119,8 +116,6 @@ private:
     int num_inputs_;
     /** \brief Number of output tensors. */
     int num_outputs_;
-    /** \brief A boolean flag to set if Edgetpu external delegate should be used. */
-    bool edgetpu_;
     /** \brief The STAI Engine and backend used for inference. */
     stai_mpu_backend_engine stai_mpu_backend_;
 
@@ -181,21 +176,6 @@ private:
                 return stai_mpu_qtype::STAI_MPU_QTYPE_NONE;
         }
     }
-
-    bool stai_mpu_check_edgetpu_ops(const tflite::FlatBufferModel& model){
-        const auto* opcodes = model.GetModel()->operator_codes();
-        for (const auto* subgraph : *model.GetModel()->subgraphs()) {
-            for (const auto* op : *subgraph->operators()) {
-                const auto* opcode = opcodes->Get(op->opcode_index());
-                if (opcode->custom_code() &&
-                    opcode->custom_code()->str() == edgetpu::kCustomOp) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
 };
 
 #endif

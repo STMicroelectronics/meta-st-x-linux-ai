@@ -32,14 +32,10 @@ The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
 ## Available frameworks and tools within the meta-layer
 [X-LINUX-AI v5.1.0 expansion package](https://wiki.st.com/stm32mpu/wiki/Category:X-LINUX-AI_expansion_package):
 * AI Frameworks:
-  * STAI_MPU Unified API based on OpenVX™(STM32MP25x only), TensorFlow™ Lite, Coral Edge TPU™ and ONNX Runtime™ compatible with all STM32MPU series
+  * STAI_MPU Unified API based on OpenVX™(STM32MP25x only), TensorFlow™ Lite, and ONNX Runtime™ compatible with all STM32MPU series
   * TIM-VX™ 1.1.57 (STM32MP25x only)
   * TensorFlow™ Lite 2.11.0 (CPU only) with XNNPACK delegate activated
   * ONNX Runtime™ 1.14.0 (CPU only) with XNNPACK execution engine activated
-  * Coral Edge TPU™ accelerator native support
-    * libedgetpu 2.0.0 (Grouper) aligned with TensorFlow™ Lite 2.11.0
-    * libcoral 2.0.0 (Grouper) aligned with TensorFlow™ Lite 2.11.0
-    * PyCoral 2.0.0 (Grouper) aligned with TensorFlow™ Lite 2.11.0
 
 * Out of the box applications:
   * Image classification :

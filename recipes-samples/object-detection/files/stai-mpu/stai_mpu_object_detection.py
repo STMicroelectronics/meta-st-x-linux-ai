@@ -1040,7 +1040,7 @@ class Application:
                     x1.append(obj['x1'])
                     y1.append(obj['y1'])
             elif self.nn.model_type == "ssd_mobilenet_v2" :
-                if ("TFLITE_CPU" or "CORAL_TPU")  in  self.nn.stai_backend.name :
+                if "TFLITE_CPU"  in  self.nn.stai_backend.name :
                     for obj in data['objects_info_ssd_mobilenet_v2_tflite']:
                         name.append(obj['name'])
                         x0.append(obj['x0'])
@@ -1261,7 +1261,7 @@ class Application:
                 # store the inference time in a list so that we can compute the
                 # average later on
                 if self.first_call :
-                    #skip first inference time to avoid warmup time in NPU and EdgeTPU mode
+                    #skip first inference time to avoid warmup time in NPU mode
                     self.first_call = False
                 else :
                     self.valid_inference_time.append(round(self.nn_inference_time * 1000, 4))
