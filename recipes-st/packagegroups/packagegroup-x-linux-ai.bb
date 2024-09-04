@@ -74,4 +74,5 @@ RDEPENDS:packagegroup-x-linux-ai-npu:append:stm32mp25common = " stai-mpu-image-c
                                                                 stai-mpu-object-detection-python-ovx \
                                                                 stai-mpu-semantic-segmentation-python-ovx \
                                                                 stai-mpu-pose-estimation-python-ovx \
+                                                                stai-mpu-face-recognition-cpp-ovx         \
 "

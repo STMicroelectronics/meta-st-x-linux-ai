@@ -43,6 +43,8 @@ if [[ "$COMPATIBLE" == *"$STM32MP135"* ]]; then
   OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v1_10_300$NN_EXT"
   OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset"
   OBJ_DETECT_DATA="coco_ssd_mobilenet/testdata/"
+  FACE_DETECTION_MODEL="blazeface/blazeface_128x128_quant$NN_EXT"
+  FACE_DETECTION_DATA="blazeface/testdata/"
 fi
 
 if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
@@ -58,6 +60,8 @@ if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
     OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v1_10_300$NN_EXT"
     OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset"
     OBJ_DETECT_DATA="coco_ssd_mobilenet/testdata/"
+    FACE_DETECTION_MODEL="blazeface/blazeface_128x128_quant$NN_EXT"
+    FACE_DETECTION_DATA="blazeface/testdata/"
   else
     MACHINE=$STM32MP157
     DWIDTH=640
@@ -70,6 +74,8 @@ if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
     OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v1_10_300$NN_EXT"
     OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset"
     OBJ_DETECT_DATA="coco_ssd_mobilenet/testdata/"
+    FACE_DETECTION_MODEL="blazeface/blazeface_128x128_quant$NN_EXT"
+    FACE_DETECTION_DATA="blazeface/testdata/"
   fi
 fi
 
@@ -79,6 +85,11 @@ if [[ "$COMPATIBLE" == *"$STM32MP257"* ]]; then
   SEMANTIC_SEGMENTATION_DATA="deeplabv3/testdata/"
   POSE_ESTIMATION_DATA="yolov8n_pose/testdata/"
   POSE_ESTIMATION_MODEL="yolov8n_pose/yolov8n_256_quant_pt_uf_pose_coco-st$NN_EXT"
+  FACE_DETECTION_MODEL="blazeface/blazeface_128x128_quant$NN_EXT"
+  FACE_DETECTION_DATA="blazeface/testdata/"
+  FACE_RECO_MODEL="facenet/facenet512_160x160_quant$NN_EXT"
+  FACE_RECO_DATA="facenet/testdata/"
+  FACE_DATABASE="database/"
   if [[ "$COMPATIBLE" == *"$STM32MP257FEV1"* ]]; then
     MACHINE=$STM32MP257FEV1
     DWIDTH=760
