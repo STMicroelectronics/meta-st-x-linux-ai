@@ -140,6 +140,7 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
 			main_postproc=`media-ctl -d $mediadev -e dcmipp_main_postproc`
 			echo "main_postproc="$main_postproc
 		fi
+		sensorbuscode=SRGGB10_1X10
 	fi
 
 	#Let sensor return its prefered resolution & format
@@ -160,6 +161,8 @@ if [ "$DCMIPP_SENSOR" != "NOTFOUND" ]; then
 		cmd "  media-ctl -d $mediadev --set-v4l2 \"'$sensorsubdev':0[fmt:$sensorbuscode/${SENSORWIDTH}x${SENSORHEIGHT}]\""
 
 		# Configure the Pipe2 to get its input from Pipe1 ISP output
+		cmd "  media-ctl -d $mediadev -l \"'dcmipp_input':1->'dcmipp_dump_postproc':0[0]\""
+		cmd "  media-ctl -d $mediadev -l \"'dcmipp_input':2->'dcmipp_main_isp':0[1]\""
 		cmd "  media-ctl -d $mediadev -l '\"dcmipp_main_isp\":1->\"dcmipp_aux_postproc\":0[1]' -v"
 
 		# Same resolution/format (2592x1940) out of the CSI and enter into the DCMIPP

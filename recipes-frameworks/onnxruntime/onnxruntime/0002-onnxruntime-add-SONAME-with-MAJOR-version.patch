@@ -1,7 +1,7 @@
-From cb9bd5d833845a5e12c38b5b457fd232498efeb7 Mon Sep 17 00:00:00 2001
+From d92e31e98c9428480a1658a5861295f849d0167f Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Tue, 9 May 2023 13:33:14 +0200
-Subject: [PATCH 2/5] onnxruntime: add SONAME with MAJOR version
+Subject: [PATCH 2/7] onnxruntime: add SONAME with MAJOR version
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 
@@ -22,5 +22,5 @@ index a5d28fb516..08a4c6af52 100644
 +message("ONNXRUNTIME_VERSION_MAJOR=${ONNXRUNTIME_VERSION_MAJOR}")
 +set_target_properties(onnxruntime PROPERTIES SOVERSION "${ONNXRUNTIME_VERSION_MAJOR}")
 --
-2.25.1
+2.34.1
 

@@ -20,7 +20,7 @@ S = "${WORKDIR}"
 
 RDEPENDS:${PN} = " \
     apt-openstlinux (>= 5.1-r0) \
-    apt-openstlinux (< 5.2) \
+    apt-openstlinux (< 6.1) \
 "
 
 FILES:${PN} = " \

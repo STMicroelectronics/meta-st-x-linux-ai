@@ -8,8 +8,8 @@ NO_GENERIC_LICENSE[SLA0044] = "LICENSE"
 LICENSE:${PN} = "SLA0044"
 
 SRC_URI = " file://x-linux-ai-benchmark/LICENSE \
-            file://x-linux-ai-benchmark/5.1.0/x_linux_ai_benchmark_mp1 \
-            file://x-linux-ai-benchmark/5.1.0/x_linux_ai_benchmark_mp2 \
+            file://x-linux-ai-benchmark/6.0.0/x_linux_ai_benchmark_mp1 \
+            file://x-linux-ai-benchmark/6.0.0/x_linux_ai_benchmark_mp2 \
 "
 
 S = "${WORKDIR}/${BPN}"

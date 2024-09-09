@@ -17,6 +17,10 @@
 #include <vector>
 #include <stdexcept>
 
+#ifndef STAI_MPU_VERSION_MAJOR
+#define STAI_MPU_VERSION_MAJOR "6"
+#endif
+
 #include "stai_mpu_wrapper.h"
 
 /**

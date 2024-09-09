@@ -14,6 +14,8 @@ The trick is to not use git clone but to use git fetch instead
 4/ git fetch --depth 1 <git_remote_name> <git_tag>
 5/ git checkout FETCH_HEAD
 
+Upstream-Status: Pending
+
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
 ---
  Modules/ExternalProject.cmake | 212 +++++++++++++++++++++++++++++-----
@@ -48,7 +50,7 @@ index 995265803b..ce45cb6af3 100644
 @@ -1333,6 +1325,149 @@ function(_ep_write_gitclone_script
    )
  endfunction()
- 
+
 +function(_ep_write_gitclone_with_gitfetch_script
 +  script_filename
 +  source_dir
@@ -262,7 +264,7 @@ index 995265803b..ce45cb6af3 100644
 +    endif()
      set(comment "Performing download step (git clone) for '${name}'")
      set(cmd ${CMAKE_COMMAND} -P ${tmp_dir}/${name}-gitclone.cmake)
- 
--- 
+
+--
 2.25.1
 

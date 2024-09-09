@@ -1,7 +1,7 @@
-From e13955dec97f7635cb055e86cb2db026f74e4823 Mon Sep 17 00:00:00 2001
+From 247fff5a1ba33a71a5551366ca8811c5d51afe74 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Tue, 9 May 2023 13:50:46 +0200
-Subject: [PATCH 3/5] onnxruntime: test: libcustom library remove relative
+Subject: [PATCH 3/7] onnxruntime: test: libcustom library remove relative
 
 Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 
@@ -56,5 +56,5 @@ index 09219b40de..db4d73f4c0 100644
 
    Ort::SessionOptions session_options;
 --
-2.25.1
+2.34.1
 

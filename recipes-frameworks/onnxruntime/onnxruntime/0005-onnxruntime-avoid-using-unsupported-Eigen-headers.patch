@@ -1,7 +1,7 @@
-From 8195a2404f122d25814b851cd738cf0ff1e91d89 Mon Sep 17 00:00:00 2001
+From be98c87f34458ead3b05808c2d430327febacac8 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 10 May 2023 10:39:00 +0200
-Subject: [PATCH 5/5] onnxruntime: avoid using unsupported Eigen headers
+Subject: [PATCH 5/7] onnxruntime: avoid using unsupported Eigen headers
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -55,5 +55,5 @@ index b3b2c55600..00c317da50 100644
  #pragma GCC diagnostic pop
  #elif defined(_MSC_VER)
 --
-2.25.1
+2.34.1
 

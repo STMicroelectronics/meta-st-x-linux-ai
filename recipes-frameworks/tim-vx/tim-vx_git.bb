@@ -11,7 +11,7 @@ SRCBRANCH_tim_vx = "main"
 SRCREV_tim_vx = "33f3a4f176ff9c407479eaf6be78c52bb3c7a939"
 SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH_tim_vx};name=tim_vx;destsuffix=tim_vx_git/;protocol=https"
 SRC_URI += " file://0001-tim-vx-tests-disable-AVG_ANDROID-tests.patch"
-
+SRCREV_FORMAT = "tim_vx"
 
 SRCBRANCH_googletest = "main"
 SRCREV_googletest = "eab0e7e289db13eabfc246809b0284dac02a369d"

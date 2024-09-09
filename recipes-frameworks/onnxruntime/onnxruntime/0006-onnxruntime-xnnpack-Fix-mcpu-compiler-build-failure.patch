@@ -1,7 +1,7 @@
-From a313277345bb498f9a788b905ed3f4e37ba31b57 Mon Sep 17 00:00:00 2001
+From 159b51caf7a08741d7b387bc5d20e4dd74404fb5 Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Tue, 30 May 2023 17:17:39 +0200
-Subject: [PATCH 6/6] onnxruntime: xnnpack: Fix -mcpu compiler build failure
+Subject: [PATCH 7/7] onnxruntime: xnnpack: Fix -mcpu compiler build failure
 
 The "-mcpu=" switch is introduced externaly into CMake by Yocto
 buildsystem toolchain. This switch is not compatible with XNNPACK
@@ -40,5 +40,5 @@ index 1fc2c6ccdc..62fad6ce38 100644
  FetchContent_Declare(psimd URL ${DEP_URL_psimd} URL_HASH SHA1=${DEP_SHA1_psimd})
  onnxruntime_fetchcontent_makeavailable(psimd)
 --
-2.25.1
+2.34.1
 

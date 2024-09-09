@@ -1,7 +1,7 @@
-From 961ee9cf8510b4d9d87777105a338fa31a5d572a Mon Sep 17 00:00:00 2001
+From 01b25ce6fd0c523bb76645cf5dd1c3d00c09257e Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Tue, 9 May 2023 14:03:04 +0200
-Subject: [PATCH 4/5] onnxruntime: fix imcompatibility with compiler GCC12.2.1
+Subject: [PATCH 4/7] onnxruntime: fix imcompatibility with compiler GCC12.2.1
  bug
 
 As stated in this issue below, the onnxruntime 14.4.0 release is
@@ -19,7 +19,7 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/onnxruntime/core/providers/cpu/tensor/scatter.cc b/onnxruntime/core/providers/cpu/tensor/scatter.cc
-index 2d932dfe59..2e2f47d31f 100644
+index 2d932dfe59..67acce7f82 100644
 --- a/onnxruntime/core/providers/cpu/tensor/scatter.cc
 +++ b/onnxruntime/core/providers/cpu/tensor/scatter.cc
 @@ -340,7 +340,11 @@ Status ScatterData(
@@ -35,5 +35,5 @@ index 2d932dfe59..2e2f47d31f 100644
      // We start at num_dims - 2 because we already pre-populated
      // the last element above
 --
-2.25.1
+2.34.1
 

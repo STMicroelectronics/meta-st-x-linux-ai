@@ -1,0 +1,25 @@
+From 8899416f7e69d5eb64ef10df22c60fa80cfbd98f Mon Sep 17 00:00:00 2001
+From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+Date: Thu, 1 Aug 2024 09:41:21 +0200
+Subject: [PATCH 1/1] TFLite: add stdint.h for int types in
+ internal::Spectrogram
+
+Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+---
+ tensorflow/lite/kernels/internal/spectrogram.cc | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tensorflow/lite/kernels/internal/spectrogram.cc b/tensorflow/lite/kernels/internal/spectrogram.cc
+index a832962a38d..919eebeb3e7 100644
+--- a/tensorflow/lite/kernels/internal/spectrogram.cc
++++ b/tensorflow/lite/kernels/internal/spectrogram.cc
+@@ -17,6 +17,7 @@ limitations under the License.
+
+ #include <assert.h>
+ #include <math.h>
++#include <stdint.h>
+
+ #include "third_party/fft2d/fft.h"
+
+--
+2.34.1
