@@ -6,21 +6,22 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=0f7e3b1308cb5c00b372a6e78835732d"
 
-PV = "1.14.0+git${SRCPV}"
+PV = "1.18.0+git${SRCPV}"
 
-SRCREV = "6ccaeddefa65ccac402a47fa4d9cad8229794bb2"
-SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.14.0;protocol=https"
-SRC_URI += " file://0001-onnxruntime-test-remove-AVX-specific-micro-benchmark.patch "
-SRC_URI += " file://0002-onnxruntime-add-SONAME-with-MAJOR-version.patch "
-SRC_URI += " file://0003-onnxruntime-test-libcustom-library-remove-relative.patch "
-SRC_URI += " file://0004-onnxruntime-fix-imcompatibility-with-compiler-GCC12.patch "
-SRC_URI += " file://0005-onnxruntime-avoid-using-unsupported-Eigen-headers.patch "
-SRC_URI += " file://0007-onnxruntime-cmake-change-visibility-compilation-opti.patch "
-SRC_URI:append:stm32mp2common = " file://0006-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
+SRCREV = "45737400a2f3015c11f005ed7603611eaed306a6"
+SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.18.0;protocol=https"
+SRC_URI += " file://1.18.0/0001-onnxruntime-test-remove-AVX-specific-microbenchmark.patch "
+SRC_URI += " file://1.18.0/0002-onnxruntime-add-SONAME-with-MAJOR-version.patch "
+SRC_URI += " file://1.18.0/0003-onnxruntime-test-libcustom-library-remove-relative.patch "
+SRC_URI += " file://1.18.0/0004-onnxruntime-fix-incompatibility-with-compiler-GCC12..patch "
+SRC_URI += " file://1.18.0/0005-onnxruntime-test-avoid-using-unsupported-Eigen-heade.patch "
+SRC_URI += " file://1.18.0/0008-onnxruntime-cmake-change-visibility-compilation-opti.patch "
+SRC_URI:append:stm32mp2common = " file://1.18.0/0006-onnxruntime-mlas-fix-mcpu-incompatibility-flag.patch "
+SRC_URI:append:stm32mp2common = " file://1.18.0/0007-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 
-PROTOC_VERSION = "3.20.2"
+PROTOC_VERSION = "21.12"
 SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"
-SRC_URI[protoc.sha256sum] = "d97227fd8bc840dcb1cf7332c8339a2d8f0fc381a98b028006e5c9a911d07c2a"
+SRC_URI[protoc.sha256sum] = "3a4c1e5f2516c639d3079b1586e703fc7bcfa2136d58bda24d1d54f949c315e8"
 
 S = "${WORKDIR}/git"
 
@@ -49,7 +50,6 @@ OECMAKE_SOURCEPATH = "${S}/cmake"
 
 EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -DCMAKE_INSTALL_PREFIX="${prefix}" \
-		      -DABSL_ENABLE_INSTALL=ON \
 		      -DFETCHCONTENT_FULLY_DISCONNECTED=OFF \
 		      -Donnxruntime_BUILD_SHARED_LIB=ON \
 		      -Donnxruntime_BUILD_BENCHMARKS=ON \
@@ -127,7 +127,6 @@ do_install() {
 	install -m 755 ${B}/onnxruntime_perf_test					${D}${prefix}/local/bin/${PN}-${PVB}/tools
 	install -m 755 ${B}/onnxruntime_test_all					${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 	install -m 755 ${B}/onnxruntime_shared_lib_test				${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
-	install -m 755 ${B}/onnxruntime_api_tests_without_env		${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 	install -m 755 ${B}/onnxruntime_global_thread_pools_test	${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 	install -m 755 ${B}/onnxruntime_test_python.py				${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 	install -m 755 ${B}/helper.py								${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
@@ -136,7 +135,6 @@ do_install() {
 	# We have to change some of the RPATH as well.
 	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_perf_test
 	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/onnxruntime_shared_lib_test
-	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/onnxruntime_api_tests_without_env
 	chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/onnxruntime_global_thread_pools_test
 	chrpath -r '$ORIGIN' ${D}${libdir}/libtest_execution_provider.so
 
@@ -151,6 +149,7 @@ do_install() {
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_api.h  	${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_c_api.h  		${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_float16.h  	${D}${includedir}/onnxruntime
 }
 
 # The package_qa() task does not like the fact that this library is present in both onnxruntime-tools

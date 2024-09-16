@@ -18,7 +18,7 @@
 #include <stdexcept>
 
 #ifndef STAI_MPU_VERSION_MAJOR
-#define STAI_MPU_VERSION_MAJOR "6"
+#define STAI_MPU_VERSION_MAJOR "5"
 #endif
 
 #include "stai_mpu_wrapper.h"

@@ -1,0 +1,55 @@
+From 08859d1df2c71c1b5ac93ce968191a4b894f55c2 Mon Sep 17 00:00:00 2001
+From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+Date: Wed, 31 Jul 2024 11:06:12 +0200
+Subject: [PATCH 5/8] onnxruntime: test: avoid using unsupported Eigen headers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch removes the suspected Unsupported/Eigen/CXX11 headers and
+uses Onnx internal headers instead. It enables also the pragma for
+HAS_CLASS_MEMACCESS to treat the class-memaccess as warnings.
+This allows fixing the following build error: â€˜void* memcpy(void*,
+const void*, size_t)â€™ copying an object of non-trivial type
+â€˜Eigen::internal::Packet4câ€™{aka â€˜const signed charâ€™}
+[-Werror=class-memaccess]
+
+Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+---
+ onnxruntime/test/onnx/microbenchmark/eigen.cc | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/onnxruntime/test/onnx/microbenchmark/eigen.cc b/onnxruntime/test/onnx/microbenchmark/eigen.cc
+index 29894316ed..6062575570 100644
+--- a/onnxruntime/test/onnx/microbenchmark/eigen.cc
++++ b/onnxruntime/test/onnx/microbenchmark/eigen.cc
+@@ -6,6 +6,13 @@
+ #pragma GCC diagnostic ignored "-Wunused-parameter"
+ #pragma GCC diagnostic ignored "-Wunused-result"
+ #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
++// cmake/external/eigen/unsupported/Eigen/CXX11/../../../Eigen/src/Core/arch/NEON/PacketMath.h:1633:9:
++// error: â€˜void* memcpy(void*, const void*, size_t)â€™ copying an object of non-trivial type â€˜Eigen::internal::Packet4câ€™
++// {aka â€˜struct Eigen::internal::eigen_packet_wrapper<int, 2>â€™} from an array of â€˜const int8_tâ€™
++// {aka â€˜const signed charâ€™} [-Werror=class-memaccess]
++#ifdef HAS_CLASS_MEMACCESS
++#pragma GCC diagnostic ignored "-Wclass-memaccess"
++#endif
+ #elif defined(_MSC_VER)
+ // build\windows\debug\external\eigen3\unsupported\eigen\cxx11\src/Tensor/Tensor.h(76):
+ // warning C4554: '&': check operator precedence for possible error; use parentheses to clarify precedence
+@@ -22,9 +29,10 @@
+ #define EIGEN_USE_THREADS
+ #endif
+
+-#include <unsupported/Eigen/CXX11/ThreadPool>
+-#include <unsupported/Eigen/CXX11/Tensor>
+-#include <unsupported/Eigen/CXX11/src/Tensor/TensorDeviceThreadPool.h>
++#include "core/platform/threadpool.h"
++#include "core/common/eigen_common_wrapper.h"
++#include "core/util/thread_utils.h"
++#include <benchmark/benchmark.h>
+ #if defined(__GNUC__) && !defined(__clang__)
+ #pragma GCC diagnostic pop
+ #elif defined(_MSC_VER)
+--
+2.34.1

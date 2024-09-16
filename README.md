@@ -35,7 +35,7 @@ The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
   * STAI_MPU Unified API based on OpenVX™(STM32MP25x only), TensorFlow™ Lite, and ONNX Runtime™ compatible with all STM32MPU series
   * TIM-VX™ 1.1.57 (STM32MP25x only)
   * TensorFlow™ Lite 2.11.0 (CPU only) with XNNPACK delegate activated
-  * ONNX Runtime™ 1.14.0 (CPU only) with XNNPACK execution engine activated
+  * ONNX Runtime™ 1.18.0 (CPU only) with XNNPACK execution engine activated
 
 * Out of the box applications:
   * Image classification :
