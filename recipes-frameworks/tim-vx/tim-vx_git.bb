@@ -5,10 +5,10 @@ SUMMARY = "Tensor Interface Module for OpenVX"
 HOMEPAGE = "https://github.com/VeriSilicon/TIM-VX"
 LICENSE = "MIT"
 
-LIC_FILES_CHKSUM = "file://LICENSE;md5=d72cd187d764d96d91db827cb65b48a7"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=a223f028c6a73fd2bd9223b79a38dcf6"
 
 SRCBRANCH_tim_vx = "main"
-SRCREV_tim_vx = "33f3a4f176ff9c407479eaf6be78c52bb3c7a939"
+SRCREV_tim_vx = "fcdf223d06b0a70ea564794b19bbe2250a38c10d"
 SRC_URI ="git://github.com/VeriSilicon/TIM-VX.git;branch=${SRCBRANCH_tim_vx};name=tim_vx;destsuffix=tim_vx_git/;protocol=https"
 SRC_URI += " file://0001-tim-vx-tests-disable-AVG_ANDROID-tests.patch"
 SRCREV_FORMAT = "tim_vx"
@@ -18,7 +18,7 @@ SRCREV_googletest = "eab0e7e289db13eabfc246809b0284dac02a369d"
 SRC_URI +="git://github.com/google/googletest;branch=${SRCBRANCH_googletest};name=googletest;destsuffix=googletest/;protocol=https "
 
 
-PV = "1.1.57+git${SRCREV_tim_vx}"
+PV = "1.2.6+git${SRCREV_tim_vx}"
 PV_googletest = "1.14.0"
 
 S = "${WORKDIR}/tim_vx_git"
