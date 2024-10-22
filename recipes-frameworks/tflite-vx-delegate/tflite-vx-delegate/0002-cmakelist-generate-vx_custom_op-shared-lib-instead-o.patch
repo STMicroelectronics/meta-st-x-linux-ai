@@ -1,0 +1,28 @@
+From 2686e28c220c79aad0c9ac4e655a1e97af039fb3 Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Mon, 28 Oct 2024 15:36:23 +0100
+Subject: [PATCH 1/1] cmakelist generate vx_custom_op shared lib instead of
+ static
+
+Change-Id: I78ad706d808665420bc452fe4ecbc17f603b5543
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index e4728f7..786e96b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -82,7 +82,7 @@ target_link_libraries(vx_delegate ${VX_DELEGATE_DEPENDENCIES})
+ if((NOT DEFINED TIM_VX_INSTALL))
+ target_link_libraries(vx_delegate -Wl,--whole-archive tim-vx)
+ endif()
+-add_library(vx_custom_op STATIC ${VX_CUSTOM_OP_SRCS})
++add_library(vx_custom_op SHARED ${VX_CUSTOM_OP_SRCS})
+ target_include_directories(vx_custom_op PUBLIC ${PROJECT_SOURCE_DIR})
+ target_link_libraries(vx_custom_op TensorFlow::tensorflow-lite)
+ add_dependencies(vx_custom_op vx_delegate)
+-- 
+2.25.1
+

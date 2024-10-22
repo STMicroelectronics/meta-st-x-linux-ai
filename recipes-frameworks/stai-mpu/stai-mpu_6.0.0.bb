@@ -141,6 +141,8 @@ RDEPENDS:${PN}-tflite += " ${PYTHON_PN}-${PN} \
                            tensorflow-lite \
                          "
 
+RDEPENDS:${PN}-tflite:append:stm32mp25common = " tflite-vx-delegate "
+
 RDEPENDS:${PN}-ort += "  ${PYTHON_PN}-${PN} \
                          ${PN} \
                          onnxruntime \

@@ -1,0 +1,76 @@
+From 3736c90be93f2c8af593fd08214840bc7f785293 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Wed, 23 Feb 2022 17:55:45 +0100
+Subject: [PATCH 4/5] TFLite: cmake: support git clone shallow with specified
+ SHA1ID
+
+Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
+---
+ tensorflow/lite/tools/cmake/modules/eigen.cmake    | 9 ++++++++-
+ tensorflow/lite/tools/cmake/modules/farmhash.cmake | 9 ++++++++-
+ tensorflow/lite/tools/cmake/modules/gemmlowp.cmake | 9 ++++++++-
+ 3 files changed, 24 insertions(+), 3 deletions(-)
+
+diff --git a/tensorflow/lite/tools/cmake/modules/eigen.cmake b/tensorflow/lite/tools/cmake/modules/eigen.cmake
+index ee0e6376ba2..4da1eef79cd 100644
+--- a/tensorflow/lite/tools/cmake/modules/eigen.cmake
++++ b/tensorflow/lite/tools/cmake/modules/eigen.cmake
+@@ -28,7 +28,14 @@ OverridableFetchContent_Declare(
+   # as cmake attempts to git checkout the commit hash after the clone
+   # which doesn't work as it's a shallow clone hence a different commit hash.
+   # https://gitlab.kitware.com/cmake/cmake/-/issues/17770
+-  # GIT_SHALLOW TRUE
++  #
++  # Since GIT clone shallow with a SHA1ID is not fetching properly
++  # when this SHA1 is not refering to to the latest branch commit
++  # Enabling GIT_SHALLOW will allow to clone using the GIT_SHALLOW
++  # --depth option. This has been introduced by Vincent ABRIOU¬
++  # patch on cmake3.16.5 From 32ce0058265d4b9187224212f10bd2ba59fe1958
++  # [PATCH 1/1] cmake: support git clone shallow with specified SHA1 ID
++  GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+   PREFIX "${CMAKE_BINARY_DIR}"
+   SOURCE_DIR "${CMAKE_BINARY_DIR}/eigen"
+diff --git a/tensorflow/lite/tools/cmake/modules/farmhash.cmake b/tensorflow/lite/tools/cmake/modules/farmhash.cmake
+index 9c8e039e6fe..f4f3c607640 100644
+--- a/tensorflow/lite/tools/cmake/modules/farmhash.cmake
++++ b/tensorflow/lite/tools/cmake/modules/farmhash.cmake
+@@ -28,7 +28,14 @@ OverridableFetchContent_Declare(
+   # as cmake attempts to git checkout the commit hash after the clone
+   # which doesn't work as it's a shallow clone hence a different commit hash.
+   # https://gitlab.kitware.com/cmake/cmake/-/issues/17770
+-  # GIT_SHALLOW TRUE
++  #
++  # Since GIT clone shallow with a SHA1ID is not fetching properly
++  # when this SHA1 is not refering to to the latest branch commit
++  # Enabling GIT_SHALLOW will allow to clone using the GIT_SHALLOW
++  # --depth option. This has been introduced by Vincent ABRIOU¬
++  # patch on cmake3.16.5 From 32ce0058265d4b9187224212f10bd2ba59fe1958
++  # [PATCH 1/1] cmake: support git clone shallow with specified SHA1 ID
++  GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+   SOURCE_DIR "${CMAKE_BINARY_DIR}/farmhash"
+ )
+diff --git a/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake b/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
+index 0aaea326a0a..5ab60c60f86 100644
+--- a/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
++++ b/tensorflow/lite/tools/cmake/modules/gemmlowp.cmake
+@@ -28,7 +28,14 @@ OverridableFetchContent_Declare(
+   # as cmake attempts to git checkout the commit hash after the clone
+   # which doesn't work as it's a shallow clone hence a different commit hash.
+   # https://gitlab.kitware.com/cmake/cmake/-/issues/17770
+-  # GIT_SHALLOW TRUE
++  #
++  # Since GIT clone shallow with a SHA1ID is not fetching properly
++  # when this SHA1 is not refering to to the latest branch commit
++  # Enabling GIT_SHALLOW will allow to clone using the GIT_SHALLOW
++  # --depth option. This has been introduced by Vincent ABRIOU¬
++  # patch on cmake3.16.5 From 32ce0058265d4b9187224212f10bd2ba59fe1958
++  # [PATCH 1/1] cmake: support git clone shallow with specified SHA1 ID
++  GIT_SHALLOW TRUE
+   GIT_PROGRESS TRUE
+   SOURCE_DIR "${CMAKE_BINARY_DIR}/gemmlowp"
+ )
+-- 
+2.25.1
+
