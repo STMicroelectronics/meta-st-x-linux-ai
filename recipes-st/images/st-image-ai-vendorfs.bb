@@ -5,4 +5,4 @@ STM32MP_VENDORFS_IMAGE = "st-image-ai-vendorfs"
 
 # add vendorfs packages to support NPU
 PACKAGE_INSTALL:append:stm32mp25common = " libopenvx-gcnano libovxkernels-gcnano "
-STM32MP_VENDORFS_SIZE:stm32mp25common = "157696"
+STM32MP_VENDORFS_SIZE:stm32mp25common = "199680"
