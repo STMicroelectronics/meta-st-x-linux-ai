@@ -81,7 +81,13 @@ namespace wrapper_stai_mpu{
 			}
 
 			std::string model_path = conf->model_name.c_str();
-			m_stai_mpu_model.reset(new stai_mpu_network(model_path));
+			size_t dot_pos = model_path.find_last_of('.');
+			// Depending on model extension enable or not hardware acceleration
+			if (model_path.substr(dot_pos) == ".nb"){
+				m_stai_mpu_model.reset(new stai_mpu_network(model_path, true));
+			} else {
+				m_stai_mpu_model.reset(new stai_mpu_network(model_path, false));
+			}
 			m_input_infos = m_stai_mpu_model->get_input_infos();
 			m_output_infos = m_stai_mpu_model->get_output_infos();
 			m_num_inputs = m_stai_mpu_model->get_num_inputs();
