@@ -38,7 +38,7 @@ public:
      * stai_mpu_backend_engine enum value. The stai_mpu_wrapper is then instanciated accordingly by loading \
      * dynamically the associated plugin (shared library of the backend).
      */
-    stai_mpu_network(const std::string& model_path);
+    stai_mpu_network(const std::string& model_path, bool use_hw_acceleration);
 
     /**
      * @brief Constructor for the stai_mpu_network class without arguments.
@@ -54,8 +54,9 @@ public:
      * @brief Loads a TFLite/Onnx/Nbg model from a file.
      *
      * @param model_path The path to the TFLite/Onnx/Nbg model file.
+     * @param use_hw_acceleration Enable HW acceleration if available for the TFLite/Onnx/Nbg model.
      */
-    virtual void load_model(const std::string& model_path);
+    virtual void load_model(const std::string& model_path, bool use_hw_acceleration);
 
     /**
      * @brief Sets input data for a specific input tensor of the TFLite/Onnx/Nbg model based.

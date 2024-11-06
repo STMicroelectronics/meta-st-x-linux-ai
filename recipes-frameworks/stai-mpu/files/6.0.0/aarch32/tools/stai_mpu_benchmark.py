@@ -34,9 +34,13 @@ def main():
 
     model_path = args.model_file
     nb_loops = args.nb_loops
+    model_extension = os.path.splitext(model_path)
 
     # Load the model and metadata
-    stai_mpu_model = stai_mpu_network(model_path)
+    if model_extension[1] == ".nb":
+        stai_mpu_model = stai_mpu_network(model_path, True)
+    else :
+        stai_mpu_model = stai_mpu_network(model_path, False)
     num_inputs = stai_mpu_model.get_num_inputs()
     num_outputs = stai_mpu_model.get_num_outputs()
 

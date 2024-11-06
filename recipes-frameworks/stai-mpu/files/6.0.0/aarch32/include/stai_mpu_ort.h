@@ -15,6 +15,8 @@
 #include <memory>
 
 #include "onnxruntime_cxx_api.h"
+#include "core/providers/vsinpu/vsinpu_provider_factory.h"
+#include "onnxruntime_session_options_config_keys.h"
 
 std::nullptr_t t;
 std::vector<int> stai_mpu_get_tensor_shape(const Ort::TypeInfo& type_info);
@@ -32,8 +34,9 @@ public:
      * @brief Loads a Onnxruntime model from a file.
      *
      * @param model_path The path to the Onnxruntime model file.
+     * @param use_hw_acceleration Enable HW acceleration if available.
      */
-    virtual void  load_model(const std::string& model_path) override;
+    virtual void  load_model(const std::string& model_path, bool use_hw_acceleration) override;
 
     /**
      * @brief Sets input data for a specific input tensor of the Onnxruntime model based.

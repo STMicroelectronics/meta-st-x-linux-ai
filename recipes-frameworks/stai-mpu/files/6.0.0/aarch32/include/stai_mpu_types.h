@@ -90,7 +90,9 @@ typedef struct _stai_mpu_quant_params{
 
 enum class stai_mpu_backend_engine {
     STAI_MPU_TFLITE_CPU_ENGINE,
+    STAI_MPU_TFLITE_NPU_ENGINE,
     STAI_MPU_ORT_CPU_ENGINE,
+    STAI_MPU_ORT_NPU_ENGINE,
     STAI_MPU_OVX_NPU_ENGINE,
 };
 

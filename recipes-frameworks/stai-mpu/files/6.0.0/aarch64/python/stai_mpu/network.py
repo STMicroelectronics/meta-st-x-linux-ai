@@ -7,8 +7,10 @@ from enum import Enum
 
 class stai_mpu_backend_engine(Enum):
     STAI_MPU_TFLITE_CPU_ENGINE = 0
+    STAI_MPU_TFLITE_NPU_ENGINE = 1
     STAI_MPU_ORT_CPU_ENGINE = 2
-    STAI_MPU_OVX_NPU_ENGINE = 3
+    STAI_MPU_ORT_NPU_ENGINE = 3
+    STAI_MPU_OVX_NPU_ENGINE = 4
 
 class stai_mpu_tensor:
     name: str = ...
@@ -22,8 +24,8 @@ class stai_mpu_tensor:
     fixed_point_pos: int = ...
 
 class stai_mpu_network:
-    def __init__(self, model_path: Path) -> None:
-        self._exec = _binding.stai_mpu_network(model_path)
+    def __init__(self, model_path: Path, use_hw_acceleration: bool) -> None:
+        self._exec = _binding.stai_mpu_network(model_path, use_hw_acceleration)
 
     def get_num_inputs(self) -> int:
         return self._exec.get_num_inputs()

@@ -17,6 +17,11 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/c/c_api_types.h"
+#ifdef VSI_OP
+#include "VX/vsi_npu_custom_op.h"
+#include "tensorflow/lite/delegates/external/external_delegate.h"
+#include "tensorflow/lite/interpreter.h"
+#endif
 
 /**
  * @brief A class that wraps TensorFlow Lite model inference functionality.
@@ -40,8 +45,9 @@ public:
      * @brief Loads a TensorFlow Lite model from a file.
      *
      * @param model_path The path to the TensorFlow Lite model file.
+     * @param use_hw_acceleration Enable HW acceleration if available.
      */
-    virtual void  load_model(const std::string& model_path) override;
+    virtual void  load_model(const std::string& model_path, bool use_hw_acceleration) override;
 
     /**
      * @brief Sets input data for a specific input tensor of the TensorFlow Lite model based.
