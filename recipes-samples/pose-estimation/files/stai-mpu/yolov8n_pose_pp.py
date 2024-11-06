@@ -30,7 +30,11 @@ class NeuralNetwork:
         self._normalize = normalize
 
         # Initialize NN model
-        self.stai_mpu_model = stai_mpu_network(model_path=self._model_file)
+        # Depending on model extension enable or not hardware acceleration
+        if (".nb" in self._model_file):
+            self.stai_mpu_model = stai_mpu_network(model_path=self._model_file, use_hw_acceleration=True)
+        else :
+            self.stai_mpu_model = stai_mpu_network(model_path=self._model_file, use_hw_acceleration=False)
 
         # Read input tensor information
         self.num_inputs = self.stai_mpu_model.get_num_inputs()
@@ -176,7 +180,7 @@ class NeuralNetwork:
         """
         Movenet post-processing comes from MoveNet: Ultra fast and accurate pose detection model
         License Apache-2.0 : https://github.com/tensorflow/docs/blob/master/site/en/hub/tutorials/movenet.ipynb
-        with Copyright 2021 The TensorFlow Hub Authors. All Rights Reserved. 
+        with Copyright 2021 The TensorFlow Hub Authors. All Rights Reserved.
         """
 
         """Returns high confidence keypoints and edges for visualization.

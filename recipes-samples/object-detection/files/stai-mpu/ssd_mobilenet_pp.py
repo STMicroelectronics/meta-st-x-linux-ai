@@ -52,7 +52,11 @@ class NeuralNetwork:
         self.number_of_boxes = 0
 
         # Initialize NN model
-        self.stai_mpu_model = stai_mpu_network(model_path=self._model_file)
+        # Depending on model extension enable or not hardware acceleration
+        if (".nb" in self._model_file):
+            self.stai_mpu_model = stai_mpu_network(model_path=self._model_file, use_hw_acceleration=True)
+        else :
+            self.stai_mpu_model = stai_mpu_network(model_path=self._model_file, use_hw_acceleration=False)
 
         # Read input tensor information
         self.num_inputs = self.stai_mpu_model.get_num_inputs()
