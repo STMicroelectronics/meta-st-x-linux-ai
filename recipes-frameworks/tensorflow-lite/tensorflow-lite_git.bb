@@ -7,19 +7,17 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=4158a261ca7f2525513e31ba9c50ae98"
 
-PV = "2.11.0+git${SRCPV}"
+PV = "2.16.2+git${SRCPV}"
 
-SRCREV = "5d37bd0350f0144632629c1aa2ebaef6ca76300b"
+SRCREV = "810f233968cec850915324948bbbc338c97cf57f"
 
-SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.11 "
+SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.16 "
 SRC_URI += " file://0001-TFLite-cmake-add-python-numpy-and-pybind11-include-p.patch "
-SRC_URI += " file://0002-TFLite-cmake-add-schema_conversion_utils.cc-to-the-s.patch "
+SRC_URI += " file://0002-TFLite-cmake-add-schema_conversion_utils.cc-in-tflit.patch "
 SRC_URI += " file://0003-TFLite-cmake-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0004-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
-SRC_URI += " file://0005-TFLite-cmake-change-the-version-of-flatbuffer-to-avo.patch "
-SRC_URI += " file://0006-TFLite-cmake-add-XNNPACK-delegate-u8-and-i8-definition.patch "
-SRC_URI += " file://0008-TFLite-cmake-change-visibility-compilation-options.patch "
-SRC_URI += " file://0009-TFLite-add-stdint.h-for-int-types-in-internal-Spectr.patch "
+SRC_URI += " file://0005-TFLite-remove-filter-on-OPT-4bits-sources.patch"
+SRC_URI += " file://0006-TFLite-cmake-change-visibility-compilation-options.patch "
 SRC_URI:append:stm32mp2common = " file://0007-TFLite-fix-aarch64-support-for-XNNPACK.patch "
 
 S = "${WORKDIR}/git"
@@ -71,6 +69,7 @@ EXTRA_OECMAKE += " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF \
 
 do_generate_toolchain_file:append() {
 	echo "set( CMAKE_SYSTEM_PROCESSOR ${TENSORFLOW_TARGET_ARCH} )" >> ${WORKDIR}/toolchain.cmake
+	sed -i 's/-mthumb//g' ${WORKDIR}/toolchain.cmake
 }
 
 do_configure[network] = "1"
@@ -156,10 +155,6 @@ do_install() {
 	install -m 0644  ${WORKDIR}/build/tflite_runtime/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 	install -m 0644  ${WORKDIR}/build/tflite_runtime.egg-info/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info
 	chrpath -r '$ORIGIN' ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime/*.so
-
-	# install common.c and util.cc for edgtpu build
-	cp ${S}/tensorflow/lite/util.cc ${D}${includedir}/tensorflow/lite
-	cp ${S}/tensorflow/lite/c/common.cc ${D}${includedir}/tensorflow/lite/c
 }
 
 PACKAGES += "${PN}-tools ${PYTHON_PN}-${PN}"

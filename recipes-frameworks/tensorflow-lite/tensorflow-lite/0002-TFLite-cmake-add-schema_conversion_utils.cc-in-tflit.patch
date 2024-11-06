@@ -1,0 +1,30 @@
+From c02338588dce043bd6e0502f1d82590aa12c71bd Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Mon, 21 Oct 2024 10:28:07 +0200
+Subject: [PATCH 2/7] TFLite: cmake add schema_conversion_utils.cc in tflite
+ sources
+
+Change-Id: I00883dc5e4e9b5f181cc700e8bc36f525b06b913
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ tensorflow/lite/CMakeLists.txt | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index f41e57d9155..52e9beccfbf 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -622,8 +622,9 @@ set(_ALL_TFLITE_SRCS
+   ${TFLITE_SOURCE_DIR}/schema/conversion_metadata_generated.h
+   ${TFLITE_SOURCE_DIR}/schema/schema_utils.cc
+   ${TFLITE_SOURCE_DIR}/schema/schema_generated.h
++  ${TFLITE_SOURCE_DIR}/schema/schema_conversion_utils.cc
+ )
+-add_library(tensorflow-lite
++add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
+   ${_ALL_TFLITE_SRCS}
+ )
+ set(_ALL_TFLITE_HDRS ${_ALL_TFLITE_SRCS})
+-- 
+2.25.1
+

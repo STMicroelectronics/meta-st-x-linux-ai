@@ -1,0 +1,29 @@
+From 5dd2378e9c1c7ff719ff9c1011e3081dbc6d61b9 Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Mon, 21 Oct 2024 10:42:39 +0200
+Subject: [PATCH 7/7] TFLite: cmake change visibility compilation options
+
+Change-Id: I7ade67f9c4faa4bff6f59d3425f8bef3842d346d
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ tensorflow/lite/CMakeLists.txt | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
+index 86074eb38f3..4a9b9fd7305 100644
+--- a/tensorflow/lite/CMakeLists.txt
++++ b/tensorflow/lite/CMakeLists.txt
+@@ -629,6 +629,10 @@ set(_ALL_TFLITE_SRCS
+ add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
+   ${_ALL_TFLITE_SRCS}
+ )
++
++target_compile_options(tensorflow-lite PRIVATE -fvisibility=hidden)
++target_compile_options(tensorflow-lite PRIVATE -fvisibility=default)
++
+ set(_ALL_TFLITE_HDRS ${_ALL_TFLITE_SRCS})
+ list(FILTER _ALL_TFLITE_HDRS INCLUDE REGEX ".*\\.h$")
+ target_include_directories(tensorflow-lite
+-- 
+2.25.1
+

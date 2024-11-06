@@ -1,7 +1,7 @@
-From 23f182c6d93e516d38600647e9b66b6c70b1d044 Mon Sep 17 00:00:00 2001
+From 4a647e1ff0833998939a5ce31f3c1d261fb42230 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 30 Mar 2023 21:13:05 +0200
-Subject: [PATCH 1/5] TFLite: cmake: add python, numpy and pybind11 include
+Subject: [PATCH 1/7] TFLite: cmake: add python, numpy and pybind11 include
  path in CMakeLists.txt
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
@@ -10,10 +10,10 @@ Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 073b29c4860..4d571be119a 100644
+index a61f537365a..f41e57d9155 100644
 --- a/tensorflow/lite/CMakeLists.txt
 +++ b/tensorflow/lite/CMakeLists.txt
-@@ -611,6 +611,9 @@ set_target_properties(_pywrap_tensorflow_interpreter_wrapper PROPERTIES PREFIX "
+@@ -727,6 +727,9 @@ set_target_properties(_pywrap_tensorflow_interpreter_wrapper PROPERTIES PREFIX "
  target_include_directories(_pywrap_tensorflow_interpreter_wrapper
    PUBLIC
      ${TENSORFLOW_SOURCE_DIR}
