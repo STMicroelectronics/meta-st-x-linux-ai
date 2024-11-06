@@ -6,18 +6,18 @@ LICENSE = "MIT"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=0f7e3b1308cb5c00b372a6e78835732d"
 
-PV = "1.18.0+git${SRCPV}"
+PV = "1.19.2+git${SRCPV}"
 
-SRCREV = "45737400a2f3015c11f005ed7603611eaed306a6"
-SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.18.0;protocol=https"
-SRC_URI += " file://1.18.0/0001-onnxruntime-test-remove-AVX-specific-microbenchmark.patch "
-SRC_URI += " file://1.18.0/0002-onnxruntime-add-SONAME-with-MAJOR-version.patch "
-SRC_URI += " file://1.18.0/0003-onnxruntime-test-libcustom-library-remove-relative.patch "
-SRC_URI += " file://1.18.0/0004-onnxruntime-fix-incompatibility-with-compiler-GCC12..patch "
-SRC_URI += " file://1.18.0/0005-onnxruntime-test-avoid-using-unsupported-Eigen-heade.patch "
-SRC_URI += " file://1.18.0/0008-onnxruntime-cmake-change-visibility-compilation-opti.patch "
-SRC_URI:append:stm32mp2common = " file://1.18.0/0006-onnxruntime-mlas-fix-mcpu-incompatibility-flag.patch "
-SRC_URI:append:stm32mp2common = " file://1.18.0/0007-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
+SRCREV = "ffceed9d44f2f3efb9dd69fa75fea51163c91d91"
+SRC_URI = "gitsm://github.com/microsoft/onnxruntime.git;branch=rel-1.19.2;protocol=https"
+SRC_URI += " file://1.19.2/0001-onnxruntime-test-remove-AVX-specific-microbenchmark.patch "
+SRC_URI += " file://1.19.2/0002-onnxruntime-add-SONAME-with-MAJOR-version.patch "
+SRC_URI += " file://1.19.2/0003-onnxruntime-test-libcustom-library-remove-relative.patch "
+SRC_URI += " file://1.19.2/0004-onnxruntime-fix-incompatibility-with-compiler-GCC12..patch "
+SRC_URI += " file://1.19.2/0009-remove-ENV-variable-that-is-not-usefull.patch "
+SRC_URI += " file://1.19.2/0008-onnxruntime-cmake-change-visibility-compilation-opti.patch "
+SRC_URI:append:stm32mp2common = " file://1.19.2/0010-fix-uncompatible-cmake-flag-issue.patch"
+SRC_URI:append:stm32mp2common = " file://1.19.2/0007-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 
 PROTOC_VERSION = "21.12"
 SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"
@@ -34,6 +34,7 @@ DEPENDS = "\
 	${PYTHON_PN}-native \
 	${PYTHON_PN} \
 	"
+DEPENDS:append:stm32mp25common = " tim-vx "
 
 python () {
     #Get major of the PV variable
@@ -65,8 +66,10 @@ EXTRA_OECMAKE += "    -DCMAKE_BUILD_TYPE=Release \
 		      -DONNXRUNTIME_VERSION_MAJOR=${MAJOR}  \
 		      -DBENCHMARK_ENABLE_GTEST_TESTS=OFF \
 		      -Donnxruntime_USE_XNNPACK=ON \
+		      -DTIM_VX_INSTALL=${RECIPE_SYSROOT}/usr \
 		      -Donnxruntime_BUILD_UNIT_TESTS=ON \
 "
+EXTRA_OECMAKE:append:stm32mp2common = "-Donnxruntime_USE_VSINPU=ON "
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
 ONNX_TARGET_ARCH:armv7a="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7a', '', d)}"
@@ -144,12 +147,14 @@ do_install() {
 
 	# Install header files
 	install -d ${D}${includedir}/onnxruntime
+	install -d ${D}${includedir}/onnxruntime/core/providers/
 	cd ${S}/onnxruntime
 	cp --parents $(find . -name "*.h*" -not -path "*cmake_build/*") 	${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_api.h  	${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_c_api.h  		${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_float16.h  	${D}${includedir}/onnxruntime
+	cp -r  ${S}/include/onnxruntime/core/providers/* 	${D}${includedir}/onnxruntime/core/providers/
 }
 
 # The package_qa() task does not like the fact that this library is present in both onnxruntime-tools
@@ -169,4 +174,5 @@ FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 # onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
 RDEPENDS:${PN} += " x-linux-ai-benchmark "
+RDEPENDS:${PN}-tools += "onnxruntime"
 RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}-numpy"
