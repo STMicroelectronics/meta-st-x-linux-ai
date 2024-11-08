@@ -154,6 +154,7 @@ do_install() {
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_c_api.h  		${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_cxx_inline.h  ${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_float16.h  	${D}${includedir}/onnxruntime
+	cp  ${S}/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h  	${D}${includedir}/onnxruntime
 	cp -r  ${S}/include/onnxruntime/core/providers/* 	${D}${includedir}/onnxruntime/core/providers/
 }
 
