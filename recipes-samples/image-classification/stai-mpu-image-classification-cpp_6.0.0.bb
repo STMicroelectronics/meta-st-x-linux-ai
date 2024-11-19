@@ -35,26 +35,35 @@ do_install() {
     install -d ${D}${prefix}/local/demo/gtk-application
     install -d ${D}${prefix}/local/x-linux-ai/image-classification/
 
-    # install applications into the demo launcher
-    install -m 0755 ${S}/stai-mpu/101-stai-mpu-image-classification-cpp-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/102-stai-mpu-image-classification-cpp-ort.yaml   ${D}${prefix}/local/demo/gtk-application
-
     # install application binaries and launcher scripts
     install -m 0755 ${S}/stai-mpu/stai_mpu_image_classification ${D}${prefix}/local/x-linux-ai/image-classification/
     install -m 0755 ${S}/stai-mpu/launch_bin*.sh                ${D}${prefix}/local/x-linux-ai/image-classification/
 }
 
+do_install:append:stm32mp1common(){
+    # install applications into the demo launcher
+    install -m 0755 ${S}/stai-mpu/*cpp-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${S}/stai-mpu/*cpp-ort.yaml   ${D}${prefix}/local/demo/gtk-application
+}
+
 do_install:append:stm32mp25common(){
-    install -m 0755 ${S}/stai-mpu/103-stai-mpu-image-classification-cpp-ovx.yaml ${D}${prefix}/local/demo/gtk-application/
+    # install applications into the demo launcher
+    install -m 0755 ${S}/stai-mpu/*cpp-tfl-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${S}/stai-mpu/*cpp-ort-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${S}/stai-mpu/*cpp-ovx-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
 }
 
 PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/image-classification/ "
-FILES:${PN}-tfl += "${prefix}/local/demo/gtk-application/101-stai-mpu-image-classification-cpp-tfl.yaml "
-FILES:${PN}-ort += "${prefix}/local/demo/gtk-application/102-stai-mpu-image-classification-cpp-ort.yaml "
-FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/103-stai-mpu-image-classification-cpp-ovx.yaml "
+
+FILES:${PN}-tfl:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-tfl.yaml "
+FILES:${PN}-ort:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-ort.yaml "
+
+FILES:${PN}-tfl:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-tfl-mp2.yaml "
+FILES:${PN}-ort:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-ort-mp2.yaml "
+FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-ovx-mp2.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
 

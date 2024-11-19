@@ -24,26 +24,35 @@ do_install() {
     # install license
     install -m 0444 ${S}/stai-mpu/LICENSE ${D}${prefix}/local/x-linux-ai/image-classification/
 
-    # install applications into the demo launcher
-    install -m 0755 ${S}/stai-mpu/105-stai-mpu-image-classification-py-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/106-stai-mpu-image-classification-py-ort.yaml   ${D}${prefix}/local/demo/gtk-application
-
     # install application binaries and launcher scripts
     install -m 0755 ${S}/stai-mpu/*.py              ${D}${prefix}/local/x-linux-ai/image-classification/
     install -m 0755 ${S}/stai-mpu/launch_python*.sh ${D}${prefix}/local/x-linux-ai/image-classification/
 }
 
-do_install:append:stm32mp25common(){
-    install -m 0755 ${S}/stai-mpu/107-stai-mpu-image-classification-py-ovx.yaml ${D}${prefix}/local/demo/gtk-application/
+do_install:append:stm32mp1common(){
+    # install applications into the demo launcher
+    install -m 0755 ${S}/stai-mpu/*py-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${S}/stai-mpu/*py-ort.yaml   ${D}${prefix}/local/demo/gtk-application
 }
+
+do_install:append:stm32mp25common(){
+    # install applications into the demo launcher
+    install -m 0755 ${S}/stai-mpu/*py-tfl-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${S}/stai-mpu/*py-ort-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
+    install -m 0755 ${S}/stai-mpu/*py-ovx-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
+}
+
 
 PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/image-classification/ "
-FILES:${PN}-tfl += "${prefix}/local/demo/gtk-application/105-stai-mpu-image-classification-py-tfl.yaml "
-FILES:${PN}-ort += "${prefix}/local/demo/gtk-application/106-stai-mpu-image-classification-py-ort.yaml "
-FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/107-stai-mpu-image-classification-py-ovx.yaml "
+FILES:${PN}-tfl:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*py-tfl.yaml "
+FILES:${PN}-ort:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*py-ort.yaml "
+
+FILES:${PN}-tfl:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*py-tfl-mp2.yaml "
+FILES:${PN}-ort:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*py-ort-mp2.yaml "
+FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*py-ovx-mp2.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
 

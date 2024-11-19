@@ -1,6 +1,6 @@
 Application:
     Name: Image Classification
-    Description: Mobilenet v2
+    Description: Mobilenet v1
     Icon: ../x-linux-ai/resources/stai_mpu_onnx_img_py.png
     Board:
         List: all
