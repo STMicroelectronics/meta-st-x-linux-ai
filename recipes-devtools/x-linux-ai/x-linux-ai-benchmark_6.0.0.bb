@@ -8,8 +8,8 @@ NO_GENERIC_LICENSE[SLA0044] = "LICENSE"
 LICENSE:${PN} = "SLA0044"
 
 SRC_URI = " file://x-linux-ai-benchmark/LICENSE \
-            file://x-linux-ai-benchmark/6.0.0/x_linux_ai_benchmark_mp1 \
-            file://x-linux-ai-benchmark/6.0.0/x_linux_ai_benchmark_mp2 \
+            file://x-linux-ai-benchmark/x_linux_ai_benchmark_mp1 \
+            file://x-linux-ai-benchmark/x_linux_ai_benchmark_mp2 \
 "
 
 S = "${WORKDIR}/${BPN}"
@@ -21,11 +21,11 @@ BOARD_USED:stm32mp25common = "stm32mp2_npu"
 
 do_install() {
     install -d ${D}/usr/bin
-    install -m 0755 ${S}/${PV}/x_linux_ai_benchmark_mp1 ${D}/usr/bin/x-linux-ai-benchmark
+    install -m 0755 ${S}/x_linux_ai_benchmark_mp1 ${D}/usr/bin/x-linux-ai-benchmark
 }
 
 do_install:append:stm32mp25common(){
-    install -m 0755 ${S}/${PV}/x_linux_ai_benchmark_mp2 ${D}/usr/bin/x-linux-ai-benchmark
+    install -m 0755 ${S}/x_linux_ai_benchmark_mp2 ${D}/usr/bin/x-linux-ai-benchmark
 }
 
 FILES:${PN} += "/usr/bin"

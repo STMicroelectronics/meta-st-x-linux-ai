@@ -10,9 +10,9 @@ LIC_FILES_CHKSUM  = "file://LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
 NO_GENERIC_LICENSE[SLA0044] = "LICENSE"
 LICENSE:${PN} = "SLA0044"
 
-SRC_URI  += " file://${PV}/"
+SRC_URI  += " file://${BPN}/"
 
-S = "${WORKDIR}/${PV}"
+S = "${WORKDIR}/${PN}"
 
 python () {
     #Get major of the PV variable
