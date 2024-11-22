@@ -40,6 +40,8 @@ do_install() {
     install -d ${D}${includedir}/stai_mpu
     # Install the Python package along with the bindings.
     mkdir -p ${D}${PYTHON_SITEPACKAGES_DIR}/stai_mpu
+    # Install the unit test directory.
+    install -d ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 }
 
 do_install:append:stm32mp1common(){
@@ -69,6 +71,10 @@ do_install:append:stm32mp1common(){
     install -m 0755 ${S}/aarch32/tools/stai_mpu_benchmark         ${D}${prefix}/local/bin/${PN}-${PVB}/tools
     install -m 0755 ${S}/aarch32/tools/stai_mpu_benchmark.py      ${D}${prefix}/local/bin/${PN}-${PVB}/tools
     chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/stai_mpu_benchmark
+
+    # Install the unit-test binary
+    install -m 0755 ${S}/aarch32/unit-tests/stai_mpu_network_test   ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+    chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/stai_mpu_network_test
 }
 
 do_install:append:stm32mp25common(){
@@ -103,16 +109,21 @@ do_install:append:stm32mp25common(){
     install -m 0755 ${S}/aarch64/tools/stai_mpu_benchmark         ${D}${prefix}/local/bin/${PN}-${PVB}/tools
     install -m 0755 ${S}/aarch64/tools/stai_mpu_benchmark.py      ${D}${prefix}/local/bin/${PN}-${PVB}/tools
     chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/tools/stai_mpu_benchmark
+
+    # Install the unit-test binary
+    install -m 0755 ${S}/aarch64/unit-tests/stai_mpu_network_test         ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
+    chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/stai_mpu_network_test
 }
 
-PACKAGES += "${PN}-tools ${PYTHON_PN}-${PN} ${PN}-tflite ${PN}-ort "
+PACKAGES += "${PN}-tools ${PYTHON_PN}-${PN} ${PN}-tflite ${PN}-ort ${PN}-unit-tests "
 PACKAGES:append:stm32mp25common = " ${PN}-ovx "
-PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tflite ${PN}-ort ${PN}-ovx"
+PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tflite ${PN}-ort ${PN}-ovx ${PN}-unit-tests"
 
 FILES:${PN} = " ${libdir}/libstai_mpu.so.*  "
 FILES:${PN}-tflite = "${libdir}/libstai_mpu_tflite.so.* "
 FILES:${PN}-ort = " ${libdir}/libstai_mpu_ort.so.* "
 FILES:${PN}-ovx = " ${libdir}/libstai_mpu_ovx.so.* "
+FILES:${PN}-unit-tests = "${prefix}/local/bin/${PN}-${PVB}/unit-tests/* "
 
 FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/*"
 FILES:${PN}-dev = " ${libdir}/libstai_mpu.so \
@@ -156,3 +167,9 @@ RDEPENDS:${PN}-ovx += "  ${PYTHON_PN}-${PN} \
 RDEPENDS:${PN}-ovx:append:stm32mp25common = " gcnano-driver-stm32mp \
                                               libopenvx-gcnano \
                                             "
+
+RDEPENDS:${PN}-unit-tests += "  ${PYTHON_PN}-${PN} \
+                                libopencv-core \
+                                libopencv-imgproc \
+                                libopencv-imgcodecs \
+                             "
