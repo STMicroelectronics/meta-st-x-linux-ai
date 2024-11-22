@@ -169,12 +169,12 @@ private:
             {
                 auto* quant_params =
                         reinterpret_cast<TfLiteAffineQuantization*>(tensor->quantization.params);
-                if (quant_params->scale && quant_params->scale->size > 1) {
+                if (quant_params->scale) {
                     // per-channel quantization along the specified dimension
-                    return stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_CHANNEL;
+                    return stai_mpu_qtype::STAI_MPU_QTYPE_STATIC_AFFINE;
                 } else {
                     // per-tensor quantization
-                    return stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_TENSOR;
+                    return stai_mpu_qtype::STAI_MPU_QTYPE_NONE;
                 }
             }
             case TfLiteQuantizationType::kTfLiteNoQuantization:

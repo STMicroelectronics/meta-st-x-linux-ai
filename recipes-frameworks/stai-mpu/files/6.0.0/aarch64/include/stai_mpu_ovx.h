@@ -30,6 +30,9 @@
 
 #include "stai_mpu_wrapper.h"
 
+vx_int16 stai_mpu_fp32_to_fp16(vx_float32 input_value);
+vx_float32 stai_mpu_fp16_to_fp32(const vx_uint16 input_buffer);
+
 /**
  * @brief A class that wraps NBG model inference functionality.
  *
@@ -245,41 +248,13 @@ private:
         switch (qtype) {
             case stai_mpu_qtype::STAI_MPU_QTYPE_DYNAMIC_FIXED_POINT:
                 return VX_QUANT_DYNAMIC_FIXED_POINT;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_CHANNEL:
-                return VX_QUANT_AFFINE_SCALE_PER_CHANNEL;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_TENSOR:
+            case stai_mpu_qtype::STAI_MPU_QTYPE_STATIC_AFFINE:
                 return VX_QUANT_AFFINE_SCALE;
             case stai_mpu_qtype::STAI_MPU_QTYPE_NONE:
                 return VX_QUANT_NONE;
             default:
                 throw std::invalid_argument("Invalid stai_mpu_qtype");
         }
-    }
-
-    /**
-     * @brief Helper function to allow mapping between the
-     * vx_tensor_quant_param and the stai_mpu_quant_params.
-     * @param vx_qparams an vx_tensor_quant_param
-     * @param qparams an stai_mpu_quant_params
-     */
-    void stai_mpu_map_qparams(vx_tensor_quant_param* vx_qparams,
-                            stai_mpu_quant_params* qparams,
-                            stai_mpu_qtype qtype) {
-        switch(qtype){
-            case stai_mpu_qtype::STAI_MPU_QTYPE_NONE:
-                break;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_TENSOR:
-                qparams->affine_per_tensor.scale = vx_qparams->affine.scale;
-                qparams->affine_per_tensor.zero_point = vx_qparams->affine.zeroPoint;
-                break;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_DYNAMIC_FIXED_POINT:
-                qparams->dfp.fixed_point_pos = vx_qparams->dfp.fixed_point_pos;
-                break;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_CHANNEL:
-            default:
-                printf("[OVX] Quant format %u is not supported!", qtype);
-                break;
-            }
     }
 
     /**
@@ -295,38 +270,17 @@ private:
         switch(qtype){
             case stai_mpu_qtype::STAI_MPU_QTYPE_NONE:
                 break;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_TENSOR:
-                vx_qparams->affine.scale = qparams->affine_per_tensor.scale;
-                vx_qparams->affine.zeroPoint = qparams->affine_per_tensor.zero_point;
+            case stai_mpu_qtype::STAI_MPU_QTYPE_STATIC_AFFINE:
+                vx_qparams->affine.scale = qparams->static_affine.scale;
+                vx_qparams->affine.zeroPoint = qparams->static_affine.zero_point;
                 break;
             case stai_mpu_qtype::STAI_MPU_QTYPE_DYNAMIC_FIXED_POINT:
                 vx_qparams->dfp.fixed_point_pos = qparams->dfp.fixed_point_pos;
                 break;
-            case stai_mpu_qtype::STAI_MPU_QTYPE_AFFINE_PER_CHANNEL:
             default:
                 printf("[OVX] Quant format %u is not supported!", qtype);
                 break;
             }
-    }
-
-    vx_float32 stai_mpu_fp16_to_fp32(const vx_uint16 input_buffer) {
-        vx_uint32 non_sign_bits;
-        vx_uint32 sign_bit;
-        vx_uint32 exponent;
-        vx_float32 output_buffer;
-
-        non_sign_bits = input_buffer & STAI_MPU_NON_SIGN_BITS;       // Non-sign bits
-        sign_bit = input_buffer & STAI_MPU_SIGN_BIT;                 // Sign bit
-        exponent = input_buffer & STAI_MPU_FLOAT_EXPONENT;           // Exponent
-        non_sign_bits <<= 13;                                    // Align mantissa on MSB
-        sign_bit <<= 16;                                         // Shift sign bit into position
-        non_sign_bits += STAI_MPU_FLOAT_BIAS;                        // Adjust bias
-        non_sign_bits  = (exponent == 0 ? 0 : non_sign_bits);    // Denormals-as-zero
-        non_sign_bits |= sign_bit;                               // Re-insert sign bit
-
-        // Type-punning: Reinterpret the bits of non_sign_bits as a float32
-        *((uint32_t*)&output_buffer) = non_sign_bits;
-        return output_buffer;
     }
 
     vx_tensor stai_mpu_create_tensor(vx_context context, const stai_mpu_tensor& tensor_info)
