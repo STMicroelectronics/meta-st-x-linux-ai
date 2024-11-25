@@ -16,6 +16,8 @@ SRC_URI += " file://0003-onnxruntime-test-libcustom-library-remove-relative.patc
 SRC_URI += " file://0004-onnxruntime-fix-incompatibility-with-compiler-GCC12..patch "
 SRC_URI += " file://0009-remove-ENV-variable-that-is-not-usefull.patch "
 SRC_URI += " file://0008-onnxruntime-cmake-change-visibility-compilation-opti.patch "
+SRC_URI += " file://0011-onnxruntime-Split-Pad-and-some-element-wise-OPs-support.patch "
+SRC_URI += " file://0012-onnxruntime-VSINPU-EP-Add-VSINPU-EP-to-support-python-bindings.patch "
 SRC_URI:append:stm32mp2common = " file://0010-fix-uncompatible-cmake-flag-issue.patch"
 SRC_URI:append:stm32mp2common = " file://0007-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 
@@ -145,6 +147,9 @@ do_install() {
 	mkdir -p ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime
 	cp -r    ${B}/onnxruntime ${D}${PYTHON_SITEPACKAGES_DIR}
 
+    # Remove the static library from the Python package installation
+    rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/capi/libonnxruntime_providers_vsinpu.a
+
 	# Install header files
 	install -d ${D}${includedir}/onnxruntime
 	install -d ${D}${includedir}/onnxruntime/core/providers/
@@ -165,6 +170,7 @@ PRIVATE_LIBS = "libonnxruntime_providers_shared.so"
 
 PACKAGES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
 PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
+INSANE_SKIP_${PYTHON_PN}-${PN} += "staticdev"
 
 FILES:${PN} = "${libdir}/pkgconfig/* ${libdir}/libonnxruntime_providers_shared.so ${libdir}/libonnxruntime.so.* ${libdir}/onnxruntime_pybind11_state.so"
 FILES:${PN}-dev = "${libdir}/libonnxruntime.so ${includedir}/*"
