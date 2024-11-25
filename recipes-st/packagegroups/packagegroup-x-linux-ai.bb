@@ -57,15 +57,18 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = " \
 "
 
 SUMMARY:packagegroup-x-linux-ai-npu = "X-LINUX-AI minimum NPU components"
-RDEPENDS:packagegroup-x-linux-ai-npu += "\
-    stai-mpu-ovx              \
-    stai-mpu-tools            \
-    ${PYTHON_PN}-stai-mpu     \
-    tim-vx                    \
-    tim-vx-tools              \
-    nbg-benchmark             \
-    x-linux-ai-tool           \
-    x-linux-ai-benchmark      \
+RDEPENDS:packagegroup-x-linux-ai-npu += " \
+    stai-mpu-ovx                  \
+    stai-mpu-tools                \
+    ${PYTHON_PN}-stai-mpu         \
+    tim-vx                        \
+    tim-vx-tools                  \
+    nbg-benchmark                 \
+    x-linux-ai-tool               \
+    x-linux-ai-benchmark          \
+    tflite-vx-delegate-example    \
+    ort-vsinpu-ep-example-cpp     \
+    ort-vsinpu-ep-example-python  \
 "
 
 RDEPENDS:packagegroup-x-linux-ai-npu:append:stm32mp25common = " stai-mpu-image-classification-cpp-ovx     \
