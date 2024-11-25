@@ -424,20 +424,20 @@ namespace nn_postproc{
 		/* Get output size */
 		std::vector<int> output_shape_0 = output_infos[0].get_shape();
 		stai_mpu_quant_params qparams_output0 =  output_infos[0].get_qparams();
-		float scale_o0 = qparams_output0.affine_per_tensor.scale;
-		int zero_point_o0 = qparams_output0.affine_per_tensor.zero_point;
+		float scale_o0 = qparams_output0.static_affine.scale;
+		int zero_point_o0 = qparams_output0.static_affine.zero_point;
 		std::vector<int> output_shape_1 = output_infos[1].get_shape();
 		stai_mpu_quant_params qparams_output1 =  output_infos[1].get_qparams();
-		float scale_o1 = qparams_output1.affine_per_tensor.scale;
-		int zero_point_o1 = qparams_output1.affine_per_tensor.zero_point;
+		float scale_o1 = qparams_output1.static_affine.scale;
+		int zero_point_o1 = qparams_output1.static_affine.zero_point;
 		std::vector<int> output_shape_2 = output_infos[2].get_shape();
 		stai_mpu_quant_params qparams_output2 =  output_infos[2].get_qparams();
-		float scale_o2 = qparams_output2.affine_per_tensor.scale;
-		int zero_point_o2 = qparams_output2.affine_per_tensor.zero_point;
+		float scale_o2 = qparams_output2.static_affine.scale;
+		int zero_point_o2 = qparams_output2.static_affine.zero_point;
 		std::vector<int> output_shape_3 = output_infos[3].get_shape();
 		stai_mpu_quant_params qparams_output3 =  output_infos[3].get_qparams();
-		float scale_o3 = qparams_output3.affine_per_tensor.scale;
-		int zero_point_o3 = qparams_output3.affine_per_tensor.zero_point;
+		float scale_o3 = qparams_output3.static_affine.scale;
+		int zero_point_o3 = qparams_output3.static_affine.zero_point;
 
 		/* Get backend used */
 		results->ai_backend = nn_model->get_backend_engine();

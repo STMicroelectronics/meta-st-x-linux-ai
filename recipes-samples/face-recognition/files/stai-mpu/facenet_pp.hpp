@@ -94,8 +94,8 @@ namespace nn_postproc_fr{
 		/* Get output size */
 		std::vector<int> output_shape_0 = output_infos[0].get_shape();
 		stai_mpu_quant_params qparams_output0 =  output_infos[0].get_qparams();
-		float scale_o0 = qparams_output0.affine_per_tensor.scale;
-		int zero_point_o0 = qparams_output0.affine_per_tensor.zero_point;
+		float scale_o0 = qparams_output0.static_affine.scale;
+		int zero_point_o0 = qparams_output0.static_affine.zero_point;
 		results->ai_backend = nn_model->get_backend_engine();
 
 		/* Get inference outputs */
