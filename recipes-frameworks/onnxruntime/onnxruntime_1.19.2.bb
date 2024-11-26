@@ -146,6 +146,7 @@ do_install() {
 	# Install the Python package.
 	mkdir -p ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime
 	cp -r    ${B}/onnxruntime ${D}${PYTHON_SITEPACKAGES_DIR}
+	find ${D}${PYTHON_SITEPACKAGES_DIR} -name "libonnx*.so*" -exec rm {} \;
 
     # Remove the static library from the Python package installation
     rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/capi/libonnxruntime_providers_vsinpu.a
@@ -182,4 +183,4 @@ FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
 RDEPENDS:${PN} += " x-linux-ai-benchmark "
 RDEPENDS:${PN}-tools += "onnxruntime"
-RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}-numpy"
+RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}-numpy onnxruntime"
