@@ -1151,14 +1151,18 @@ class Application:
 
                 for i in range(0, key_found):
                     for j in range(0,expected_key):
-                            error_epsilon = 0.02
-                            if abs(self.keypoint_locs[i][0] - float(keypoints_locs_expected[j][0])) <= error_epsilon or \
-                                abs(self.keypoint_locs[i][1] - float(keypoints_locs_expected[j][1])) <= error_epsilon:
+                            error_epsilon = 0.1
+                            x_percent = (self.keypoint_locs[i][0] - float(keypoints_locs_expected[j][0])) / float(keypoints_locs_expected[j][0])
+                            y_percent = (self.keypoint_locs[i][1] - float(keypoints_locs_expected[j][1])) / float(keypoints_locs_expected[j][1])
+                            if abs(x_percent) <= error_epsilon and abs(y_percent) <= error_epsilon:
                                     found = True
                                     if found :
                                         valid_count += 1
                                         found = False
                                         break
+                            elif j>=expected_key-1:
+                              print("No match found for keypoint: %s; %s" % (self.keypoint_locs[i][0], self.keypoint_locs[i][1]))
+                              os._exit(5)
                     print("X values found {}, expected {}".format(self.keypoint_locs[i][0], float(keypoints_locs_expected[j][0])))
                     print("Y values found {}, expected {}".format(self.keypoint_locs[i][1], float(keypoints_locs_expected[j][1])))
 
