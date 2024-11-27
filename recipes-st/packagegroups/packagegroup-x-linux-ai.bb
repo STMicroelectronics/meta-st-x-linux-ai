@@ -33,13 +33,13 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "  \
     tensorflow-lite-tools                    \
     tensorflow-lite                          \
     x-linux-ai-tool                          \
+    x-linux-ai-application                   \
     x-linux-ai-benchmark                     \
     stai-mpu-image-classification-cpp-tfl    \
     stai-mpu-image-classification-python-tfl \
     stai-mpu-object-detection-cpp-tfl        \
     stai-mpu-object-detection-python-tfl     \
 "
-
 SUMMARY:packagegroup-x-linux-ai-onnxruntime = "X-LINUX-AI ONNX Runtime components"
 RDEPENDS:packagegroup-x-linux-ai-onnxruntime = " \
     stai-mpu-ort                             \
@@ -50,6 +50,7 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = " \
     ${PYTHON_PN}-onnxruntime                 \
     x-linux-ai-tool                          \
     x-linux-ai-benchmark                     \
+    x-linux-ai-application                   \
     stai-mpu-image-classification-cpp-ort    \
     stai-mpu-image-classification-python-ort \
     stai-mpu-object-detection-python-ort     \
@@ -66,6 +67,7 @@ RDEPENDS:packagegroup-x-linux-ai-npu += " \
     nbg-benchmark                 \
     x-linux-ai-tool               \
     x-linux-ai-benchmark          \
+    x-linux-ai-application        \
     tflite-vx-delegate-example    \
     ort-vsinpu-ep-example-cpp     \
     ort-vsinpu-ep-example-python  \
