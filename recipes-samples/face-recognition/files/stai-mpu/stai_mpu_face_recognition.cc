@@ -1487,8 +1487,9 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 		/* Still picture use case */
 		if (first_call_overlay){
 			first_call_overlay = false;
-			gui_compute_history_thumbnail_position(data);
+			compute_frame_position(data);
 			initialize_face_database(data);
+			gui_compute_history_thumbnail_position(data);
 			/* add the inference function in idle after the initialization of
 			 * the GUI */
 			g_idle_add((GSourceFunc)infer_new_picture,data);
@@ -1512,9 +1513,11 @@ static gboolean gui_draw_overlay_cb(GtkWidget *widget,
 
 	/* Draw a black transparent banner to display the registered faces */
 	cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.60);
-	cairo_rectangle(cr,
-			data->face_banner.x + data->offset, data->face_banner.y,
-			data->face_banner.width, data->face_banner.height);
+	if (!data->preview_enabled){
+		cairo_rectangle(cr,data->face_banner.x, data->face_banner.y,data->face_banner.width, data->face_banner.height);
+	} else {
+		cairo_rectangle(cr,data->face_banner.x + data->offset, data->face_banner.y,data->face_banner.width, data->face_banner.height);
+	}
 	cairo_fill_preserve(cr);
 	cairo_stroke(cr);
 
