@@ -21,7 +21,7 @@ PV = "2.16.2+git${SRCREV_vx}"
 S = "${WORKDIR}/git_vx"
 COMPATIBLE_MACHINE = "stm32mp25common"
 
-inherit cmake
+inherit cmake python3-dir
 DEPENDS += "tim-vx patchelf-native"
 
 python () {
@@ -78,6 +78,13 @@ FILES:${PN} += " ${libdir}/libvx_delegate.so.${MAJOR} \
 "
 FILES:${PN}-dev += " ${includedir}/VX/vsi_npu_custom_op.h \
                      ${libdir}/libvx_delegate.so \
+"
+
+RDEPENDS:${PN} += " \
+    tensorflow-lite \
+    ${PYTHON_PN}-tensorflow-lite \
+    tensorflow-lite-tools \
+    tim-vx \
 "
 
 INSANE_SKIP:${PN} += "dev-so"

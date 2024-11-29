@@ -40,6 +40,10 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "  \
     stai-mpu-object-detection-cpp-tfl        \
     stai-mpu-object-detection-python-tfl     \
 "
+RDEPENDS:packagegroup-x-linux-ai-tflite:append:stm32mp25common = " tflite-vx-delegate \
+                                                                   tflite-vx-delegate-example \
+                                                                 "
+
 SUMMARY:packagegroup-x-linux-ai-onnxruntime = "X-LINUX-AI ONNX Runtime components"
 RDEPENDS:packagegroup-x-linux-ai-onnxruntime = " \
     stai-mpu-ort                             \
@@ -56,6 +60,10 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = " \
     stai-mpu-object-detection-python-ort     \
     stai-mpu-object-detection-cpp-ort        \
 "
+
+RDEPENDS:packagegroup-x-linux-ai-onnxruntime:append:stm32mp25common = " ort-vsinpu-ep-example-cpp     \
+                                                                        ort-vsinpu-ep-example-python  \
+                                                                      "
 
 SUMMARY:packagegroup-x-linux-ai-npu = "X-LINUX-AI minimum NPU components"
 RDEPENDS:packagegroup-x-linux-ai-npu += " \

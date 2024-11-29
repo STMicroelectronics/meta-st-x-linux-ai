@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM  = "file://tflite-vx-delegate-example/LICENSE;md5=91fc08c2e8dfc
 NO_GENERIC_LICENSE[SLA0044] = "tflite-vx-delegate-example/LICENSE"
 LICENSE:${PN} = "SLA0044"
 
-inherit pkgconfig
+inherit pkgconfig python3-dir
 
 DEPENDS += " tensorflow-lite tflite-vx-delegate"
 
@@ -37,7 +37,7 @@ FILES:${PN} += "${prefix}/local/bin/tflite-vx-delegate-example/ "
 INSANE_SKIP:${PN} = "ldflags"
 
 RDEPENDS:${PN} += " \
-    tensorflow-lite \
     tflite-vx-delegate \
     img-models-mobilenetv2-10-224 \
+    ${PYTHON_PN}-numpy \
 "

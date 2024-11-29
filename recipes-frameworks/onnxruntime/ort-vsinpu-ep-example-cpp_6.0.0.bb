@@ -37,5 +37,6 @@ INSANE_SKIP:${PN} = "ldflags"
 
 RDEPENDS:${PN} += " \
     onnxruntime \
+    onnxruntime-tools \
     img-models-mobilenetv1-05-128 \
 "
