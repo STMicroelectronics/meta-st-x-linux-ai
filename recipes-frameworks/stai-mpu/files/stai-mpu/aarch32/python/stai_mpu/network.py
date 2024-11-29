@@ -24,7 +24,7 @@ class stai_mpu_tensor:
     fixed_point_pos: int = ...
 
 class stai_mpu_network:
-    def __init__(self, model_path: Path, use_hw_acceleration: bool) -> None:
+    def __init__(self, model_path: Path, use_hw_acceleration: bool = True) -> None:
         self._exec = _binding.stai_mpu_network(model_path, use_hw_acceleration)
 
     def get_num_inputs(self) -> int:
