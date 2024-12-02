@@ -22,6 +22,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <regex>
 #include <array>
 #include <stdexcept>
 
@@ -189,17 +190,22 @@ void manage_pkgs(int argc, char** argv, bool install = true) {
     }
 }
 
-std::string exec_command(const char* cmd) {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+std::string _get_x_pkg_path(const std::string& pattern, const std::vector<std::string>& directories) {
+    std::regex regexPattern(pattern);
+
+    for (const auto& dir : directories) {
+        if (std::filesystem::exists(dir) && std::filesystem::is_directory(dir)) {
+            for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+                if (entry.is_regular_file()) {
+                    std::string filename = entry.path().filename().string();
+                    if (std::regex_search(filename, regexPattern)) {
+                        return entry.path().string();
+                    }
+                }
+            }
+        }
     }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
-    return result;
+    return "";
 }
 
 /// Main function ///
@@ -208,13 +214,19 @@ int main(int argc, char *argv[])
     process_args(argc, argv);
 
     if (list) {
-        std::string command = "ls /var/lib/apt/lists/*_AI_*_main_*";
-        std::string ostl_pkg_path = "/var/lib/dpkg/status";
-        std::string x_pkg_path = exec_command(command.c_str());
+        std::vector<std::string> directories = {
+            "/var/lib/apt/lists/",
+            "/var/lib/apt/lists/auxfiles/"
+        };
 
-        if (!x_pkg_path.empty() && x_pkg_path.back() == '\n') {
-            x_pkg_path.pop_back();
+        std::string pattern = ".*_AI_.*_main_.*";
+        std::string x_pkg_path = _get_x_pkg_path(pattern, directories);
+        if (x_pkg_path.empty()) {
+            std::cout << "list of AI packages not found." << std::endl;
+            return -1;
         }
+        /* Get ostl installed packages */
+        std::string ostl_pkg_path = "/var/lib/dpkg/status";
         print_pkgs(ostl_pkg_path, x_pkg_path);
     }
     else if (to_install && argc == 3) {
