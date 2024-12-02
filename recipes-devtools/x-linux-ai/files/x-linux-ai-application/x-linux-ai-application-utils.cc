@@ -24,7 +24,6 @@ Application::~Application(){}
 
 /* Global variables */
 std::string Application::dirPath = "/usr/local/x-linux-ai";
-std::string Application::xAppFilePath = "ls /var/lib/apt/lists/*_AI_*_main_*";
 std::string Application::ostlAppFilePath = "ls /var/lib/dpkg/status";
 
 /* Model type map, for complete and short names*/
@@ -44,6 +43,24 @@ std::map<std::string, std::string> Application::modelTypeList = {
 };
 std::set<std::string> Application::fileLanguageList = {"cpp", "python"};
 #endif
+
+std::string Application::get_x_pkg_path(const std::string& pattern, const std::vector<std::string>& directories) {
+    std::regex regexPattern(pattern);
+
+    for (const auto& dir : directories) {
+        if (std::filesystem::exists(dir) && std::filesystem::is_directory(dir)) {
+            for (const auto& entry : std::filesystem::directory_iterator(dir)) {
+                if (entry.is_regular_file()) {
+                    std::string filename = entry.path().filename().string();
+                    if (std::regex_search(filename, regexPattern)) {
+                        return entry.path().string();
+                    }
+                }
+            }
+        }
+    }
+    return "";
+}
 
 std::string Application::exCommand(const char *cmd)
 {

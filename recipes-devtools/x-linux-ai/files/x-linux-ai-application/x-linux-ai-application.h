@@ -53,6 +53,11 @@ public:
     ~Application();
 
     /**
+     * @brief Recover x-linux-ai package list.
+     */
+    static std::string get_x_pkg_path(const std::string& pattern, const std::vector<std::string>& directories);
+
+    /**
      * @brief Executes a shell command and captures its output.
      *
      * This function uses `popen` to execute a shell command and reads the command's

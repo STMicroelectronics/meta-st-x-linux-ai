@@ -86,7 +86,21 @@ int main(int argc, char* argv[]) {
     }
 
     Application XLinuxAI;
-    std::set<std::string> xAppList = XLinuxAI.getAiApplicationList(Application::xAppFilePath);
+
+    // recover x-linux-ai package list depending on the directory used
+    std::vector<std::string> directories = {
+        "/var/lib/apt/lists/",
+        "/var/lib/apt/lists/auxfiles/"
+    };
+
+    std::string pattern = ".*_AI_.*_main_.*";
+    std::string x_pkg_path = XLinuxAI.get_x_pkg_path(pattern, directories);
+    if (x_pkg_path.empty()) {
+        std::cout << "list of AI packages not found." << std::endl;
+        return -1;
+    }
+    std::string xAppFilePath = "ls " + x_pkg_path;
+    std::set<std::string> xAppList = XLinuxAI.getAiApplicationList(xAppFilePath);
     std::set<std::string> ostlAppList = XLinuxAI.getAiApplicationList(Application::ostlAppFilePath);
     std::set<std::string> installedAppList = XLinuxAI.getInstalledAiApplicationList(xAppList, ostlAppList);
     std::set<std::string> notInstalledAppList = XLinuxAI.getNotInstalledAiApplicationList(xAppList, ostlAppList);
