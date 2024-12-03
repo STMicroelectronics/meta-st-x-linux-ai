@@ -19,7 +19,7 @@ inherit allarch
 S = "${WORKDIR}"
 
 RDEPENDS:${PN} = " \
-    apt-openstlinux (>= 5.1-r0) \
+    apt-openstlinux (>= 6.0-r0) \
     apt-openstlinux (< 6.1) \
 "
 
