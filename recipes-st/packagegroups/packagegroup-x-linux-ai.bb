@@ -42,6 +42,7 @@ RDEPENDS:packagegroup-x-linux-ai-tflite = "  \
 "
 RDEPENDS:packagegroup-x-linux-ai-tflite:append:stm32mp25common = " tflite-vx-delegate \
                                                                    tflite-vx-delegate-example \
+                                                                   tim-vx-tools \
                                                                  "
 
 SUMMARY:packagegroup-x-linux-ai-onnxruntime = "X-LINUX-AI ONNX Runtime components"
@@ -63,6 +64,7 @@ RDEPENDS:packagegroup-x-linux-ai-onnxruntime = " \
 
 RDEPENDS:packagegroup-x-linux-ai-onnxruntime:append:stm32mp25common = " ort-vsinpu-ep-example-cpp     \
                                                                         ort-vsinpu-ep-example-python  \
+                                                                        tim-vx-tools  \
                                                                       "
 
 SUMMARY:packagegroup-x-linux-ai-npu = "X-LINUX-AI minimum NPU components"

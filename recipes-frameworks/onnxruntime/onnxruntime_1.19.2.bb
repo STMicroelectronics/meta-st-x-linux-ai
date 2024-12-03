@@ -181,6 +181,7 @@ FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/*"
 
 # onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
+RDEPENDS:${PN}-unit-tests:append:stm32mp25common = " tim-vx-tools "
 RDEPENDS:${PN} += " x-linux-ai-benchmark "
 RDEPENDS:${PN}-tools += "onnxruntime"
 RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}-numpy onnxruntime"
