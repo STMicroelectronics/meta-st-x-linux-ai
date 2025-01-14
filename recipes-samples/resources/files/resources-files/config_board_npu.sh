@@ -41,6 +41,7 @@ else
 fi
 
 if [[ "$COMPATIBLE" == *"$STM32MP257"* ]] || [[ "$COMPATIBLE" == *"$STM32MP255"* ]] || [[ "$COMPATIBLE" == *"$STM32MP235"* ]]; then
+  CAMERA_SRC="LIBCAMERA"
   SEMANTIC_SEGMENTATION_MODEL="deeplabv3/deeplabv3_257_int8_per_tensor$NN_EXT"
   SEMANTIC_SEGMENTATION_LABEL="deeplabv3/labels_pascalvoc"
   SEMANTIC_SEGMENTATION_DATA="deeplabv3/testdata/"

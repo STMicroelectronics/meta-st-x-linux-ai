@@ -34,16 +34,11 @@ do_install() {
 
 	# install all OD resources
 	install -m 0644 ${S}/resources-files/OD_*.png 					${D}${prefix}/local/x-linux-ai/resources
-
-	# install all FR resources
-	install -m 0644 ${S}/resources-files/FR_*.png 					${D}${prefix}/local/x-linux-ai/resources
-
 }
 
 do_install:append:stm32mp2common(){
 	# overwrite camera setup script for stm32mp2x
     install -m 0755 ${S}/resources-files/check_camera_preview_main_isp.sh     ${D}${prefix}/local/x-linux-ai/resources/check_camera_preview.sh
-    install -m 0755 ${S}/resources-files/setup_camera_main_isp.sh             ${D}${prefix}/local/x-linux-ai/resources/setup_camera.sh
 
 	# install all stai resources for OVX logos
 	install -m 0644 ${S}/resources-files/stai_mpu_ovx*.png 				      ${D}${prefix}/local/x-linux-ai/resources
@@ -53,6 +48,9 @@ do_install:append:stm32mp2common(){
 
 	# install all POSE ESTIMATION resources
 	install -m 0644 ${S}/resources-files/PE_*.png 							  ${D}${prefix}/local/x-linux-ai/resources
+
+	# install all FR resources
+	install -m 0644 ${S}/resources-files/FR_*.png 					          ${D}${prefix}/local/x-linux-ai/resources
 }
 
 FILES:${PN} += "${prefix}/local/"

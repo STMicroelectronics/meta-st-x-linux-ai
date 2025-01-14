@@ -12,7 +12,7 @@ FRAMEWORK=$1
 echo "stai_mpu wrapper used : "$FRAMEWORK
 CONFIG=$(find /usr/local/x-linux-ai -name "config_board_*.sh")
 source $CONFIG
-cmd="/usr/local/x-linux-ai/object-detection/stai_mpu_object_detection.py -m /usr/local/x-linux-ai/object-detection/models/$OBJ_DETEC_MODEL -l /usr/local/x-linux-ai/object-detection/models/$OBJ_DETEC_MODEL_LABEL.txt --framerate $DFPS --frame_width $DWIDTH --frame_height $DHEIGHT $OPTIONS"
+cmd="/usr/local/x-linux-ai/object-detection/stai_mpu_object_detection.py -m /usr/local/x-linux-ai/object-detection/models/$OBJ_DETEC_MODEL -l /usr/local/x-linux-ai/object-detection/models/$OBJ_DETEC_MODEL_LABEL.txt --framerate $DFPS --frame_width $DWIDTH --frame_height $DHEIGHT --camera_src $CAMERA_SRC"
 
 if [ "$weston_user" != "root" ]; then
 	echo "user : "$weston_user

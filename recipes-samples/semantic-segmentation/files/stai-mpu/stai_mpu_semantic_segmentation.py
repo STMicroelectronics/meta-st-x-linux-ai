@@ -61,233 +61,107 @@ class GstWidget(Gtk.Box):
          self.isp_first_config = True
 
     def _on_realize(self, widget):
-        if(args.dual_camera_pipeline):
-            self.camera_pipeline_preview_creation()
-            self.nn_pipeline_creation()
+        if(args.camera_src == "LIBCAMERA"):
+            self.camera_dual_pipeline_creation()
             self.pipeline_preview.set_state(Gst.State.PLAYING)
-            self.pipeline_nn.set_state(Gst.State.PLAYING)
-        else :
-            self.camera_pipeline_creation()
+        else:
+            print("Camera source used not supported use LIBCAMERA \n")
 
-    def camera_pipeline_creation(self):
+    def camera_dual_pipeline_creation(self):
         """
-        Creation of the gstreamer pipeline when gstwidget is created dedicated to handle
-        camera stream and NN inference (mode single pipeline)
+        creation of the gstreamer pipeline when gstwidget is created dedicated to camera stream
+        (in dual camera pipeline mode)
         """
         # gstreamer pipeline creation
-        self.pipeline_preview = Gst.Pipeline()
+        self.pipeline_preview = Gst.Pipeline.new("Semantic Segmentation")
 
-        # creation of the source v4l2src
-        self.v4lsrc1 = Gst.ElementFactory.make("v4l2src", "source")
-        video_device = "/dev/" + str(self.app.video_device_prev)
-        self.v4lsrc1.set_property("device", video_device)
+        # creation of the source element
+        self.libcamerasrc = Gst.ElementFactory.make("libcamerasrc", "libcamera")
+        if not self.libcamerasrc:
+            raise Exception("Could not create Gstreamer camera source element")
 
-        #creation of the v4l2src caps
-        caps = str(self.app.camera_caps_prev) + ", framerate=" + str(args.framerate)+ "/1"
-        print("Camera pipeline configuration : ",caps)
-        camera1caps = Gst.Caps.from_string(caps)
-        self.camerafilter1 = Gst.ElementFactory.make("capsfilter", "filter1")
-        self.camerafilter1.set_property("caps", camera1caps)
+        # creation of the libcamerasrc caps for the pipelines for camera
+        caps = "video/x-raw,width=" + str(self.app.frame_width) + ",height=" + str(self.app.frame_height) + ",format=RGB16"
+        print("Main pipe configuration: ", caps)
+        caps_src = Gst.Caps.from_string(caps)
 
-        # creation of the videoconvert elements
-        self.videoformatconverter1 = Gst.ElementFactory.make("videoconvert", "video_convert1")
-        self.videoformatconverter2 = Gst.ElementFactory.make("videoconvert", "video_convert2")
+        # creation of the libcamerasrc caps for the pipelines for nn
+        caps = "video/x-raw,width=" + str(self.app.nn_input_width) + ",height=" + str(self.app.nn_input_height) + ",format=RGB"
+        print("Aux pipe configuration:  ", caps)
+        caps_src0 = Gst.Caps.from_string(caps)
 
-        self.tee = Gst.ElementFactory.make("tee", "tee")
-
-        # creation and configuration of the queue elements
-        self.queue1 = Gst.ElementFactory.make("queue", "queue-1")
-        self.queue2 = Gst.ElementFactory.make("queue", "queue-2")
-        self.queue1.set_property("max-size-buffers", 1)
-        self.queue1.set_property("leaky", 2)
-        self.queue2.set_property("max-size-buffers", 1)
-        self.queue2.set_property("leaky", 2)
-
-        # creation and configuration of the appsink element
-        self.appsink = Gst.ElementFactory.make("appsink", "appsink")
-        nn_caps = "video/x-raw, format = RGB, width=" + str(self.app.nn_input_width) + ",height=" + str(self.app.nn_input_height)
-        nncaps = Gst.Caps.from_string(nn_caps)
-        self.appsink.set_property("caps", nncaps)
-        self.appsink.set_property("emit-signals", True)
-        self.appsink.set_property("sync", False)
-        self.appsink.set_property("max-buffers", 1)
-        self.appsink.set_property("drop", True)
-        self.appsink.connect("new-sample", self.new_sample)
+        # creation of the queues elements
+        queue  = Gst.ElementFactory.make("queue", "queue")
+        # Only one buffer in the queue0 to get 30fps on the display preview pipeline
+        queue0 = Gst.ElementFactory.make("queue", "queue0")
+        queue0.set_property("leaky", 2)  # 0: no leak, 1: upstream (oldest), 2: downstream (newest)
+        queue0.set_property("max-size-buffers", 1)  # Maximum number of buffers in the queue
 
         # creation of the gtkwaylandsink element to handle the gestreamer video stream
-        self.gtkwaylandsink = Gst.ElementFactory.make("gtkwaylandsink")
-        self.pack_start(self.gtkwaylandsink.props.widget, True, True, 0)
-        self.gtkwaylandsink.props.widget.show()
+        gtkwaylandsink = Gst.ElementFactory.make("gtkwaylandsink")
+        self.pack_start(gtkwaylandsink.props.widget, True, True, 0)
+        gtkwaylandsink.props.widget.show()
 
         # creation and configuration of the fpsdisplaysink element to measure display fps
-        self.fps_disp_sink = Gst.ElementFactory.make("fpsdisplaysink", "fpsmeasure1")
-        self.fps_disp_sink.set_property("signal-fps-measurements", True)
-        self.fps_disp_sink.set_property("fps-update-interval", 2000)
-        self.fps_disp_sink.set_property("text-overlay", False)
-        self.fps_disp_sink.set_property("video-sink", self.gtkwaylandsink)
-        self.fps_disp_sink.connect("fps-measurements",self.get_fps_display)
-
-        # creation of the video rate and video scale elements
-        self.video_rate = Gst.ElementFactory.make("videorate", "video-rate")
-        self.video_scale = Gst.ElementFactory.make("videoscale", "video-scale")
-
-        # Add all elements to the pipeline
-        self.pipeline_preview.add(self.v4lsrc1)
-        self.pipeline_preview.add(self.camerafilter1)
-        self.pipeline_preview.add(self.videoformatconverter1)
-        self.pipeline_preview.add(self.videoformatconverter2)
-        self.pipeline_preview.add(self.tee)
-        self.pipeline_preview.add(self.queue1)
-        self.pipeline_preview.add(self.queue2)
-        self.pipeline_preview.add(self.appsink)
-        self.pipeline_preview.add(self.fps_disp_sink)
-        self.pipeline_preview.add(self.video_rate)
-        self.pipeline_preview.add(self.video_scale)
-
-        # linking elements together
-        #                              -> queue 1 -> videoconvert -> fpsdisplaysink
-        # v4l2src -> video rate -> tee
-        #                              -> queue 2 -> videoconvert -> video scale -> appsink
-        self.v4lsrc1.link(self.video_rate)
-        self.video_rate.link(self.camerafilter1)
-        self.camerafilter1.link(self.tee)
-        self.queue1.link(self.videoformatconverter1)
-        self.videoformatconverter1.link(self.fps_disp_sink)
-        self.queue2.link(self.videoformatconverter2)
-        self.videoformatconverter2.link(self.video_scale)
-        self.video_scale.link(self.appsink)
-        self.tee.link(self.queue1)
-        self.tee.link(self.queue2)
-
-        # set pipeline playing mode
-        self.pipeline_preview.set_state(Gst.State.PLAYING)
-        # getting pipeline bus
-        self.bus_preview = self.pipeline_preview.get_bus()
-        self.bus_preview.add_signal_watch()
-        self.bus_preview.connect('message::error', self.msg_error_cb)
-        self.bus_preview.connect('message::eos', self.msg_eos_cb)
-        self.bus_preview.connect('message::info', self.msg_info_cb)
-        self.bus_preview.connect('message::application', self.msg_application_cb)
-        self.bus_preview.connect('message::state-changed', self.msg_state_changed_cb)
-        return True
-
-    def camera_pipeline_preview_creation(self):
-        """
-        Creation of the gstreamer pipeline when gstwidget is created dedicated to camera stream
-        (in dual camera pipeline mode)
-        """
-        # gstreamer pipeline creation
-        self.pipeline_preview = Gst.Pipeline()
-
-        # creation of the source v4l2src for preview
-        self.v4lsrc_preview = Gst.ElementFactory.make("v4l2src", "source_prev")
-        video_device_preview = "/dev/" + str(self.app.video_device_prev)
-        self.v4lsrc_preview.set_property("device", video_device_preview)
-        print("device used for preview : ",video_device_preview)
-
-        #creation of the v4l2src caps for preview
-        caps_prev = str(self.app.camera_caps_prev)
-        print("Camera pipeline preview configuration : ",caps_prev)
-        camera1caps_prev = Gst.Caps.from_string(caps_prev)
-        self.camerafilter_prev = Gst.ElementFactory.make("capsfilter", "filter_preview")
-        self.camerafilter_prev.set_property("caps", camera1caps_prev)
-
-        # creation and configuration of the queue elements
-        self.queue_prev = Gst.ElementFactory.make("queue", "queue-prev")
-        self.queue_prev.set_property("max-size-buffers", 1)
-        self.queue_prev.set_property("leaky", 2)
-
-        # creation of the gtkwaylandsink element to handle the gstreamer video stream
-        properties_names=["drm-device"]
-        properties_values=[" "]
-        self.gtkwaylandsink = Gst.ElementFactory.make_with_properties("gtkwaylandsink",properties_names,properties_values)
-        self.pack_start(self.gtkwaylandsink.props.widget, True, True, 0)
-        self.gtkwaylandsink.props.widget.show()
-
-        # creation and configuration of the fpsdisplaysink element to measure display fps
-        self.fps_disp_sink = Gst.ElementFactory.make("fpsdisplaysink", "fpsmeasure1")
-        self.fps_disp_sink.set_property("signal-fps-measurements", True)
-        self.fps_disp_sink.set_property("fps-update-interval", 2000)
-        self.fps_disp_sink.set_property("text-overlay", False)
-        self.fps_disp_sink.set_property("video-sink", self.gtkwaylandsink)
-        self.fps_disp_sink.connect("fps-measurements",self.get_fps_display)
-
-        # Add all elements to the pipeline
-        self.pipeline_preview.add(self.v4lsrc_preview)
-        self.pipeline_preview.add(self.camerafilter_prev)
-        self.pipeline_preview.add(self.queue_prev)
-        self.pipeline_preview.add(self.fps_disp_sink)
-
-        # linking elements together
-        self.v4lsrc_preview.link(self.camerafilter_prev)
-        self.camerafilter_prev.link(self.queue_prev)
-        self.queue_prev.link(self.fps_disp_sink)
-
-        # self.setup_nn_pipeline()
-        # set pipeline playing mode
-        # self.pipeline_preview.set_state(Gst.State.PLAYING)
-        # set pipeline playing mode
-        # self.pipeline_nn.set_state(Gst.State.PLAYING)
-        self.bus_preview = self.pipeline_preview.get_bus()
-        self.bus_preview.add_signal_watch()
-        self.bus_preview.connect('message::error', self.msg_error_cb)
-        self.bus_preview.connect('message::eos', self.msg_eos_cb)
-        self.bus_preview.connect('message::info', self.msg_info_cb)
-        self.bus_preview.connect('message::state-changed', self.msg_state_changed_cb)
-        return True
-
-    def nn_pipeline_creation(self):
-        """
-        Creation of the gstreamer pipeline when gstwidget is created dedicated to NN model inference
-        (in dual camera pipeline mode)
-        """
-        self.pipeline_nn = Gst.Pipeline()
-
-        # creation of the source v4l2src for nn
-        self.v4lsrc_nn = Gst.ElementFactory.make("v4l2src", "source_nn")
-        video_device_nn = "/dev/" + str(self.app.video_device_nn)
-        self.v4lsrc_nn.set_property("device", video_device_nn)
-        print("device used as input of the NN : ",video_device_nn)
-
-        caps_nn_rq = str(self.app.camera_caps_nn)
-        print("Camera pipeline nn requested configuration : ",caps_nn_rq)
-        camera1caps_nn_rq = Gst.Caps.from_string(caps_nn_rq)
-        self.camerafilter_nn_rq = Gst.ElementFactory.make("capsfilter", "filter_nn_requested")
-        self.camerafilter_nn_rq.set_property("caps", camera1caps_nn_rq)
-
-        # creation and configuration of the queue elements
-        self.queue_nn = Gst.ElementFactory.make("queue", "queue-nn")
-        self.queue_nn.set_property("max-size-buffers", 1)
-        self.queue_nn.set_property("leaky", 2)
+        fpsdisplaysink = Gst.ElementFactory.make("fpsdisplaysink", "fpsmeasure")
+        fpsdisplaysink.set_property("signal-fps-measurements", True)
+        fpsdisplaysink.set_property("fps-update-interval", 2000)
+        fpsdisplaysink.set_property("text-overlay", False)
+        fpsdisplaysink.set_property("video-sink", gtkwaylandsink)
+        fpsdisplaysink.connect("fps-measurements",self.get_fps_display)
 
         # creation and configuration of the appsink element
         self.appsink = Gst.ElementFactory.make("appsink", "appsink")
-        self.appsink.set_property("caps", camera1caps_nn_rq)
         self.appsink.set_property("emit-signals", True)
         self.appsink.set_property("sync", False)
         self.appsink.set_property("max-buffers", 1)
         self.appsink.set_property("drop", True)
         self.appsink.connect("new-sample", self.new_sample)
 
-        # Add all elements to the pipeline
-        self.pipeline_nn.add(self.v4lsrc_nn)
-        self.pipeline_nn.add(self.camerafilter_nn_rq)
-        self.pipeline_nn.add(self.queue_nn)
-        self.pipeline_nn.add(self.appsink)
+        # check if all elements were created
+        if not all([self.pipeline_preview, self.libcamerasrc, queue, queue0, fpsdisplaysink, gtkwaylandsink, self.appsink]):
+            print("Not all elements could be created. Exiting.")
+            return False
+
+        # add all elements to the pipeline
+        self.pipeline_preview.add(self.libcamerasrc)
+        self.pipeline_preview.add(queue)
+        self.pipeline_preview.add(queue0)
+        self.pipeline_preview.add(fpsdisplaysink)
+        self.pipeline_preview.add(self.appsink)
 
         # linking elements together
-        self.v4lsrc_nn.link(self.camerafilter_nn_rq)
-        self.camerafilter_nn_rq.link(self.queue_nn)
-        self.queue_nn.link(self.appsink)
+        #
+        #              | src   --> queue  [caps_src]  --> fpsdisplaysink (connected to gtkwaylandsink)
+        # libcamerasrc |
+        #              | src_0 --> queue0 [caps_src0] --> appsink
+        #
+        queue.link_filtered(fpsdisplaysink, caps_src)
+        queue0.link_filtered(self.appsink, caps_src0)
+
+        src_pad = self.libcamerasrc.get_static_pad("src")
+        src_request_pad_template = self.libcamerasrc.get_pad_template("src_%u")
+        src_request_pad0 = self.libcamerasrc.request_pad(src_request_pad_template, None, None)
+        queue_sink_pad = queue.get_static_pad("sink")
+        queue0_sink_pad = queue0.get_static_pad("sink")
+
+        # view-finder
+        src_pad.set_property("stream-role", 3)
+        # still-capture
+        src_request_pad0.set_property("stream-role", 1)
+
+        src_pad.link(queue_sink_pad)
+        src_request_pad0.link(queue0_sink_pad)
 
         # getting pipeline bus
-        self.bus_nn = self.pipeline_nn.get_bus()
-        self.bus_nn.add_signal_watch()
-        self.bus_nn.connect('message::error', self.msg_error_cb)
-        self.bus_nn.connect('message::eos', self.msg_eos_cb)
-        self.bus_nn.connect('message::info', self.msg_info_cb)
-        self.bus_nn.connect('message::application', self.msg_application_cb)
-        self.bus_nn.connect('message::state-changed', self.msg_state_changed_cb)
+        self.bus_pipeline = self.pipeline_preview.get_bus()
+        self.bus_pipeline.add_signal_watch()
+        self.bus_pipeline.connect('message::error', self.msg_error_cb)
+        self.bus_pipeline.connect('message::eos', self.msg_eos_cb)
+        self.bus_pipeline.connect('message::info', self.msg_info_cb)
+        self.bus_pipeline.connect('message::state-changed', self.msg_state_changed_cb)
+        self.bus_pipeline.connect('message::application', self.msg_application_cb)
+
         return True
 
     def msg_eos_cb(self, bus, message):
@@ -324,34 +198,6 @@ class GstWidget(Gtk.Box):
             self.app.draw_inference = True
             self.app.update_ui()
 
-    def update_isp_config(self):
-        """
-        Update internal ISP configuration to make the most of the camera sensor
-        """
-        isp_file =  "/usr/local/demo/bin/dcmipp-isp-ctrl"
-        if(args.dual_camera_pipeline):
-            isp_config_gamma_0 = "v4l2-ctl -d " + self.app.aux_postproc + " -c gamma_correction=0"
-            isp_config_gamma_1 = "v4l2-ctl -d " + self.app.aux_postproc + " -c gamma_correction=1"
-        else :
-            isp_config_gamma_0 = "v4l2-ctl -d " + self.app.main_postproc + " -c gamma_correction=0"
-            isp_config_gamma_1 = "v4l2-ctl -d " + self.app.main_postproc + " -c gamma_correction=1"
-
-        isp_config_whiteb = isp_file +  " -i0 "
-        isp_config_autoexposure = isp_file + " -g > /dev/null"
-
-        if os.path.exists(isp_file) and self.app.dcmipp_sensor=="imx335" and self.isp_first_config :
-            subprocess.run(isp_config_gamma_0,shell=True)
-            subprocess.run(isp_config_gamma_1,shell=True)
-            subprocess.run(isp_config_whiteb,shell=True)
-            subprocess.run(isp_config_autoexposure,shell=True)
-            self.isp_first_config = False
-
-        if self.cpt_frame == 0 and os.path.exists(isp_file) and self.app.dcmipp_sensor=="imx335" :
-            subprocess.run(isp_config_whiteb,shell=True)
-            subprocess.run(isp_config_autoexposure,shell=True)
-
-        return True
-
     def gst_to_opencv(self,sample):
         """
         conversion of the gstreamer frame buffer into numpy array
@@ -367,7 +213,8 @@ class GstWidget(Gtk.Box):
         number_of_column = caps.get_structure(0).get_value('width')
         number_of_lines = caps.get_structure(0).get_value('height')
         channels = 3
-        strides = (772,3,1)
+        #strides 772 with v4l2src and 816 with libcamera
+        strides = (816,3,1)
         arr = np.ndarray(
             (number_of_lines,
              number_of_column,
@@ -387,10 +234,6 @@ class GstWidget(Gtk.Box):
         if(args.debug):
             cv2.imwrite("/home/weston/NN_cv_sample_dump.png",arr)
         self.last_picture = arr.copy()
-        self.cpt_frame += 1
-        if self.cpt_frame == 60:
-            self.cpt_frame = 0
-            self.update_isp_config()
         if (args.validation):
             if (arr is not None):
                 start_time = timer()
@@ -401,10 +244,7 @@ class GstWidget(Gtk.Box):
                 self.app.unique_label, self.app.nn_seg_map = self.app.nn.get_results()
                 struc = Gst.Structure.new_empty("inference-done")
                 msg = Gst.Message.new_application(None, struc)
-                if (args.dual_camera_pipeline):
-                    self.bus_nn.post(msg)
-                else:
-                    self.bus_preview.post(msg)
+                self.bus_pipeline.post(msg)
         return Gst.FlowReturn.OK
 
     def get_fps_display(self,fpsdisplaysink,fps,droprate,avgfps):
@@ -961,6 +801,11 @@ class Application:
         self.window_height = 0
         self.get_display_resolution()
 
+        #preview dimensions and fps
+        self.frame_width = args.frame_width
+        self.frame_height = args.frame_height
+        self.framerate = args.framerate
+
         #instantiate the Neural Network class
         self.nn = NeuralNetwork(args.model_file, args.label_file, float(args.input_mean), float(args.input_std))
         self.shape = self.nn.get_img_size()
@@ -982,10 +827,6 @@ class Application:
             if check_camera.returncode==1:
                 print("no camera connected")
                 exit(1)
-            if(args.dual_camera_pipeline):
-                self.video_device_prev,self.camera_caps_prev,self.video_device_nn,self.camera_caps_nn,self.dcmipp_sensor, self.aux_postproc = self.setup_camera()
-            else:
-                self.video_device_prev,self.camera_caps_prev,self.dcmipp_sensor, self.main_postproc = self.setup_camera()
         else:
             print("still picture mode activate")
             self.enable_camera_preview = False
@@ -1038,44 +879,6 @@ class Application:
         self.window_width = int(display_width)
         self.window_height = int(display_height)
         return 0
-
-    def setup_camera(self):
-        """
-        Used to configure the camera based on resolution passed as application arguments
-        """
-        width = str(args.frame_width)
-        height = str(args.frame_height)
-        framerate = str(args.framerate)
-        device = str(args.video_device)
-        nn_input_width = str(self.nn_input_width)
-        nn_input_height = str(self.nn_input_height)
-        if (args.dual_camera_pipeline):
-            config_camera = RESOURCES_DIRECTORY + "setup_camera.sh " + width + " " + height + " " + framerate + " " + nn_input_width + " " + nn_input_height + " " + device
-        else:
-            config_camera = RESOURCES_DIRECTORY + "setup_camera.sh " + width + " " + height + " " + framerate + " " + device
-        x = subprocess.check_output(config_camera,shell=True)
-        x = x.decode("utf-8")
-        print(x)
-        x = x.split("\n")
-        for i in x :
-            if "V4L_DEVICE_PREV" in i:
-                video_device_prev = i.lstrip('V4L_DEVICE_PREV=')
-            if "V4L2_CAPS_PREV" in i:
-                camera_caps_prev = i.lstrip('V4L2_CAPS_PREV=')
-            if "V4L_DEVICE_NN" in i:
-                video_device_nn = i.lstrip('V4L_DEVICE_NN=')
-            if "V4L2_CAPS_NN" in i:
-                camera_caps_nn = i.lstrip('V4L2_CAPS_NN=')
-            if "DCMIPP_SENSOR" in i:
-                dcmipp_sensor = i.lstrip('DCMIPP_SENSOR=')
-            if "MAIN_POSTPROC" in i:
-                main_postproc = i.lstrip('MAIN_POSTPROC=')
-            if "AUX_POSTPROC" in i:
-                aux_postproc = i.lstrip('AUX_POSTPROC=')
-        if (args.dual_camera_pipeline):
-            return video_device_prev, camera_caps_prev,video_device_nn,camera_caps_nn, dcmipp_sensor, aux_postproc
-        else:
-            return video_device_prev, camera_caps_prev, dcmipp_sensor, main_postproc
 
     def valid_timeout_callback(self):
         """
@@ -1379,7 +1182,7 @@ if __name__ == '__main__':
     parser.add_argument("--input_std", default=127.5, help="input standard deviation")
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
     parser.add_argument("--val_run", default=50, help="set the number of draws in the validation mode")
-    parser.add_argument("--dual_camera_pipeline", default=False, action='store_true', help=argparse.SUPPRESS)
+    parser.add_argument("--camera_src", default="LIBCAMERA", help="use V4L2SRC for MP1x and LIBCAMERA for MP2x")
     parser.add_argument("--debug", default=False, action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
 

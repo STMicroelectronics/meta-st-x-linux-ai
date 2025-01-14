@@ -29,6 +29,7 @@ else
 fi
 
 if [[ "$COMPATIBLE" == *"$STM32MP135"* ]]; then
+  CAMERA_SRC="V4L2SRC"
   MACHINE=$STM32MP135
   DWIDTH=320
   DHEIGHT=240
@@ -43,6 +44,7 @@ if [[ "$COMPATIBLE" == *"$STM32MP135"* ]]; then
 fi
 
 if [[ "$COMPATIBLE" == *"$STM32MP157"* ]]; then
+  CAMERA_SRC="V4L2SRC"
   if [[ "$COMPATIBLE" == *"$STM32MP157FEV1"* ]]; then
     MACHINE=$STM32MP157FEV1
     DWIDTH=320
@@ -72,6 +74,7 @@ fi
 
 
 if [[ "$COMPATIBLE" == *"$STM32MP2"* ]]; then
+  CAMERA_SRC="LIBCAMERA"
   MACHINE=$STM32MP2_CPU
   DWIDTH=760
   DHEIGHT=568
