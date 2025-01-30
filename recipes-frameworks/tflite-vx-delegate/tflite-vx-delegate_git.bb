@@ -4,7 +4,7 @@ LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=7d6260e4f3f6f85de05af9c8f87e6fb5"
 
 SRCBRANCH_vx = "main"
-SRCREV_vx = "35049c9e4088480558c35bbae976a1d43d96afee"
+SRCREV_vx = "3f4759e07221e6b90bd82989b65febdaaf9ec0ea"
 
 SRCBRANCH_tf = "r2.16"
 SRCREV_tf = "810f233968cec850915324948bbbc338c97cf57f"
@@ -14,7 +14,6 @@ SRCREV_FORMAT ="vx_tf"
 SRC_URI =  "git://github.com/VeriSilicon/tflite-vx-delegate.git;branch=${SRCBRANCH_vx};name=vx;destsuffix=git_vx/;protocol=https \
             git://github.com/tensorflow/tensorflow;branch=${SRCBRANCH_tf};name=tf;destsuffix=git_tf/;protocol=https "
 SRC_URI += "file://0001-TFLite-cmake-support-git-clone-shallow-with-specifie.patch;patchdir=${WORKDIR}/git_tf "
-SRC_URI += "file://0001-VX-delegate-add-missing-header-in-examples.patch;patchdir=${WORKDIR}/git_vx "
 SRC_URI += "file://0002-cmakelist-generate-vx_custom_op-shared-lib-instead-o.patch;patchdir=${WORKDIR}/git_vx "
 
 PV = "2.16.2+git${SRCREV_vx}"
