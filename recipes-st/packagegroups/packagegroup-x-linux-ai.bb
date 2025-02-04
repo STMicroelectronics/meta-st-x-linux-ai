@@ -25,12 +25,11 @@ PACKAGES = "                                 \
     packagegroup-x-linux-ai-tflite-cpu       \
     packagegroup-x-linux-ai-onnxruntime-cpu  \
 "
-PACKAGES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', 'packagegroup-x-linux-ai packagegroup-x-linux-ai-npu packagegroup-x-linux-ai-demo-npu packagegroup-x-linux-ai-tflite-npu packagegroup-x-linux-ai-onnxruntime-npu ', '', d)}"
+PACKAGES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', 'packagegroup-x-linux-ai packagegroup-x-linux-ai-npu packagegroup-x-linux-ai-demo-npu packagegroup-x-linux-ai-tflite-npu packagegroup-x-linux-ai-onnxruntime-npu packagegroup-x-linux-ai-on-device-learning-ort', '', d)}"
 
 # Manage to provide only demo with best performances depending on target used
 RDEPENDS:packagegroup-x-linux-ai-demo-cpu = " packagegroup-x-linux-ai-tflite-cpu "
 RDEPENDS:packagegroup-x-linux-ai-demo-npu:append:stm32mp2common = " packagegroup-x-linux-ai-npu "
-
 
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS:packagegroup-x-linux-ai-cpu = "     \
@@ -42,7 +41,9 @@ RDEPENDS:packagegroup-x-linux-ai-cpu = "     \
 RDEPENDS:packagegroup-x-linux-ai += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '\
     packagegroup-x-linux-ai-tflite-npu       \
     packagegroup-x-linux-ai-onnxruntime-npu  \
-    packagegroup-x-linux-ai-npu', '', d)}"
+    packagegroup-x-linux-ai-npu \
+    packagegroup-x-linux-ai-on-device-learning-ort', '', d)}"
+
 
 SUMMARY:packagegroup-x-linux-ai-tflite-cpu = "X-LINUX-AI TensorFlow Lite components (CPU only)"
 RDEPENDS:packagegroup-x-linux-ai-tflite-cpu = "  \
@@ -140,6 +141,12 @@ RDEPENDS:packagegroup-x-linux-ai-npu:append:stm32mp2common = " \
     stai-mpu-pose-estimation-python-ovx-npu       \
     stai-mpu-face-recognition-cpp-ovx-npu         \
     stai-mpu-people-tracking-heatmap-python-ovx-npu \
+"
+
+SUMMARY:packagegroup-x-linux-ai-on-device-learning-ort = "X-LINUX-AI On-Device Learning on ORT components"
+RDEPENDS:packagegroup-x-linux-ai-on-device-learning-ort:append:stm32mp2common = " \
+    onnxruntime                          \
+    ${PYTHON_PN}-onnxruntime-training    \
 "
 
 RCONFLICTS:packagegroup-x-linux-ai-onnxruntime-npu = "packagegroup-x-linux-ai-onnxruntime-cpu"
