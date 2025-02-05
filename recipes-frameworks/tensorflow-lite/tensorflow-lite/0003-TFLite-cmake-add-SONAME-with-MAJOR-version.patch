@@ -1,4 +1,4 @@
-From d54d97fc243bd22c5b8555ca5428611fe199936d Mon Sep 17 00:00:00 2001
+From 78c69965f2dd77a23eaba8c709bf3ec5e7d94408 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 17 Mar 2022 10:27:59 +0100
 Subject: [PATCH 3/7] TFLite: cmake add SONAME with MAJOR version
@@ -10,10 +10,10 @@ Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 52e9beccfbf..a7d9e90ce3e 100644
+index 206ab082e0e..44534d723ce 100644
 --- a/tensorflow/lite/CMakeLists.txt
 +++ b/tensorflow/lite/CMakeLists.txt
-@@ -701,6 +701,10 @@ if(TFLITE_ENABLE_INSTALL)
+@@ -774,6 +774,10 @@ if(TFLITE_ENABLE_INSTALL)
    )
  endif()
  

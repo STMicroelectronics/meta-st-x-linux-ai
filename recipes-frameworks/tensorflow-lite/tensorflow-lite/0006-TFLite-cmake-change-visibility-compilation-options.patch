@@ -1,7 +1,7 @@
-From 5dd2378e9c1c7ff719ff9c1011e3081dbc6d61b9 Mon Sep 17 00:00:00 2001
+From 3c7d51e6c967e2e1734f3aa17c86ae5b29c1f440 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Mon, 21 Oct 2024 10:42:39 +0200
-Subject: [PATCH 7/7] TFLite: cmake change visibility compilation options
+Subject: [PATCH 6/7] TFLite: cmake change visibility compilation options
 
 Change-Id: I7ade67f9c4faa4bff6f59d3425f8bef3842d346d
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -10,11 +10,11 @@ Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/tensorflow/lite/CMakeLists.txt b/tensorflow/lite/CMakeLists.txt
-index 86074eb38f3..4a9b9fd7305 100644
+index 74c5d3c57e9..64be2797d9e 100644
 --- a/tensorflow/lite/CMakeLists.txt
 +++ b/tensorflow/lite/CMakeLists.txt
-@@ -629,6 +629,10 @@ set(_ALL_TFLITE_SRCS
- add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
+@@ -701,6 +701,10 @@ endif()
+ add_library(tensorflow-lite
    ${_ALL_TFLITE_SRCS}
  )
 +

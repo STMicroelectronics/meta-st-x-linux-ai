@@ -7,18 +7,20 @@ LICENSE = "Apache-2.0"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=4158a261ca7f2525513e31ba9c50ae98"
 
-PV = "2.16.2+git${SRCPV}"
+PV = "2.18.0+git${SRCPV}"
 
-SRCREV = "810f233968cec850915324948bbbc338c97cf57f"
+SRCREV = "500e03dc2d086c8078c0da575932ae5177da22d9"
 
-SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.16 "
+SRC_URI = " git://github.com/tensorflow/tensorflow;protocol=https;branch=r2.18 "
 SRC_URI += " file://0001-TFLite-cmake-add-python-numpy-and-pybind11-include-p.patch "
 SRC_URI += " file://0002-TFLite-cmake-add-schema_conversion_utils.cc-in-tflit.patch "
 SRC_URI += " file://0003-TFLite-cmake-add-SONAME-with-MAJOR-version.patch "
 SRC_URI += " file://0004-TFLite-cmake-support-git-clone-shallow-with-specifie.patch "
 SRC_URI += " file://0005-TFLite-remove-filter-on-OPT-4bits-sources.patch"
 SRC_URI += " file://0006-TFLite-cmake-change-visibility-compilation-options.patch "
-SRC_URI:append:stm32mp2common = " file://0007-TFLite-fix-aarch64-support-for-XNNPACK.patch "
+SRC_URI += " file://0007-TFLite-align-protobuf-version-on-the-native-one.patch "
+SRC_URI += " file://0008-TFLite-make-tensorflow-lib-shared-library.patch "
+SRC_URI:append:stm32mp2common = " file://0009-TFLite-fix-aarch64-support-for-XNNPACK.patch "
 
 S = "${WORKDIR}/git"
 
@@ -33,6 +35,8 @@ DEPENDS = "zlib \
 	   swig-native \
 	   ${PYTHON_PN} \
 	   gzip-native \
+	   flatbuffers-native \
+	   protobuf-native \
 	  "
 
 python () {
@@ -65,6 +69,7 @@ EXTRA_OECMAKE += " -DFETCHCONTENT_FULLY_DISCONNECTED=OFF \
 		   -DNUMPY_TARGET_INCLUDE=${RECIPE_SYSROOT}${PYTHON_SITEPACKAGES_DIR}/numpy/core/include \
 		   -DPYBIND11_TARGET_INCLUDE=${RECIPE_SYSROOT}${PYTHON_SITEPACKAGES_DIR}/pybind11/include \
 		   -DTFLITE_VERSION_MAJOR=${MAJOR}  \
+		   -DTFLITE_HOST_TOOLS_DIR=${RECIPE_SYSROOT_NATIVE}/ \
 "
 
 do_generate_toolchain_file:append() {

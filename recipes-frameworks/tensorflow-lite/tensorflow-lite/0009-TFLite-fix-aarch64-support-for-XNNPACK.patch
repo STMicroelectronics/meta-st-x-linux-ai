@@ -1,7 +1,7 @@
-From 96e6bcf44694c838523684c15ad3e2d4e3b2fdb0 Mon Sep 17 00:00:00 2001
+From 10612d0fdcff8f5d9a06fe5d705ec3d7443efca6 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Mon, 21 Oct 2024 10:38:05 +0200
-Subject: [PATCH 6/7] TFLite: fix aarch64 support for XNNPACK
+Subject: [PATCH 7/7] TFLite: fix aarch64 support for XNNPACK
 
 Change-Id: I17770799f68119f94d5b01dfbceb4fd41568b572
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -10,7 +10,7 @@ Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/tensorflow/lite/tools/cmake/modules/xnnpack.cmake b/tensorflow/lite/tools/cmake/modules/xnnpack.cmake
-index dbc832812f4..ef129e7f22e 100644
+index 0bf6fc80f62..3a60b5726c8 100644
 --- a/tensorflow/lite/tools/cmake/modules/xnnpack.cmake
 +++ b/tensorflow/lite/tools/cmake/modules/xnnpack.cmake
 @@ -38,6 +38,18 @@ endif()

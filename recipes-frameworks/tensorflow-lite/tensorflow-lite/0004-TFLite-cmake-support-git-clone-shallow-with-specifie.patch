@@ -1,4 +1,4 @@
-From 78acfcab74dfea88aa479d7006974c5c52c6b97f Mon Sep 17 00:00:00 2001
+From 5e9c5948a5fb57b851fc90f4fd18fae025dcea65 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Wed, 23 Feb 2022 17:55:45 +0100
 Subject: [PATCH 4/7] TFLite: cmake support git clone shallow with specified
@@ -13,7 +13,7 @@ Signed-off-by: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
  3 files changed, 24 insertions(+), 3 deletions(-)
 
 diff --git a/tensorflow/lite/tools/cmake/modules/eigen.cmake b/tensorflow/lite/tools/cmake/modules/eigen.cmake
-index 1bb203388a0..d8d9bf10295 100644
+index 3d6585bbf87..7bdadeeeabc 100644
 --- a/tensorflow/lite/tools/cmake/modules/eigen.cmake
 +++ b/tensorflow/lite/tools/cmake/modules/eigen.cmake
 @@ -28,7 +28,14 @@ OverridableFetchContent_Declare(
