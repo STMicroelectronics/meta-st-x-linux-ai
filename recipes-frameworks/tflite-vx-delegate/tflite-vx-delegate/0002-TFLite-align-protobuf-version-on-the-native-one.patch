@@ -1,0 +1,27 @@
+From e79bc82fcbecc1762f32f555c41c00ba9fe7764d Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Wed, 5 Feb 2025 14:08:20 +0100
+Subject: [PATCH 1/1] TFLite: align protobuf version on the native one
+
+Change-Id: I98a62e754250471e8abd3f518c068ddcba57d8f3
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ tensorflow/lite/tools/cmake/modules/protobuf.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tensorflow/lite/tools/cmake/modules/protobuf.cmake b/tensorflow/lite/tools/cmake/modules/protobuf.cmake
+index de09cdeda9c..628e31d57fe 100644
+--- a/tensorflow/lite/tools/cmake/modules/protobuf.cmake
++++ b/tensorflow/lite/tools/cmake/modules/protobuf.cmake
+@@ -19,7 +19,7 @@ OverridableFetchContent_Declare(
+   protobuf
+   GIT_REPOSITORY https://github.com/protocolbuffers/protobuf
+   # Sync with tensorflow/third_party/protobuf/protobuf.patch
+-  GIT_TAG 90b73ac3f0b10320315c2ca0d03a5a9b095d2f66
++  GIT_TAG v25.3
+   GIT_PROGRESS TRUE
+   PREFIX "${CMAKE_BINARY_DIR}"
+   SOURCE_DIR "${CMAKE_BINARY_DIR}/protobuf"
+-- 
+2.25.1
+
