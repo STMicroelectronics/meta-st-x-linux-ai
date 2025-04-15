@@ -17,6 +17,7 @@
 #include "tensorflow/lite/kernels/register.h"
 #include "tensorflow/lite/model.h"
 #include "tensorflow/lite/c/c_api_types.h"
+
 #ifdef VSI_OP
 #include "VX/vsi_npu_custom_op.h"
 #include "tensorflow/lite/delegates/external/external_delegate.h"

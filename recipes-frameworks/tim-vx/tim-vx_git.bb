@@ -23,8 +23,8 @@ PV_googletest = "1.14.0"
 
 S = "${WORKDIR}/tim_vx_git"
 
-# Only compatible with stm32mp25
-COMPATIBLE_MACHINE = "stm32mp25common"
+# Only compatible with stm32mp2
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 python () {
     #Get major of the PV variable

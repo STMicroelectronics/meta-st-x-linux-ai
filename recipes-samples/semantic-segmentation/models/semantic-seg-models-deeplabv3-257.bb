@@ -4,6 +4,8 @@ SUMMARY = "Create package containing deeplabv3 models used for the semantic segm
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=2ceadd15836145e138bc85f4eb50bd15"
 
+PV="6.0.1"
+
 SRC_URI  =  "file://LICENSE "
 SRC_URI +=  "file://deeplabv3_257_int8_per_tensor.nb "
 SRC_URI +=  "file://labels_pascalvoc.txt "

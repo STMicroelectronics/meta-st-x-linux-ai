@@ -1,2 +1,0 @@
-DPkg::Pre-Invoke {"echo 'https://www.st.com/resource/en/additional_license_terms/additional-license-terms-for-x-linux-ai.html' ; echo ; ";};
-APT::Update::Pre-Invoke {"echo 'https://www.st.com/resource/en/additional_license_terms/additional-license-terms-for-x-linux-ai.html' ; echo ;";};

@@ -19,6 +19,7 @@
 
 #include "stai_mpu_tensor.h"
 #include "stai_mpu_types.h"
+#include "stai_mpu_utils.h"
 
 /**
  * @brief Class for representing a ST AI Wrapper class.

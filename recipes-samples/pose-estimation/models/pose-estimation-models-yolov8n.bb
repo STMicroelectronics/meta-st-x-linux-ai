@@ -3,6 +3,7 @@ SUMMARY = "Create package containing YoloV8 pose estimation models used for the 
 LICENSE = "AGPL-3.0-only"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=eb1e647870add0502f8f010b19de32af"
 
+PV="6.0.1"
 
 SRCBRANCH = "main"
 SRCREV = "a77932c834023a7becbf30643c55c024d2442878"

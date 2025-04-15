@@ -10,7 +10,7 @@
 weston_user=$(ps aux | grep '/usr/bin/weston '|grep -v 'grep'|awk '{print $1}')
 FRAMEWORK=$1
 echo "stai wrapper used : "$FRAMEWORK
-source /usr/local/x-linux-ai/resources/config_board.sh
+source /usr/local/x-linux-ai/resources/config_board_npu.sh
 cmd="python3 /usr/local/x-linux-ai/pose-estimation/stai_mpu_pose_estimation.py -m /usr/local/x-linux-ai/pose-estimation/models/$POSE_ESTIMATION_MODEL -i /usr/local/x-linux-ai/pose-estimation/models/$POSE_ESTIMATION_DATA"
 
 if [ "$weston_user" != "root" ]; then

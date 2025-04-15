@@ -3,6 +3,8 @@ SUMMARY = "Create package containing MobileNetV1 models"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=2ceadd15836145e138bc85f4eb50bd15"
 
+PV="6.0.1"
+
 #Mobilenet v1 models in TFLite, ONNX
 SRC_URI += " https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_0.5_128_quant.tgz;subdir=${BPN}-${PV}/mobilenet_v1_0.5_128_quant;name=mobilenet_v1_0.5_128_quant "
 SRC_URI[mobilenet_v1_0.5_128_quant.md5sum] = "5cc8484cf04a407fc90993296f3f02db"

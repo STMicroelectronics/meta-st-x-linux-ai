@@ -27,6 +27,7 @@
 #include <array>
 #include <algorithm>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <set>
 #include <map>
@@ -56,6 +57,16 @@ public:
      * @brief Recover x-linux-ai package list.
      */
     static std::string get_x_pkg_path(const std::string& pattern, const std::vector<std::string>& directories);
+
+    /**
+     * @brief Recover platform used.
+     */
+    static std::string get_platform();
+
+    /**
+     * @brief Recover model type if not defined.
+     */
+    static std::map<std::string, std::string> set_modelType();
 
     /**
      * @brief Executes a shell command and captures its output.
@@ -261,7 +272,6 @@ private:
 
 public:
     static std::string dirPath;
-    static std::string xAppFilePath;
     static std::string ostlAppFilePath;
     static std::map<std::string, std::string> modelTypeList;
     static std::set<std::string> fileLanguageList;

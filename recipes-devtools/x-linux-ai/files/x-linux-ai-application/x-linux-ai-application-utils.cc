@@ -24,25 +24,67 @@ Application::~Application(){}
 
 /* Global variables */
 std::string Application::dirPath = "/usr/local/x-linux-ai";
-std::string Application::ostlAppFilePath = "ls /var/lib/dpkg/status";
-
-/* Model type map, for complete and short names*/
-#ifdef STM32MP2_platform
-std::map<std::string, std::string> Application::modelTypeList = {
-    {"nbg", "ovx"},
-    {"tflite", "tfl"},
-    {"onnx", "ort"},
-};
+std::string Application::ostlAppFilePath = "/var/lib/dpkg/status";
+std::map<std::string, std::string> Application::modelTypeList = set_modelType();
 std::set<std::string> Application::fileLanguageList = {"cpp", "python"};
-#endif
 
-#ifdef STM32MP1_platform
-std::map<std::string, std::string> Application::modelTypeList = {
-    {"tflite", "tfl"},
-    {"onnx", "ort"},
-};
-std::set<std::string> Application::fileLanguageList = {"cpp", "python"};
-#endif
+// Function to check if the output contains any of the patterns
+int contains_pattern(const std::string &output, const std::vector<std::string> &patterns) {
+    for (size_t i = 0; i < patterns.size(); ++i) {
+        if (output.find(patterns[i]) != std::string::npos) {
+            return i; // Return the index of the matching pattern
+        }
+    }
+    return -1; // No pattern matched
+}
+
+std::string Application::get_platform() {
+    std::string command = "cat /proc/device-tree/compatible";
+
+    // Execute the command and capture the output
+    std::string output = exCommand(command.c_str());
+
+    // Patterns to be checked
+    const char *patterns[] = {"stm32mp257", "stm32mp235", "stm32mp255"};
+    size_t num_patterns = sizeof(patterns) / sizeof(patterns[0]);
+
+    // Convert patterns to std::vector<std::string>
+    std::vector<std::string> pattern_vector(patterns, patterns + num_patterns);
+
+    // Check if the output contains any of the patterns
+    int pattern_index = contains_pattern(output, pattern_vector);
+
+    std::string platform;
+
+    // Return platform used
+    if (pattern_index != -1) {
+        platform = "STM32MP_NPU";
+    } else {
+        platform = "STM32MP_CPU";
+    }
+
+    return platform;
+}
+
+// Function to set model type if not defined by user
+std::map<std::string, std::string> Application::set_modelType(){
+    std::string platform;
+    platform = get_platform();
+    if (platform=="STM32MP_NPU"){
+        std::map<std::string, std::string> modelTypeList = {
+            {"nbg", "ovx"},
+            {"tflite", "tfl"},
+            {"onnx", "ort"},
+        };
+        return modelTypeList;
+    } else {
+        std::map<std::string, std::string> modelTypeListCpu = {
+            {"tflite", "tfl"},
+            {"onnx", "ort"},
+        };
+        return modelTypeListCpu;
+    }
+}
 
 std::string Application::get_x_pkg_path(const std::string& pattern, const std::vector<std::string>& directories) {
     std::regex regexPattern(pattern);
@@ -147,10 +189,13 @@ std::set<std::string> Application::getUseCaseList()
         if (pos != std::string::npos) {
             pos = str.find_last_of('-', pos - 1);
             if (pos != std::string::npos) {
-                std::string prefix = str.substr(0, pos);
-                if (unique_applications.find(prefix) == unique_applications.end()) {
-                    unique_applications.insert(prefix);
-                    result.push_back(prefix);
+                pos = str.find_last_of('-', pos - 1);
+                if (pos != std::string::npos) {
+                    std::string prefix = str.substr(0, pos);
+                    if (unique_applications.find(prefix) == unique_applications.end()) {
+                        unique_applications.insert(prefix);
+                        result.push_back(prefix);
+                    }
                 }
             }
         }
@@ -251,16 +296,12 @@ std::set<std::string> Application::getLaunchFilePathList(const std::set<std::str
 std::set<std::string> Application::getAiApplicationList(const std::string &filePath)
 {
     std::set<std::string> appList;
-
     try {
-        std::string command = filePath + " 2>/dev/null";
-        std::string newFileFormat = exCommand(command.c_str());
-        std::ifstream file(newFileFormat);
+        std::ifstream file(filePath);
+        std::string platform = get_platform();
 
-        if (!file.is_open()) {
-            if (!file.is_open()) {
-                throw std::runtime_error("");
-            }
+        if (!file) {
+            throw std::runtime_error("Cannot open package list file");
         }
 
         std::set<std::string> packageList;
@@ -274,11 +315,21 @@ std::set<std::string> Application::getAiApplicationList(const std::string &fileP
         for (const auto& mdType : modelTypeList) {
             for (const std::string& uCase : useCaseList) {
                 for (const std::string& fLang : fileLanguageList) {
-                    std::string app = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second;
-                    for (const std::string package: packageList) {
-                        if (package.find(app) != std::string::npos) {
-                            appList.insert(package);
-                            break;
+                    if (platform=="STM32MP_NPU"){
+                        std::string app = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second + "-npu";
+                        for (const std::string package: packageList) {
+                            if (package.find(app) != std::string::npos) {
+                                appList.insert(package);
+                                break;
+                            }
+                        }
+                    } else {
+                        std::string appcpu = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second + "-cpu";
+                        for (const std::string package: packageList) {
+                            if (package.find(appcpu) != std::string::npos) {
+                                appList.insert(package);
+                                break;
+                            }
                         }
                     }
                 }
@@ -451,13 +502,14 @@ void Application::runApplication(const std::string &inputUscase, const std::stri
     if (inputUscase != ""  && inputFileLanguage == "" && inputModelType == ""){
         for (const std::string _uCase: getUseCaseList()){
             if (inputUscase == _uCase){
-                #ifdef STM32MP2_platform
-                file = getBestPerf(launchFilePathList,inputUscase, "nbg", "python", notInAppList, inAppList);
-                #endif
 
-                #ifdef STM32MP1_platform
-                file = getBestPerf(launchFilePathList,inputUscase, "tflite", "cpp", notInAppList, inAppList);
-                #endif
+                std::string platform;
+                platform = get_platform();
+                if (platform=="STM32MP_NPU"){
+                    file = getBestPerf(launchFilePathList,inputUscase, "nbg", "python", notInAppList, inAppList);
+                } else {
+                    file = getBestPerf(launchFilePathList,inputUscase, "tflite", "cpp", notInAppList, inAppList);
+                }
 
                 if (file != ""){
                     printApplicationInfo(extractModelTypeFromFilePath(file), extractUseCaseFromFilePath(file), extractFileLanguageFromFileName(file), file);

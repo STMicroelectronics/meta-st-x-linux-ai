@@ -6,6 +6,8 @@ LIC_FILES_CHKSUM  = "file://resources-files/LICENSE;md5=91fc08c2e8dfcd4229b69819
 NO_GENERIC_LICENSE[SLA0044] = "resources-files/LICENSE"
 LICENSE:${PN} = "SLA0044"
 
+PV="6.0.1"
+
 SRC_URI = "	file://resources-files "
 
 S = "${WORKDIR}"
@@ -20,7 +22,6 @@ do_install() {
 	install -m 0644 ${S}/resources-files/stai_*.png 				${D}${prefix}/local/x-linux-ai/resources
 
 	# install all configuration scripts
-	install -m 0755 ${S}/resources-files/config_board.sh 			${D}${prefix}/local/x-linux-ai/resources
 	install -m 0755 ${S}/resources-files/check_camera_preview.sh 	${D}${prefix}/local/x-linux-ai/resources
 	install -m 0755 ${S}/resources-files/setup_camera.sh 			${D}${prefix}/local/x-linux-ai/resources
 	install -m 0644 ${S}/resources-files/Default.css 				${D}${prefix}/local/x-linux-ai/resources
@@ -39,7 +40,7 @@ do_install() {
 
 }
 
-do_install:append:stm32mp25common(){
+do_install:append:stm32mp2common(){
 	# overwrite camera setup script for stm32mp2x
     install -m 0755 ${S}/resources-files/check_camera_preview_main_isp.sh     ${D}${prefix}/local/x-linux-ai/resources/check_camera_preview.sh
     install -m 0755 ${S}/resources-files/setup_camera_main_isp.sh             ${D}${prefix}/local/x-linux-ai/resources/setup_camera.sh

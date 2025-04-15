@@ -19,7 +19,7 @@ SRC_URI += "file://0002-cmakelist-generate-vx_custom_op-shared-lib-instead-o.pat
 
 PV = "2.16.2+git${SRCREV_vx}"
 S = "${WORKDIR}/git_vx"
-COMPATIBLE_MACHINE = "stm32mp25common"
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 inherit cmake python3-dir
 DEPENDS += "tim-vx patchelf-native"

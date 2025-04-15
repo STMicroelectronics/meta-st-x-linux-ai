@@ -10,7 +10,8 @@
 weston_user=$(ps aux | grep '/usr/bin/weston '|grep -v 'grep'|awk '{print $1}')
 FRAMEWORK=$1
 echo "stai_mpu wrapper used : "$FRAMEWORK
-source /usr/local/x-linux-ai/resources/config_board.sh
+CONFIG=$(find /usr/local/x-linux-ai -name "config_board_*.sh")
+source $CONFIG
 cmd="/usr/local/x-linux-ai/object-detection/stai_mpu_object_detection.py -m /usr/local/x-linux-ai/object-detection/models/$OBJ_DETEC_MODEL -l /usr/local/x-linux-ai/object-detection/models/$OBJ_DETEC_MODEL_LABEL.txt -i /usr/local/x-linux-ai/object-detection/models/$OBJ_DETECT_DATA"
 
 if [ "$weston_user" != "root" ]; then

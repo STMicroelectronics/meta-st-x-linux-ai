@@ -3,8 +3,9 @@ SUMMARY = "Create package containing MobileNetV2 models"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=2ceadd15836145e138bc85f4eb50bd15"
 
-#Mobilenet v2 models in TFLite, ONNX and NBG
+PV="6.0.1"
 
+#Mobilenet v2 models in TFLite, ONNX and NBG
 SRC_URI = "	file://LICENSE \
 			file://mobilenet_v2_1.0_224_int8_per_tensor.tflite   \
 			file://mobilenet_v2_1.0_224_int8_per_tensor.onnx 	 \

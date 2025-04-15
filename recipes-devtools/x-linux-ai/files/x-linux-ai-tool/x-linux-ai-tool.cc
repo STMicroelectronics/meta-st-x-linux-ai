@@ -20,11 +20,14 @@
 #include <algorithm>
 #include <set>
 #include <string>
+#include <cstring>
 #include <typeinfo>
 #include <vector>
 #include <regex>
 #include <array>
 #include <stdexcept>
+#include <stdio.h>
+#include <stdlib.h>
 
 /* Define global variables */
 bool list = false;
@@ -115,6 +118,67 @@ std::set<std::string> _get_pkg(const std::string& file_path) {
     return pkgs;
 }
 
+// Function to check if the output contains any of the patterns
+int _contains_pattern(const std::string &output, const std::vector<std::string> &patterns) {
+    for (size_t i = 0; i < patterns.size(); ++i) {
+        if (output.find(patterns[i]) != std::string::npos) {
+            return i; // Return the index of the matching pattern
+        }
+    }
+    return -1; // No pattern matched
+}
+
+std::string _exCommand(const char *cmd)
+{
+    // A fixed-size array to temporarily hold segments of the command's output
+    std::array<char, 128> buffer;
+    std::string result;
+    // Open a pipe to run the command and read its output
+    // The unique_ptr ensures that the pipe is closed with pclose when it goes out of scope
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    // Check if the pipe was successfully opened
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    // Read the command's output in segments and append each segment to the result
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    // Remove the trailing newline character from the result, if present
+    if (!result.empty() && result.back() == '\n') {
+        result.pop_back();
+    }
+    return result;
+}
+
+std::string _get_platform() {
+    std::string command = "cat /proc/device-tree/compatible";
+
+    // Execute the command and capture the output
+    std::string output = _exCommand(command.c_str());
+
+    // Patterns to be checked
+    const char *patterns[] = {"stm32mp257", "stm32mp235", "stm32mp255"};
+    size_t num_patterns = sizeof(patterns) / sizeof(patterns[0]);
+
+    // Convert patterns to std::vector<std::string>
+    std::vector<std::string> pattern_vector(patterns, patterns + num_patterns);
+
+    // Check if the output contains any of the patterns
+    int pattern_index = _contains_pattern(output, pattern_vector);
+
+    std::string platform;
+
+    // Return platform used
+    if (pattern_index != -1) {
+        platform = "STM32MP_NPU";
+    } else {
+        platform = "STM32MP_CPU";
+    }
+
+    return platform;
+}
+
 std::set<std::string> _set_common_pkgs(auto ostl_pkg, auto x_pkg) {
     std::set<std::string> common_pkg;
     std::set_intersection(ostl_pkg.begin(), ostl_pkg.end(),
@@ -190,6 +254,74 @@ void manage_pkgs(int argc, char** argv, bool install = true) {
     }
 }
 
+// Function to check if the output contains any of the patterns
+int contains_pattern(const char *output, const char *patterns[], size_t num_patterns) {
+    for (size_t i = 0; i < num_patterns; ++i) {
+        if (strstr(output, patterns[i]) != NULL) {
+            return i; // Return the index of the matching pattern
+        }
+    }
+    return -1; // No pattern matched
+}
+
+int install_pkg_repo(){
+
+    //check if AI repo is installed
+    std::string check_package = "dpkg -l | grep apt-openstlinux-x-linux-ai- > /dev/null";
+    int repo_set = system(check_package.c_str());
+    if (repo_set == 0) {
+        return 0;
+    } else {
+        printf("X-LINUX-AI repo is not set\n");
+        printf("Prepare X-LINUX-AI repo \n");
+        std::string platform;
+        platform = _get_platform();
+        if (platform=="STM32MP_NPU"){
+            // Execute the specific apt-get install command
+            printf("Updating APT database ...\n");
+            if (system("sudo -E apt-get update  > /dev/null") == -1) {
+                perror("sudo -E apt-get update failed");
+                return 1;
+            }
+            printf("Setting up X-LINUX-AI package repo ...\n");
+            if (system("sudo -E apt-get install -y apt-openstlinux-x-linux-ai-npu  > /dev/null") == -1) {
+                perror("setting AI package repo failed");
+                return 1;
+            }
+        } else {
+            printf("Updating APT database ...\n");
+            if (system("sudo -E apt-get update") == -1) {
+                perror("sudo -E apt-get update failed");
+                return 1;
+            }
+            printf("Setting up X-LINUX-AI package repo ...\n");
+            // Execute the alternative apt-get install command
+            if (system("sudo -E apt-get install -y apt-openstlinux-x-linux-ai-cpu  > /dev/null") == -1) {
+                perror("setting AI package repo failed");
+                return 1;
+            }
+        }
+
+        //check if old AI repo is installed
+        printf("Cleaning the repo ...\n");
+        std::string check_old_repo = "dpkg -l | grep apt-openstlinux-x-linux-ai  > /dev/null";
+        int result = system(check_old_repo.c_str());
+        if (result == 0) {
+            //old AI repo is already installed
+            if (system("sudo -E apt-get update > /dev/null ") == -1) {
+            perror("sudo -E apt-get update failed");
+            return 1;
+            }
+            // clean old packages with autoremove
+            if (system("sudo -E apt-get autoremove > /dev/null") == -1) {
+                perror("sudo -E apt-get autoremove failed");
+                return 1;
+            }
+        }
+        return 0;
+    }
+}
+
 std::string _get_x_pkg_path(const std::string& pattern, const std::vector<std::string>& directories) {
     std::regex regexPattern(pattern);
 
@@ -213,13 +345,28 @@ int main(int argc, char *argv[])
 {
     process_args(argc, argv);
 
+    int repo_set;
+    repo_set = install_pkg_repo();
+    if (repo_set == 0){
+        std::cout << "X-LINUX-AI package repo is already set." << std::endl;
+    } else {
+        std::cout << "X-LINUX-AI package repo is not set properly." << std::endl;
+    }
+
     if (list) {
         std::vector<std::string> directories = {
             "/var/lib/apt/lists/",
             "/var/lib/apt/lists/auxfiles/"
         };
 
-        std::string pattern = ".*_AI_.*_main_.*";
+        std::string platform;
+        std::string pattern;
+        platform = _get_platform();
+        if (platform=="STM32MP_NPU"){
+            pattern= ".*_AINPU_.*_main_.*";
+        } else {
+            pattern= ".*_AICPU_.*_main_.*";
+        }
         std::string x_pkg_path = _get_x_pkg_path(pattern, directories);
         if (x_pkg_path.empty()) {
             std::cout << "list of AI packages not found." << std::endl;

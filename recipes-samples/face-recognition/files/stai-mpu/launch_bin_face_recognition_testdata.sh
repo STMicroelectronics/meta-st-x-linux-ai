@@ -10,7 +10,7 @@
 weston_user=$(ps aux | grep '/usr/bin/weston '|grep -v 'grep'|awk '{print $1}')
 FRAMEWORK=$1
 echo "stai wrapper used : "$FRAMEWORK
-source /usr/local/x-linux-ai/resources/config_board.sh
+source /usr/local/x-linux-ai/resources/config_board_npu.sh
 cmd="/usr/local/x-linux-ai/face-recognition/stai_mpu_face_recognition -m /usr/local/x-linux-ai/face-recognition/models/$FACE_DETECTION_MODEL -i /usr/local/x-linux-ai/face-recognition/models/$FACE_RECO_DATA -f /usr/local/x-linux-ai/face-recognition/models/$FACE_RECO_MODEL -d /usr/local/x-linux-ai/face-recognition/$FACE_DATABASE"
 
 if [ "$weston_user" != "root" ]; then

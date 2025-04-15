@@ -10,7 +10,8 @@
 weston_user=$(ps aux | grep '/usr/bin/weston '|grep -v 'grep'|awk '{print $1}')
 FRAMEWORK=$1
 echo "stai wrapper used : "$FRAMEWORK
-source /usr/local/x-linux-ai/resources/config_board.sh
+CONFIG=$(find /usr/local/x-linux-ai -name "config_board_*.sh")
+source $CONFIG
 cmd="/usr/local/x-linux-ai/image-classification/stai_mpu_image_classification -m /usr/local/x-linux-ai/image-classification/models/$IMAGE_CLASSIFICATION_MODEL -l /usr/local/x-linux-ai/image-classification/models/$IMAGE_CLASSIFICATION_LABEL.txt --framerate $DFPS --frame_width $DWIDTH --frame_height $DHEIGHT $OPTIONS"
 
 if [ "$weston_user" != "root" ]; then

@@ -12,11 +12,13 @@
 #define STAI_MPU_ORT_H
 
 #include "stai_mpu_wrapper.h"
+
 #include <memory>
 
 #include "onnxruntime_cxx_api.h"
 #include "core/providers/vsinpu/vsinpu_provider_factory.h"
 #include "onnxruntime_session_options_config_keys.h"
+
 
 std::nullptr_t t;
 std::vector<int> stai_mpu_get_tensor_shape(const Ort::TypeInfo& type_info);

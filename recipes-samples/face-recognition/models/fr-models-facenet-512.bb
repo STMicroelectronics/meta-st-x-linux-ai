@@ -5,8 +5,8 @@ SUMMARY = "Create package containing Facenet512 models"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://facenet/LICENSE;md5=f3a6c154b2b11d824cf57057af10de88"
 
+PV="6.0.1"
 #Blazeface models in TFLite and NBG
-
 SRC_URI = "	file://facenet/LICENSE \
 			file://facenet/facenet512_160x160_quant.tflite   \
 			file://facenet/facenet512_160x160_quant.nb		 \
@@ -25,7 +25,7 @@ do_install() {
 	install -m 0644 ${S}/facenet/facenet512_160x160_quant.tflite			${D}${prefix}/local/x-linux-ai/face-recognition/models/facenet/
 }
 
-do_install:append:stm32mp25common(){
+do_install:append:stm32mp2common(){
     install -m 0644 ${S}/facenet/facenet512_160x160_quant.nb		         ${D}${prefix}/local/x-linux-ai/face-recognition/models/facenet/
 }
 
