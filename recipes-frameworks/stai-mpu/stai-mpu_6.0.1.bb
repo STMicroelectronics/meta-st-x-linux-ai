@@ -29,7 +29,7 @@ python () {
 }
 
 BOARD_USED:stm32mp1common = "stm32mp1"
-BOARD_USED:stm32mp25common = "stm32mp2_npu"
+BOARD_USED:stm32mp2common = "stm32mp2_npu"
 
 inherit python3-dir
 
@@ -77,7 +77,7 @@ do_install:append:stm32mp1common(){
     chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/stai_mpu_network_test
 }
 
-do_install:append:stm32mp25common(){
+do_install:append:stm32mp2common(){
     # Install libdir
     install -m 0644 ${S}/aarch64/lib/libstai_mpu_ort.so.${MAJOR}    ${D}${libdir}/libstai_mpu_ort.so.${PVB}
     install -m 0644 ${S}/aarch64/lib/libstai_mpu_tflite.so.${MAJOR} ${D}${libdir}/libstai_mpu_tflite.so.${PVB}
@@ -96,10 +96,10 @@ do_install:append:stm32mp25common(){
     # Install the Python package along with the bindings.
     cp -r ${S}/aarch64/python/*      ${D}${PYTHON_SITEPACKAGES_DIR}/stai_mpu/
 
-    #Install specific python shared lib module for stm32mp25common
+    #Install specific python shared lib module for stm32mp2common
     cp ${S}/aarch64/lib/_stai_mpu_network.cpython.${PYTHON_PV}-aarch64-linux-gnu.so      ${D}${PYTHON_SITEPACKAGES_DIR}/stai_mpu/_binding/_stai_mpu_network.so
 
-    #Install specific OpenVX shared libs for stm32mp25common
+    #Install specific OpenVX shared libs for stm32mp2common
     install -m 0644 ${S}/aarch64/lib/libstai_mpu_ovx.so.${MAJOR}    ${D}${libdir}/libstai_mpu_ovx.so.${PVB}
     ln -sf libstai_mpu_ovx.so.${PVB}    ${D}${libdir}/libstai_mpu_ovx.so.${MAJOR}
     ln -sf libstai_mpu_ovx.so.${PVB}    ${D}${libdir}/libstai_mpu_ovx.so
@@ -116,7 +116,7 @@ do_install:append:stm32mp25common(){
 }
 
 PACKAGES += "${PN}-tools ${PYTHON_PN}-${PN} ${PN}-tflite ${PN}-ort ${PN}-unit-tests "
-PACKAGES:append:stm32mp25common = " ${PN}-ovx "
+PACKAGES:append:stm32mp2common = " ${PN}-ovx "
 PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tflite ${PN}-ort ${PN}-ovx ${PN}-unit-tests"
 
 FILES:${PN} = " ${libdir}/libstai_mpu.so.*  "
@@ -152,7 +152,7 @@ RDEPENDS:${PN}-tflite += " ${PYTHON_PN}-${PN} \
                            tensorflow-lite \
                          "
 
-RDEPENDS:${PN}-tflite:append:stm32mp25common = " tflite-vx-delegate "
+RDEPENDS:${PN}-tflite:append:stm32mp2common = " tflite-vx-delegate "
 
 RDEPENDS:${PN}-ort += "  ${PYTHON_PN}-${PN} \
                          ${PN} \
@@ -164,7 +164,7 @@ RDEPENDS:${PN}-ovx += "  ${PYTHON_PN}-${PN} \
                          ${PN} \
                          "
 
-RDEPENDS:${PN}-ovx:append:stm32mp25common = " gcnano-driver-stm32mp \
+RDEPENDS:${PN}-ovx:append:stm32mp2common = " gcnano-driver-stm32mp \
                                               libopenvx-gcnano \
                                             "
 

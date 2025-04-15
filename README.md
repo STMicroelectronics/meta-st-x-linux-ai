@@ -2,7 +2,7 @@
     <img width="720" src="https://raw.githubusercontent.com/STMicroelectronics/meta-st-stm32mpu-ai/master/x-linux-ai-logo.png">
 </p>
 
-X-LINUX-AI version: v6.0.0
+X-LINUX-AI version: v6.0.1
 
 X-LINUX-AI is a free of charge open-source software package dedicated to AI.
 It is a complete ecosystem that allow developers working with OpenSTLinux to create AI-based application very easily.
@@ -19,7 +19,7 @@ X-LINUX-AI OpenEmbedded meta layer to be integrated into OpenSTLinux distributio
 It contains recipes for AI frameworks, tools and application examples for STM32MPx series
 
 ## Compatibility
-The X-LINUX-AI OpenSTLinux Expansion Package v6.0.0 is compatible with the Yocto Project™ build system Scarthgap.
+The X-LINUX-AI OpenSTLinux Expansion Package v6.0.1 is compatible with the Yocto Project™ build system Scarthgap.
 It is validated over the OpenSTLinux Distribution v6.0.0 https://wiki.st.com/stm32mpu on STM32MP25x and STM32MP1x series.
 
 ## Versioning
@@ -30,7 +30,7 @@ The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
 * **z**: patch version to introduce bug fixes. A patch version is implemented in a backward compatible manner.
 
 ## Available frameworks and tools within the meta-layer
-[X-LINUX-AI v6.0.0 expansion package](https://wiki.st.com/stm32mpu/wiki/Category:X-LINUX-AI_expansion_package):
+[X-LINUX-AI v6.0.1 expansion package](https://wiki.st.com/stm32mpu/wiki/Category:X-LINUX-AI_expansion_package):
 * AI Frameworks:
   * STAI_MPU Unified API based on OpenVX™(STM32MP25x only), TensorFlow™ Lite, and ONNX Runtime™ compatible with all STM32MPU series
   * TIM-VX™ 1.2.6 (STM32MP25x only)

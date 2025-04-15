@@ -11,14 +11,14 @@ inherit python3-dir
 SRC_URI  =  " file://stai-mpu;subdir=${BPN}-${PV} "
 
 # Only compatible with stm32mp25
-COMPATIBLE_MACHINE = "stm32mp25common"
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
-do_install:append:stm32mp25common(){
+do_install:append:stm32mp2common(){
     install -d ${D}${prefix}/local/demo/gtk-application
     install -d ${D}${prefix}/local/x-linux-ai/semantic-segmentation/
 
@@ -33,11 +33,11 @@ do_install:append:stm32mp25common(){
     install -m 0755 ${S}/stai-mpu/launch_python*.sh ${D}${prefix}/local/x-linux-ai/semantic-segmentation/
 }
 
-PACKAGES += " ${PN}-ovx "
-PROVIDES += " ${PN}-ovx "
+PACKAGES += " ${PN}-ovx-npu "
+PROVIDES += " ${PN}-ovx-npu "
 
 FILES:${PN} += " ${prefix}/local/x-linux-ai/semantic-segmentation/ "
-FILES:${PN}-ovx += " ${prefix}/local/demo/gtk-application/300-stai-mpu-semantic-segmentation-py-ovx.yaml "
+FILES:${PN}-ovx-npu += " ${prefix}/local/demo/gtk-application/300-stai-mpu-semantic-segmentation-py-ovx.yaml "
 
 RDEPENDS:${PN} += " \
     ${PYTHON_PN}-core \
@@ -51,4 +51,4 @@ RDEPENDS:${PN} += " \
 "
 
 RDEPENDS:${PN} += " semantic-seg-models-deeplabv3-257 "
-RDEPENDS:${PN}-ovx += " ${PN} stai-mpu-ovx "
+RDEPENDS:${PN}-ovx-npu += " ${PN} stai-mpu-ovx config-npu "

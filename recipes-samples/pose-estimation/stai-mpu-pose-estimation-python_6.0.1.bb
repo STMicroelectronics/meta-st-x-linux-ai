@@ -8,8 +8,8 @@ LICENSE:${PN} = "SLA0044"
 
 SRC_URI  =  " file://stai-mpu;subdir=${BPN}-${PV} "
 
-# Only compatible with stm32mp25
-COMPATIBLE_MACHINE = "stm32mp25common"
+# Only compatible with stm32mp2
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
@@ -33,11 +33,11 @@ do_install() {
     install -m 0755 ${S}/stai-mpu/launch_python*.sh ${D}${prefix}/local/x-linux-ai/pose-estimation/
 }
 
-PACKAGES += " ${PN}-ovx "
-PROVIDES += " ${PN}-ovx "
+PACKAGES += " ${PN}-ovx-npu "
+PROVIDES += " ${PN}-ovx-npu "
 
 FILES:${PN} += " ${prefix}/local/x-linux-ai/pose-estimation/ "
-FILES:${PN}-ovx += " ${prefix}/local/demo/gtk-application/400-stai-mpu-pose-estimation-py-ovx.yaml "
+FILES:${PN}-ovx-npu += " ${prefix}/local/demo/gtk-application/400-stai-mpu-pose-estimation-py-ovx.yaml "
 
 RDEPENDS:${PN} += " \
     ${PYTHON_PN}-core \
@@ -51,4 +51,4 @@ RDEPENDS:${PN} += " \
 "
 
 RDEPENDS:${PN} += " pose-estimation-models-yolov8n "
-RDEPENDS:${PN}-ovx += " ${PN} stai-mpu-ovx "
+RDEPENDS:${PN}-ovx-npu += " ${PN} stai-mpu-ovx config-npu "

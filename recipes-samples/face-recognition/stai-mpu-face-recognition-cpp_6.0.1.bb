@@ -13,7 +13,7 @@ DEPENDS += " stai-mpu gtk+3 opencv gstreamer1.0 rapidjson gstreamer1.0-plugins-b
 SRC_URI  = " file://stai-mpu;subdir=${BPN}-${PV} "
 
 # Only compatible with stm32mp25
-COMPATIBLE_MACHINE = "stm32mp25common"
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
@@ -53,11 +53,11 @@ pkg_postinst:${PN} () {
     chmod 777 $D${prefix}/local/x-linux-ai/face-recognition/database
 }
 
-PACKAGES += " ${PN}-tfl ${PN}-ovx "
-PROVIDES += " ${PN}-tfl ${PN}-ovx "
+PACKAGES += " ${PN}-ovx-npu "
+PROVIDES += " ${PN}-ovx-npu "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/face-recognition/  ${prefix}/local/x-linux-ai/resources/"
-FILES:${PN}-ovx += "${prefix}/local/demo/gtk-application/601-stai-mpu-face-recognition-cpp-ovx.yaml "
+FILES:${PN}-ovx-npu += "${prefix}/local/demo/gtk-application/601-stai-mpu-face-recognition-cpp-ovx.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
 
@@ -78,7 +78,8 @@ RDEPENDS:${PN} += " \
     bash \
 "
 
-RDEPENDS:${PN}-ovx += " fd-models-blazeface-128 \
-                        fr-models-facenet-512 \
-                        ${PN} stai-mpu-ovx \
+RDEPENDS:${PN}-ovx-npu += " fd-models-blazeface-128 \
+                            fr-models-facenet-512   \
+                            ${PN} stai-mpu-ovx      \
+                            config-npu              \
 "

@@ -38,32 +38,33 @@ do_install() {
     # install application binaries and launcher scripts
     install -m 0755 ${S}/stai-mpu/stai_mpu_object_detection ${D}${prefix}/local/x-linux-ai/object-detection/
     install -m 0755 ${S}/stai-mpu/launch_bin*.sh            ${D}${prefix}/local/x-linux-ai/object-detection/
-}
 
-do_install:append:stm32mp1common(){
     # install applications into the demo launcher
     install -m 0755 ${S}/stai-mpu/*cpp-tfl.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/*cpp-ort.yaml   ${D}${prefix}/local/demo/gtk-application
 }
 
-do_install:append:stm32mp25common(){
+do_install:append:stm32mp2common(){
     # install applications into the demo launcher
     install -m 0755 ${S}/stai-mpu/*cpp-tfl-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/*cpp-ort-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
     install -m 0755 ${S}/stai-mpu/*cpp-ovx-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
 }
 
-PACKAGES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
-PROVIDES += " ${PN}-tfl ${PN}-ort ${PN}-ovx "
+PACKAGES:append:stm32mp1common = "  ${PN}-tfl-cpu ${PN}-ort-cpu "
+PACKAGES:append:stm32mp2common = "  ${PN}-tfl-cpu ${PN}-ort-cpu ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu "
 
-FILES:${PN} += "${prefix}/local/x-linux-ai/object-detection/"
+PROVIDES:append:stm32mp1common = "  ${PN}-tfl-cpu ${PN}-ort-cpu "
+PROVIDES:append:stm32mp2common = "  ${PN}-tfl-cpu ${PN}-ort-cpu ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu "
 
-FILES:${PN}-tfl:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-tfl.yaml "
-FILES:${PN}-ort:append:stm32mp1common = "${prefix}/local/demo/gtk-application/*cpp-ort.yaml "
+FILES:${PN} += "${prefix}/local/x-linux-ai/object-detection/ "
 
-FILES:${PN}-tfl:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-tfl-mp2.yaml "
-FILES:${PN}-ort:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-ort-mp2.yaml "
-FILES:${PN}-ovx:append:stm32mp25common = "${prefix}/local/demo/gtk-application/*cpp-ovx-mp2.yaml "
+FILES:${PN}-tfl-cpu:append = "${prefix}/local/demo/gtk-application/*cpp-tfl.yaml "
+FILES:${PN}-ort-cpu:append = "${prefix}/local/demo/gtk-application/*cpp-ort.yaml "
+
+FILES:${PN}-tfl-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*cpp-tfl-mp2.yaml "
+FILES:${PN}-ort-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*cpp-ort-mp2.yaml "
+FILES:${PN}-ovx-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*cpp-ovx-mp2.yaml "
 
 INSANE_SKIP:${PN} = "ldflags"
 
@@ -83,14 +84,14 @@ RDEPENDS:${PN} += " \
     bash \
 "
 
-RDEPENDS:${PN}-tfl += " ${PN} stai-mpu-tflite "
-RDEPENDS:${PN}-ort += " ${PN} stai-mpu-ort "
-RDEPENDS:${PN}-ovx:append:stm32mp25common = " ${PN} stai-mpu-ovx "
+RDEPENDS:${PN}-tfl-npu:append:stm32mp2common = " ${PN} stai-mpu-tflite object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu "
+RDEPENDS:${PN}-ort-npu:append:stm32mp2common = " ${PN} stai-mpu-ort object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu "
+RDEPENDS:${PN}-ovx-npu:append:stm32mp2common = " ${PN} stai-mpu-ovx object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu "
 
-RDEPENDS:${PN}-tfl:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v2-10-256-fpnlite "
-RDEPENDS:${PN}-ort:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v2-10-256-fpnlite "
-RDEPENDS:${PN}-ovx:append:stm32mp25common = " object-detect-models-ssd-mobilenet-v2-10-256-fpnlite "
+RDEPENDS:${PN}-tfl-cpu:append  = "  ${PN} stai-mpu-tflite object-detect-models-ssd-mobilenet-v1-10-300 config-cpu "
+RDEPENDS:${PN}-ort-cpu:append  = " ${PN} stai-mpu-ort object-detect-models-ssd-mobilenet-v1-10-300 config-cpu "
 
-RDEPENDS:${PN}-tfl:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "
-RDEPENDS:${PN}-ort:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "
-RDEPENDS:${PN}-ovx:append:stm32mp1common = " object-detect-models-ssd-mobilenet-v1-10-300 "
+RCONFLICTS:${PN}-ort-cpu = "${PN}-ort-npu"
+RCONFLICTS:${PN}-tfl-cpu = "${PN}-tfl-npu"
+RCONFLICTS:${PN}-ort-npu = "${PN}-ort-cpu"
+RCONFLICTS:${PN}-tfl-npu = "${PN}-tfl-cpu"

@@ -25,7 +25,4 @@ do_install() {
 
 INSANE_SKIP:${PN} = "ldflags"
 
-BOARD_USED:stm32mp1common = "STM32MP1"
-BOARD_USED:stm32mp25common = "STM32MP2"
-
 EXTRA_OEMAKE += 'STM32MPU="${BOARD_USED}"'

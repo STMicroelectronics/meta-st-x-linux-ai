@@ -14,7 +14,7 @@ SRC_URI  =  " file://tflite-vx-delegate-example;subdir=${BPN}-${PV} "
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
-COMPATIBLE_MACHINE = "stm32mp25common"
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 do_configure[noexec] = "1"
 

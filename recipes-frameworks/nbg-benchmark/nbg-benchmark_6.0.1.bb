@@ -6,10 +6,12 @@ LIC_FILES_CHKSUM  = "file://LICENSE;md5=91fc08c2e8dfcd4229b69819ef52827c"
 NO_GENERIC_LICENSE[SLA0044] = "LICENSE"
 LICENSE:${PN} = "SLA0044"
 
-DEPENDS += "jpeg"
-DEPENDS:append:stm32mp25common = " gcnano-driver-stm32mp gcnano-userland "
+COMPATIBLE_MACHINE = "stm32mp2common"
 
-PV = "5.0.0"
+DEPENDS += "jpeg"
+DEPENDS:append:stm32mp2common = " gcnano-driver-stm32mp gcnano-userland "
+
+PV = "6.0.1"
 
 python () {
     #Get major of the PV variable

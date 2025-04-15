@@ -53,6 +53,3 @@ do_install() {
 }
 
 FILES:${PN} = "${bindir}"
-
-# Add dependency on the apt configuration for x-linux-ai
-RDEPENDS:${PN}:class-target += "apt-openstlinux-x-linux-ai"

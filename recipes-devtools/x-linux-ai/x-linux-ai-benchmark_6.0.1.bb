@@ -17,14 +17,14 @@ S = "${WORKDIR}/${BPN}"
 inherit python3-dir
 
 BOARD_USED:stm32mp1common = "stm32mp1"
-BOARD_USED:stm32mp25common = "stm32mp2_npu"
+BOARD_USED:stm32mp2common = "stm32mp2_npu"
 
 do_install() {
     install -d ${D}/usr/bin
     install -m 0755 ${S}/x_linux_ai_benchmark_mp1 ${D}/usr/bin/x-linux-ai-benchmark
 }
 
-do_install:append:stm32mp25common(){
+do_install:append:stm32mp2common(){
     install -m 0755 ${S}/x_linux_ai_benchmark_mp2 ${D}/usr/bin/x-linux-ai-benchmark
 }
 
