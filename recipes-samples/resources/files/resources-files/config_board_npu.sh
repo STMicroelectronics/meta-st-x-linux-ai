@@ -42,6 +42,7 @@ fi
 
 if [[ "$COMPATIBLE" == *"$STM32MP257"* ]] || [[ "$COMPATIBLE" == *"$STM32MP255"* ]] || [[ "$COMPATIBLE" == *"$STM32MP235"* ]]; then
   CAMERA_SRC="LIBCAMERA"
+  HUMAN_TRACKING_MODEL="yolov8n_people/yolov8n_320_quant_pt_uf_od_coco-person-st$NN_EXT"
   SEMANTIC_SEGMENTATION_MODEL="deeplabv3/deeplabv3_257_int8_per_tensor$NN_EXT"
   SEMANTIC_SEGMENTATION_LABEL="deeplabv3/labels_pascalvoc"
   SEMANTIC_SEGMENTATION_DATA="deeplabv3/testdata/"

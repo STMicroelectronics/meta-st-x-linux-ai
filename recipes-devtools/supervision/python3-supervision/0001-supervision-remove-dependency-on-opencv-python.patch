@@ -1,0 +1,26 @@
+From 75bcd25a90b02dc5c8782039b0aee178535f22c6 Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Thu, 6 Mar 2025 15:02:15 +0100
+Subject: [PATCH 1/1] supervision: remove dependency on opencv-python
+
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ pyproject.toml | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/pyproject.toml b/pyproject.toml
+index ae25215..f972299 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -89,8 +89,6 @@ pandas = [
+     { version = ">=2.2.3", python = ">=3.13", optional = true },
+ ]
+ 
+-opencv-python = ">=4.5.5.64"
+-
+ [tool.poetry.extras]
+ metrics = ["pandas"]
+ 
+-- 
+2.25.1
+

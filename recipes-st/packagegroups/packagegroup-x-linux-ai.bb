@@ -139,6 +139,7 @@ RDEPENDS:packagegroup-x-linux-ai-npu:append:stm32mp2common = " \
     stai-mpu-semantic-segmentation-python-ovx-npu \
     stai-mpu-pose-estimation-python-ovx-npu       \
     stai-mpu-face-recognition-cpp-ovx-npu         \
+    stai-mpu-people-tracking-heatmap-python-ovx-npu \
 "
 
 RCONFLICTS:packagegroup-x-linux-ai-onnxruntime-npu = "packagegroup-x-linux-ai-onnxruntime-cpu"
