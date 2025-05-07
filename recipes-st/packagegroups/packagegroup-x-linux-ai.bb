@@ -148,6 +148,7 @@ RDEPENDS:packagegroup-x-linux-ai-on-device-learning-ort:append:stm32mp2common = 
     onnxruntime                              \
     ${PYTHON_PN}-onnxruntime-training        \
     odl-teacher-student-object-detection-jupyterlab \
+    odl-teacher-student-object-detection-python \
 "
 
 RCONFLICTS:packagegroup-x-linux-ai-onnxruntime-npu = "packagegroup-x-linux-ai-onnxruntime-cpu"

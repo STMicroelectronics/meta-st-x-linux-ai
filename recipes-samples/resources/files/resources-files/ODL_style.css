@@ -1,0 +1,174 @@
+/* style.css */
+
+/* Set padding for the tabs */
+.notebook tab {
+    padding: 10px;
+}
+
+#button-back {
+    background: #03234b; /* Blue */
+    color: white;
+}
+
+#button-next {
+    background: #03234b; /* Blue */
+    color: white;
+}
+
+/* Style the first tab with a background color */
+#tab-data-retrieval {
+    background-color: #03234b; /* Orange */
+    color: white;
+}
+
+
+
+#button {
+    background: #FFD200; /* Orange */
+    color: #03234b;
+}
+
+#button:disabled {
+    background: #ffe880; /* Orange */
+    color: #03234b;
+}
+
+
+
+#nav-box {
+    background-color: #03234b; /* Blue */
+    border: none;
+}
+
+#data-label {
+    background-color: #03234b; /* Blue */
+    color: white;
+}
+
+
+#button-close-zoom {
+    background: #8f0404; /* Red */
+    color: white;
+}
+
+/* Style for the custom scale value text */
+#custom-scale  value {
+    color: rgb(85, 85, 85);
+    font-weight: bold;
+}
+
+#custom-scale trough {
+    background-color: #FFD200;
+}
+
+/* Make all labels bold */
+label {
+    color:#03234b;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+#teacher-label {
+    color:#03234b;
+    font-weight: normal;
+    font-size: 15px;
+}
+
+/* Make all labels bold */
+#tab-label {
+    font-weight: bold;
+    font-size: 20px;
+    color: white
+}
+
+#inf-label {
+    font-weight: bold;
+    font-size: 15px;
+    color: white
+}
+
+
+/* Style the second tab with a background color */
+#tab-data-viz {
+    background-color: #425a78;
+    color: white;
+}
+
+/* Style the third tab with a background color */
+#tab-annotation {
+    background-color: #8191a5;
+    color: white;
+}
+
+/* Style the fourth tab with a background color */
+#tab-training {
+    background-color: #425a78;
+    color: white;
+}
+
+/* Style the fifth tab with a background color */
+#tab-inference {
+    background-color: #03234b;
+    color: white;
+}
+
+#light-fill {
+    background-color: #c0c8d2;
+}
+
+/* Add spacing between tabs and the notebook's container */
+.notebook {
+    margin: 0px;
+}
+
+box#gui_main_video {
+    background-color: #000000;
+  }
+#tab-page {
+    background-color: #EBEBEB;
+}
+
+#white-bg-box {
+    background-color: white;
+    border-radius: 7px;
+}
+
+#blue-bg-box {
+    color: white;
+    background-color: #03234b;
+    border-radius: 5px;
+}
+
+#nbmain {
+    border: none;
+}
+
+.placeholder {
+    border: 1px groove #8191a5;
+    background-color: white;
+    border-radius: 5px;
+}
+
+#event-box {
+    background-color: red;
+}
+
+drawing_area#overlay_draw {
+    background-color: yellow;
+}
+
+box#gui_overlay_video {
+    background-color: transparent;
+}
+
+box#inference-main-box {
+    background-color: black;
+}
+
+window#overlay_window {
+    background-color: transparent;
+  }
+
+widget {
+    background-color: transparent;
+}

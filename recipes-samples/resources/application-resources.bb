@@ -59,7 +59,8 @@ do_install:append:stm32mp2common(){
 	install -m 0644 ${S}/resources-files/FR_*.png 					          ${D}${prefix}/local/x-linux-ai/resources
 
 	# install all ON DEVICE LEARNING resources
-	install -m 0644 -o jupyter -g jupyter ${S}/resources-files/ODL_*.png 	  ${D}${prefix}/local/x-linux-ai/resources
+	install -m 0644 -o jupyter -g jupyter ${S}/resources-files/ODL_*.png      ${D}${prefix}/local/x-linux-ai/resources
+	install -m 0644 ${S}/resources-files/ODL_style.css                        ${D}${prefix}/local/x-linux-ai/resources
 }
 
 FILES:${PN} += "${prefix}/local/"
