@@ -51,6 +51,5 @@ RDEPENDS:${PN} = " \
     ${PYTHON_PN}-numpy \
     ${PYTHON_PN}-protobuf \
     ${PYTHON_PN}-pip \
-    ${PYTHON_PN}-matplotlib \
     libgomp \
 "

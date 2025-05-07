@@ -1,0 +1,15 @@
+Application:
+    Name: Teacher-student learning
+    Description: SSD MobileNetV2 + RT-DETR
+    Icon: ../x-linux-ai/resources/ODL_teacher_student_jupyter.png
+    Board:
+        List: all
+    Type: script
+    Script:
+        Exist:
+            File: /usr/local/x-linux-ai/resources/check_camera_preview.sh
+            Msg_false: Camera is not connected
+        Start: ../x-linux-ai/on-device-learning/launch_jupyterlab_odl_teacher_student_obj_detect.sh
+    Action:
+        button_release_event: script_management
+        button_press_event: highlight_eventBox

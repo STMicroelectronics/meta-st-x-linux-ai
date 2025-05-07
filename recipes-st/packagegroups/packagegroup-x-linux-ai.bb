@@ -145,8 +145,9 @@ RDEPENDS:packagegroup-x-linux-ai-npu:append:stm32mp2common = " \
 
 SUMMARY:packagegroup-x-linux-ai-on-device-learning-ort = "X-LINUX-AI On-Device Learning on ORT components"
 RDEPENDS:packagegroup-x-linux-ai-on-device-learning-ort:append:stm32mp2common = " \
-    onnxruntime                          \
-    ${PYTHON_PN}-onnxruntime-training    \
+    onnxruntime                              \
+    ${PYTHON_PN}-onnxruntime-training        \
+    odl-teacher-student-object-detection-jupyterlab \
 "
 
 RCONFLICTS:packagegroup-x-linux-ai-onnxruntime-npu = "packagegroup-x-linux-ai-onnxruntime-cpu"

@@ -12,6 +12,12 @@ SRC_URI = "	file://resources-files "
 
 S = "${WORKDIR}"
 
+inherit useradd
+
+# Define the package that will contain the user
+USERADD_PACKAGES = "${PN}"
+USERADD_PARAM:${PN} = "--home /home/jupyter --shell /bin/sh --user-group -G video,input,tty,audio,dialout jupyter"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -51,6 +57,9 @@ do_install:append:stm32mp2common(){
 
 	# install all FR resources
 	install -m 0644 ${S}/resources-files/FR_*.png 					          ${D}${prefix}/local/x-linux-ai/resources
+
+	# install all ON DEVICE LEARNING resources
+	install -m 0644 -o jupyter -g jupyter ${S}/resources-files/ODL_*.png 	  ${D}${prefix}/local/x-linux-ai/resources
 }
 
 FILES:${PN} += "${prefix}/local/"
