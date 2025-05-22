@@ -25,7 +25,7 @@ PYPI_SRC_URI = "https://files.pythonhosted.org/packages/${PYPI_SHA256SUM}/${PYPI
 DEPENDS += "python3-pip-native \
 		   	python3-wheel-native"
 
-COMPATIBLE_MACHINE = "stm32mp25common"
+COMPATIBLE_MACHINE = "stm32mp2common"
 
 inherit pypi python3-dir python3native
 

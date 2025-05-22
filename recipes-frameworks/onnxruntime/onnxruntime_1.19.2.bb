@@ -60,7 +60,7 @@ python () {
 }
 
 OECMAKE_SOURCEPATH = "${S}/cmake"
-
+TARGET_CXXFLAGS += "-Wno-error=range-loop-construct"
 EXTRA_OECMAKE += " 	\
 					-DCMAKE_BUILD_TYPE=Release \
 					-DCMAKE_INSTALL_PREFIX="${prefix}" \
@@ -260,4 +260,4 @@ RDEPENDS:${PYTHON_PN}-${PN}-training:append:stm32mp2common = "${@bb.utils.contai
                             ${PYTHON_PN}-sympy \
                             ${PYTHON_PN}-protobuf \
                             ${PYTHON_PN}-torch \
-                            ${PYTHON_PN}-onnx', '', d)}"ure v1.19.2
+                            ${PYTHON_PN}-onnx', '', d)}"
