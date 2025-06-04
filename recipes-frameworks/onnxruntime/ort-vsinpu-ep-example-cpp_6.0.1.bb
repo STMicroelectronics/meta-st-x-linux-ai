@@ -36,7 +36,7 @@ FILES:${PN} += "${prefix}/local/bin/ort-vsinpu-ep-example/ort-vsinpu-ep-example"
 INSANE_SKIP:${PN} = "ldflags"
 
 RDEPENDS:${PN} += " \
-    onnxruntime \
-    onnxruntime-tools \
+    onnxruntime               \
+    onnxruntime-tools         \
     img-models-mobilenetv1-05-128 \
 "

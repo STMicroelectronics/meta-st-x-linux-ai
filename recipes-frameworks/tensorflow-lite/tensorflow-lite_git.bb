@@ -169,6 +169,6 @@ FILES:${PYTHON_PN}-${PN} += "${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info"
 
 RDEPENDS:${PYTHON_PN}-${PN} += " ${PYTHON_PN}-ctypes ${PYTHON_PN}-numpy "
 RDEPENDS:${PN} += " x-linux-ai-benchmark "
-RDEPENDS:${PN}:append:stm32mp2common = " tflite-vx-delegate "
+RDEPENDS:${PN}:append:stm32mp2common = " ${@bb.utils.contains('MACHINE_FEATURES', 'gpu', ' tflite-vx-delegate ', '', d)} "
 
 PROVIDES += "${PYTHON_PN}-${PN}"

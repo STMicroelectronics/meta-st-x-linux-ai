@@ -13,6 +13,10 @@ S = "${WORKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
 
+BOARD_USED:stm32mp1common = "stm32mp1"
+BOARD_USED:stm32mp2common = "${@bb.utils.contains('MACHINE_FEATURES', 'gpu', 'stm32mp2_npu', 'stm32mp2', d)}"
+BOARD_USED:stm32mp2common := "${@bb.utils.contains('DEFAULT_BUILD_AI', 'CPU', 'stm32mp2', '${BOARD_USED}', d)}"
+
 do_configure[noexec] = "1"
 do_compile[noexec] = "1"
 
@@ -33,27 +37,28 @@ do_install() {
 }
 
 do_install:append:stm32mp2common(){
-    # install applications into the demo launcher
-    install -m 0755 ${S}/stai-mpu/*py-tfl-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/*py-ort-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/*py-ovx-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+    if [ ${BOARD_USED} == "stm32mp2_npu" ]; then
+        # install applications into the demo launcher
+        install -m 0755 ${S}/stai-mpu/*py-tfl-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+        install -m 0755 ${S}/stai-mpu/*py-ort-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+        install -m 0755 ${S}/stai-mpu/*py-ovx-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+    fi
 }
 
-PACKAGES:append:stm32mp1common = " ${PN}-tfl-cpu ${PN}-ort-cpu "
-PACKAGES:append:stm32mp2common = " ${PN}-tfl-cpu ${PN}-ort-cpu ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu "
+PACKAGES += " ${PN}-tfl-cpu ${PN}-ort-cpu "
+PACKAGES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu ', '', d)} "
 
-PROVIDES:append:stm32mp1common = " ${PN}-tfl-cpu ${PN}-ort-cpu "
-PROVIDES:append:stm32mp2common = " ${PN}-tfl-cpu ${PN}-ort-cpu ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu "
+PROVIDES += " ${PN}-tfl-cpu ${PN}-ort-cpu "
+PROVIDES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu ', '', d)} "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/object-detection/ "
 
 FILES:${PN}-tfl-cpu:append = "${prefix}/local/demo/gtk-application/*py-tfl.yaml "
 FILES:${PN}-ort-cpu:append = "${prefix}/local/demo/gtk-application/*py-ort.yaml "
 
-FILES:${PN}-tfl-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*py-tfl-mp2.yaml "
-FILES:${PN}-ort-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*py-ort-mp2.yaml "
-FILES:${PN}-ovx-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*py-ovx-mp2.yaml "
-
+FILES:${PN}-tfl-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${prefix}/local/demo/gtk-application/*py-tfl-mp2.yaml ', '', d)} "
+FILES:${PN}-ort-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${prefix}/local/demo/gtk-application/*py-ort-mp2.yaml ', '', d)} "
+FILES:${PN}-ovx-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${prefix}/local/demo/gtk-application/*py-ovx-mp2.yaml ', '', d)} "
 
 RDEPENDS:${PN} += " \
     ${PYTHON_PN}-core \
@@ -65,9 +70,10 @@ RDEPENDS:${PN} += " \
     application-resources \
     bash \
 "
-RDEPENDS:${PN}-tfl-npu:append:stm32mp2common = " ${PN} stai-mpu-tflite object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu "
-RDEPENDS:${PN}-ort-npu:append:stm32mp2common = " ${PN} stai-mpu-ort object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu "
-RDEPENDS:${PN}-ovx-npu:append:stm32mp2common = " ${PN} stai-mpu-ovx object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu "
+
+RDEPENDS:${PN}-tfl-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN} stai-mpu-tflite object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu ', '', d)} "
+RDEPENDS:${PN}-ort-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN} stai-mpu-ort object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu ', '', d)} "
+RDEPENDS:${PN}-ovx-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN} stai-mpu-ovx object-detect-models-ssd-mobilenet-v2-10-256-fpnlite config-npu ', '', d)} "
 
 RDEPENDS:${PN}-tfl-cpu:append  = "  ${PN} stai-mpu-tflite object-detect-models-ssd-mobilenet-v1-10-300 config-cpu "
 RDEPENDS:${PN}-ort-cpu:append  = " ${PN} stai-mpu-ort object-detect-models-ssd-mobilenet-v1-10-300 config-cpu "

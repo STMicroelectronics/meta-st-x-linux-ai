@@ -29,6 +29,6 @@ do_install() {
 FILES:${PN} += "${prefix}/local/bin/ort-vsinpu-ep-example/ "
 
 RDEPENDS:${PN} += " \
-    ${PYTHON_PN}-onnxruntime      \
+    ${PYTHON_PN}-onnxruntime  \
     img-models-mobilenetv1-05-128 \
 "

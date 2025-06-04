@@ -16,6 +16,10 @@ S = "${WORKDIR}/${BPN}-${PV}"
 
 do_configure[noexec] = "1"
 
+BOARD_USED:stm32mp1common = "stm32mp1"
+BOARD_USED:stm32mp2common = "${@bb.utils.contains('MACHINE_FEATURES', 'gpu', 'stm32mp2_npu', 'stm32mp2', d)}"
+BOARD_USED:stm32mp2common := "${@bb.utils.contains('DEFAULT_BUILD_AI', 'CPU', 'stm32mp2', '${BOARD_USED}', d)}"
+
 EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 EXTRA_OEMAKE += 'ARCHITECTURE="${BOARD_USED}"'
 
@@ -45,26 +49,28 @@ do_install() {
 }
 
 do_install:append:stm32mp2common(){
-    # install applications into the demo launcher
-    install -m 0755 ${S}/stai-mpu/*cpp-tfl-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/*cpp-ort-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
-    install -m 0755 ${S}/stai-mpu/*cpp-ovx-mp2.yaml   ${D}${prefix}/local/demo/gtk-application
+    if [ ${BOARD_USED} == "stm32mp2_npu" ]; then
+        # install applications into the demo launcher
+        install -m 0755 ${S}/stai-mpu/*cpp-tfl-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+        install -m 0755 ${S}/stai-mpu/*cpp-ort-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+        install -m 0755 ${S}/stai-mpu/*cpp-ovx-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
+    fi
 }
 
-PACKAGES:append:stm32mp1common = " ${PN}-tfl-cpu ${PN}-ort-cpu "
-PACKAGES:append:stm32mp2common = " ${PN}-tfl-cpu ${PN}-ort-cpu ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu "
+PACKAGES += " ${PN}-tfl-cpu ${PN}-ort-cpu "
+PACKAGES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu ', '', d)} "
 
-PROVIDES:append:stm32mp1common = " ${PN}-tfl-cpu ${PN}-ort-cpu "
-PROVIDES:append:stm32mp2common = " ${PN}-tfl-cpu ${PN}-ort-cpu ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu "
+PROVIDES += " ${PN}-tfl-cpu ${PN}-ort-cpu "
+PROVIDES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' ${PN}-tfl-npu ${PN}-ort-npu ${PN}-ovx-npu ', '', d)} "
 
 FILES:${PN} += "${prefix}/local/x-linux-ai/image-classification/ "
 
 FILES:${PN}-tfl-cpu:append = "${prefix}/local/demo/gtk-application/*cpp-tfl.yaml "
 FILES:${PN}-ort-cpu:append = "${prefix}/local/demo/gtk-application/*cpp-ort.yaml "
 
-FILES:${PN}-tfl-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*cpp-tfl-mp2.yaml "
-FILES:${PN}-ort-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*cpp-ort-mp2.yaml "
-FILES:${PN}-ovx-npu:append:stm32mp2common = "${prefix}/local/demo/gtk-application/*cpp-ovx-mp2.yaml "
+FILES:${PN}-tfl-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${prefix}/local/demo/gtk-application/*cpp-tfl-mp2.yaml', '', d)} "
+FILES:${PN}-ort-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${prefix}/local/demo/gtk-application/*cpp-ort-mp2.yaml', '', d)} "
+FILES:${PN}-ovx-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${prefix}/local/demo/gtk-application/*cpp-ovx-mp2.yaml', '', d)} "
 
 INSANE_SKIP:${PN} = "ldflags"
 
@@ -85,11 +91,11 @@ RDEPENDS:${PN} += " \
     bash \
 "
 
-RDEPENDS:${PN}-tfl-npu:append:stm32mp2common = " ${PN} stai-mpu-tflite img-models-mobilenetv2-10-224 config-npu "
-RDEPENDS:${PN}-ort-npu:append:stm32mp2common = " ${PN} stai-mpu-ort img-models-mobilenetv2-10-224 config-npu "
-RDEPENDS:${PN}-ovx-npu:append:stm32mp2common = " ${PN} stai-mpu-ovx img-models-mobilenetv2-10-224 config-npu "
+RDEPENDS:${PN}-tfl-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${PN} stai-mpu-tflite img-models-mobilenetv2-10-224 config-npu', '', d)} "
+RDEPENDS:${PN}-ort-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${PN} stai-mpu-ort img-models-mobilenetv2-10-224 config-npu', '', d)} "
+RDEPENDS:${PN}-ovx-npu += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${PN} stai-mpu-ovx img-models-mobilenetv2-10-224 config-npu', '', d)} "
 
-RDEPENDS:${PN}-tfl-cpu:append  = "  ${PN} stai-mpu-tflite img-models-mobilenetv1-05-128 config-cpu "
+RDEPENDS:${PN}-tfl-cpu:append  = " ${PN} stai-mpu-tflite img-models-mobilenetv1-05-128 config-cpu "
 RDEPENDS:${PN}-ort-cpu:append  = " ${PN} stai-mpu-ort img-models-mobilenetv1-05-128 config-cpu "
 
 RCONFLICTS:${PN}-ort-cpu = "${PN}-ort-npu"

@@ -5,17 +5,32 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 inherit packagegroup python3-dir
 
 PROVIDES = "${PACKAGES}"
+
+BOARD_USED:stm32mp1common = "stm32mp1"
+BOARD_USED:stm32mp2common = "${@bb.utils.contains('MACHINE_FEATURES', 'gpu', 'stm32mp2_npu', 'stm32mp2', d)}"
+BOARD_USED:stm32mp2common := "${@bb.utils.contains('DEFAULT_BUILD_AI', 'CPU', 'stm32mp2', '${BOARD_USED}', d)}"
+
+python () {
+    board = d.getVar('BOARD_USED')
+    image_type = d.getVar('DEFAULT_BUILD_AI')
+    warning_issued = d.getVar('WARNING_IMAGE', True)
+    if board == "stm32mp2_npu" and image_type == "NPU" and not warning_issued:
+        bb.warn("Please be careful this st-image-ai is targeting STM32MPU possessing a hardware AI accelerator.")
+        d.setVar('WARNING_IMAGE', True)
+}
+
 PACKAGES = "                                 \
     packagegroup-x-linux-ai-cpu              \
     packagegroup-x-linux-ai-demo-cpu         \
     packagegroup-x-linux-ai-tflite-cpu       \
     packagegroup-x-linux-ai-onnxruntime-cpu  \
 "
-PACKAGES:append:stm32mp2common = " packagegroup-x-linux-ai packagegroup-x-linux-ai-npu packagegroup-x-linux-ai-demo-npu packagegroup-x-linux-ai-tflite-npu packagegroup-x-linux-ai-onnxruntime-npu "
+PACKAGES += " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', 'packagegroup-x-linux-ai packagegroup-x-linux-ai-npu packagegroup-x-linux-ai-demo-npu packagegroup-x-linux-ai-tflite-npu packagegroup-x-linux-ai-onnxruntime-npu ', '', d)}"
 
 # Manage to provide only demo with best performances depending on target used
 RDEPENDS:packagegroup-x-linux-ai-demo-cpu = " packagegroup-x-linux-ai-tflite-cpu "
 RDEPENDS:packagegroup-x-linux-ai-demo-npu:append:stm32mp2common = " packagegroup-x-linux-ai-npu "
+
 
 # Manage to provide all framework tools base packages with overall one
 RDEPENDS:packagegroup-x-linux-ai-cpu = "     \
@@ -24,11 +39,10 @@ RDEPENDS:packagegroup-x-linux-ai-cpu = "     \
 "
 
 # Manage to provide all framework tools base packages with overall one
-RDEPENDS:packagegroup-x-linux-ai:append:stm32mp2common = "     \
+RDEPENDS:packagegroup-x-linux-ai += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '\
     packagegroup-x-linux-ai-tflite-npu       \
     packagegroup-x-linux-ai-onnxruntime-npu  \
-    packagegroup-x-linux-ai-npu \
-"
+    packagegroup-x-linux-ai-npu', '', d)}"
 
 SUMMARY:packagegroup-x-linux-ai-tflite-cpu = "X-LINUX-AI TensorFlow Lite components (CPU only)"
 RDEPENDS:packagegroup-x-linux-ai-tflite-cpu = "  \

@@ -1,0 +1,29 @@
+From bcad7fb488ce0a6f86a25ca630dbae0721552a77 Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Fri, 27 Sep 2024 16:20:28 +0200
+Subject: [PATCH 1/2] remove $ENV variable that is not usefull
+
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ cmake/onnxruntime_providers_vsinpu.cmake | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/cmake/onnxruntime_providers_vsinpu.cmake b/cmake/onnxruntime_providers_vsinpu.cmake
+index 4b987fd1e4..0e1d09e33b 100644
+--- a/cmake/onnxruntime_providers_vsinpu.cmake
++++ b/cmake/onnxruntime_providers_vsinpu.cmake
+@@ -14,9 +14,9 @@
+     safeint_interface nsync::nsync_cpp)
+   add_dependencies(onnxruntime_providers_vsinpu ${onnxruntime_EXTERNAL_DEPENDENCIES})
+   set_target_properties(onnxruntime_providers_vsinpu PROPERTIES FOLDER "ONNXRuntime" LINKER_LANGUAGE CXX)
+-  target_include_directories(onnxruntime_providers_vsinpu PRIVATE ${ONNXRUNTIME_ROOT} $ENV{TIM_VX_INSTALL}/include)
++  target_include_directories(onnxruntime_providers_vsinpu PRIVATE ${ONNXRUNTIME_ROOT} ${TIM_VX_INSTALL}/include)
+ 
+-  find_library(TIMVX_LIBRARY NAMES tim-vx PATHS $ENV{TIM_VX_INSTALL}/lib NO_DEFAULT_PATH)
++  find_library(TIMVX_LIBRARY NAMES tim-vx PATHS ${TIM_VX_INSTALL}/lib NO_DEFAULT_PATH)
+   if(NOT TIMVX_LIBRARY)
+     message(FATAL_ERROR "TIM-VX library is not found!")
+   endif()
+-- 
+2.25.1
+
