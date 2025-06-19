@@ -71,10 +71,6 @@ do_install() {
     # Install custom op lib
     install -m 0755 ${WORKDIR}/build/libvx_custom_op.so ${D}${libdir}/libvx_custom_op.so
     install -m 0644 ${S}/vsi_npu_custom_op.h ${D}${includedir}/VX/vsi_npu_custom_op.h
-
-    # Install header
-    cd ${WORKDIR}/git_tf/tensorflow/compiler/mlir/lite
-    cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/compiler/mlir/lite
 }
 
 FILES_SOLIBSDEV = ""
