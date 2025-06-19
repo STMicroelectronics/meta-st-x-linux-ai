@@ -144,6 +144,13 @@ do_install() {
 	# Install header files
 	install -d ${D}${includedir}/tensorflow
 	install -d ${D}${includedir}/tensorflow/lite
+
+	# Needed for stai-mpu
+	install -d ${D}${includedir}/tensorflow/compiler
+	install -d ${D}${includedir}/tensorflow/compiler/mlir
+	cd ${S}/tensorflow/compiler/mlir
+	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/compiler/mlir
+
 	cd ${S}/tensorflow/lite
 	cp --parents $(find . -name "*.h*" -not -path "*cmake_build/*") ${D}${includedir}/tensorflow/lite
 	cd ${WORKDIR}/build
