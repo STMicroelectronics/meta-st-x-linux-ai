@@ -39,27 +39,28 @@ int contains_pattern(const std::string &output, const std::vector<std::string> &
 }
 
 std::string Application::get_platform() {
-    std::string command = "cat /proc/device-tree/compatible";
 
-    // Execute the command and capture the output
-    std::string output = exCommand(command.c_str());
-
-    // Patterns to be checked
-    const char *patterns[] = {"stm32mp257", "stm32mp235", "stm32mp255"};
-    size_t num_patterns = sizeof(patterns) / sizeof(patterns[0]);
-
-    // Convert patterns to std::vector<std::string>
-    std::vector<std::string> pattern_vector(patterns, patterns + num_patterns);
-
-    // Check if the output contains any of the patterns
-    int pattern_index = contains_pattern(output, pattern_vector);
-
+    std::string npu_pattern = ".*_AINPU_.*_main_.*";
+    std::string cpu_pattern = ".*_AICPU_.*_main_.*";
     std::string platform;
 
-    // Return platform used
-    if (pattern_index != -1) {
+    std::vector<std::string> directories = {
+        "/var/lib/apt/lists/",
+        "/var/lib/apt/lists/auxfiles/"
+    };
+
+    std::string x_npu_pkg_path = Application::get_x_pkg_path(npu_pattern, directories);
+    std::string x_cpu_pkg_path = Application::get_x_pkg_path(cpu_pattern, directories);
+
+    if (x_npu_pkg_path.empty() && x_cpu_pkg_path.empty()) {
+        std::cout << "List of AI packages not found for both CPU and NPU." << std::endl;
+        exit(1);
+    }
+
+    if (!x_npu_pkg_path.empty() && x_cpu_pkg_path.empty()){
         platform = "STM32MP_NPU";
-    } else {
+    }
+    else if (!x_cpu_pkg_path.empty() && x_npu_pkg_path.empty()){
         platform = "STM32MP_CPU";
     }
 
@@ -177,7 +178,11 @@ std::set<std::string> Application::getUseCaseList()
         std::string match_str = match.str();
         size_t pos = match_str.find("stai");
         if (pos != std::string::npos) {
-            vect_list_of_applications.push_back(match_str.substr(pos));
+            if(match_str.substr(pos).find("stai-mpu-people") != std::string::npos){
+                continue;
+            } else {
+                vect_list_of_applications.push_back(match_str.substr(pos));
+            }
         }
     }
 
@@ -315,21 +320,11 @@ std::set<std::string> Application::getAiApplicationList(const std::string &fileP
         for (const auto& mdType : modelTypeList) {
             for (const std::string& uCase : useCaseList) {
                 for (const std::string& fLang : fileLanguageList) {
-                    if (platform=="STM32MP_NPU"){
-                        std::string app = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second + "-npu";
-                        for (const std::string package: packageList) {
-                            if (package.find(app) != std::string::npos) {
-                                appList.insert(package);
-                                break;
-                            }
-                        }
-                    } else {
-                        std::string appcpu = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second + "-cpu";
-                        for (const std::string package: packageList) {
-                            if (package.find(appcpu) != std::string::npos) {
-                                appList.insert(package);
-                                break;
-                            }
+                    std::string app_npu = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second + "-npu";
+                    std::string app_cpu = "stai-mpu-" + uCase + "-" + fLang + "-" + mdType.second + "-cpu";
+                    for (const std::string package: packageList) {
+                        if ((package.find(app_npu) != std::string::npos) || (package.find(app_cpu) != std::string::npos)) {
+                            appList.insert(package);
                         }
                     }
                 }
@@ -360,14 +355,21 @@ std::set<std::string> Application::getInstalledAiApplicationList(const std::set<
 
 std::set<std::string> Application::getNotInstalledAiApplicationList(const std::set<std::string>& xAppList, const std::set<std::string>& ostlAppList)
 {
-    if (ostlAppList.empty())
+    if (ostlAppList.empty()){
+        std::cout << "ostl app list empty" << std::endl;
         return xAppList;
+    }
 
-    for (const std::string& xApp: xAppList) {
-        for (const std::string ostlApp : ostlAppList){
-            if (!ostlApp.find(xApp) != std::string::npos){
-                this->_notInstalledAppList.insert(xApp);
+    for (const std::string& xApp : xAppList) {
+        bool found = false;
+        for (const std::string& ostlApp : ostlAppList) {
+            if (ostlApp.find(xApp) != std::string::npos) {
+                found = true;
+                break;  // No need to check further if found
             }
+        }
+        if (!found) {
+            this->_notInstalledAppList.insert(xApp);
         }
     }
 
@@ -406,8 +408,10 @@ std::string Application::getBestPerf(const std::set<std::string> &launchFilePath
         std::string fileLanguage = extractFileLanguageFromFileName(filePath);
         if(inputUscase == useCase && inputFileLanguage == fileLanguage){
             for (const std::string& app: inAppList){
-                if (app.find("stai-mpu-" + inputUscase + "-" + _fileLanguage + "-" + modelTypeList[inputModelType]) != std::string::npos)
+                if (app.find("stai-mpu-" + inputUscase + "-" + _fileLanguage + "-" + modelTypeList[inputModelType]) != std::string::npos){
                     return filePath + " " + inputModelType;
+
+                }
             }
         }
     }
@@ -415,8 +419,9 @@ std::string Application::getBestPerf(const std::set<std::string> &launchFilePath
     for (const std::string app: notInAppList){
         if (app.find(inputUscase) != std::string::npos){
             if(app.find(modelTypeList[inputModelType]) != std::string::npos){
-                if (app.find(inputFileLanguage) != std::string::npos)
+                if (app.find(inputFileLanguage) != std::string::npos){
                     warningMsg(app);
+                }
             }
         }
     }
@@ -429,7 +434,6 @@ std::string Application::getBestPerf(const std::set<std::string> &launchFilePath
 {
 
     std::vector<std::string> orderedKeys = {"nbg", "tflite", "onnx"};
-
     for (const auto& key : orderedKeys) {
         auto it = modelTypeList.find(key);
         if (it != modelTypeList.end()) {
@@ -486,8 +490,9 @@ std::string Application::getBestPerf(const std::set<std::string> &launchFilePath
         for(const std::string& fileLanguage: fileLanguageList){
             for (const std::string& app: notInAppList){
                 if (app.find(inputUscase) != std::string::npos){
-                    if(app.find(modelType.second) != std::string::npos && app.find(fileLanguage) != std::string::npos)
+                    if(app.find(modelType.second) != std::string::npos && app.find(fileLanguage) != std::string::npos){
                         warningMsg(app);
+                    }
                 }
             }
         }
@@ -499,10 +504,11 @@ std::string Application::getBestPerf(const std::set<std::string> &launchFilePath
 void Application::runApplication(const std::string &inputUscase, const std::string &inputModelType, const std::string &inputFileLanguage, const std::set<std::string> &launchFilePathList, const std::set<std::string> &notInAppList, const std::set<std::string> &inAppList)
 {
     std::string file = "";
+    bool uCaseFound = false;
     if (inputUscase != ""  && inputFileLanguage == "" && inputModelType == ""){
         for (const std::string _uCase: getUseCaseList()){
             if (inputUscase == _uCase){
-
+                uCaseFound = true;
                 std::string platform;
                 platform = get_platform();
                 if (platform=="STM32MP_NPU"){
@@ -510,13 +516,13 @@ void Application::runApplication(const std::string &inputUscase, const std::stri
                 } else {
                     file = getBestPerf(launchFilePathList,inputUscase, "tflite", "cpp", notInAppList, inAppList);
                 }
-
                 if (file != ""){
                     printApplicationInfo(extractModelTypeFromFilePath(file), extractUseCaseFromFilePath(file), extractFileLanguageFromFileName(file), file);
                     system(file.c_str());
                     exit(0);
                 }
-                else{
+                else
+                {
                     file = getBestPerf(launchFilePathList, inputUscase, notInAppList, inAppList);
                     if(file != ""){
                         printApplicationInfo(extractModelTypeFromFilePath(file), extractUseCaseFromFilePath(file), extractFileLanguageFromFileName(file), file);

@@ -359,22 +359,40 @@ int main(int argc, char *argv[])
             "/var/lib/apt/lists/auxfiles/"
         };
 
-        std::string platform;
-        std::string pattern;
-        platform = _get_platform();
-        if (platform=="STM32MP_NPU"){
-            pattern= ".*_AINPU_.*_main_.*";
-        } else {
-            pattern= ".*_AICPU_.*_main_.*";
-        }
-        std::string x_pkg_path = _get_x_pkg_path(pattern, directories);
-        if (x_pkg_path.empty()) {
-            std::cout << "list of AI packages not found." << std::endl;
+        std::string npu_pattern = ".*_AINPU_.*_main_.*";
+        std::string cpu_pattern = ".*_AICPU_.*_main_.*";
+
+        std::string x_npu_pkg_path = _get_x_pkg_path(npu_pattern, directories);
+        std::string x_cpu_pkg_path = _get_x_pkg_path(cpu_pattern, directories);
+
+        if (x_npu_pkg_path.empty() && x_cpu_pkg_path.empty()) {
+            std::cout << "List of AI packages not found for both patterns." << std::endl;
             return -1;
         }
-        /* Get ostl installed packages */
-        std::string ostl_pkg_path = "/var/lib/dpkg/status";
-        print_pkgs(ostl_pkg_path, x_pkg_path);
+
+        if (!x_npu_pkg_path.empty() && x_cpu_pkg_path.empty()){
+            /* Get ostl installed packages */
+            std::string ostl_pkg_path = "/var/lib/dpkg/status";
+            print_pkgs(ostl_pkg_path, x_npu_pkg_path);
+        }
+        else if (!x_cpu_pkg_path.empty() && x_npu_pkg_path.empty()){
+            /* Get ostl installed packages */
+            std::string ostl_pkg_path = "/var/lib/dpkg/status";
+            print_pkgs(ostl_pkg_path, x_cpu_pkg_path);
+        }
+        else {
+            std::string platform;
+            platform = _get_platform();
+            if (platform=="STM32MP_NPU"){
+                /* Get ostl installed packages */
+                std::string ostl_pkg_path = "/var/lib/dpkg/status";
+                print_pkgs(ostl_pkg_path, x_npu_pkg_path);
+            } else {
+                /* Get ostl installed packages */
+                std::string ostl_pkg_path = "/var/lib/dpkg/status";
+                print_pkgs(ostl_pkg_path, x_cpu_pkg_path);
+            }
+        }
     }
     else if (to_install && argc == 3) {
         manage_pkgs(argc, argv,true);
