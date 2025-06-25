@@ -15,8 +15,11 @@
 
 #include <memory>
 
-#include "onnxruntime_cxx_api.h"
+#ifdef PLATFORM_stm32mp2_npu
 #include "core/providers/vsinpu/vsinpu_provider_factory.h"
+#endif
+
+#include "onnxruntime_cxx_api.h"
 #include "onnxruntime_session_options_config_keys.h"
 
 
