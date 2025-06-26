@@ -19,6 +19,7 @@ SRC_URI += " file://onnxruntime/0005-onnxruntime-cmake-change-visibility-compila
 SRC_URI += " file://onnxruntime/0006-remove-ENV-variable-that-is-not-usefull.patch "
 SRC_URI += " file://onnxruntime/0007-onnxruntime-Split-Pad-and-some-element-wise-OPs-support.patch "
 SRC_URI += " file://onnxruntime/0008-onnxruntime-VSINPU-EP-Add-VSINPU-EP-to-support-python-bindings.patch "
+SRC_URI += " file://onnxruntime/0009-onnxruntime-update-hash-of-eigen-tar-file-on-gitlab.patch"
 SRC_URI:append:stm32mp2common = " file://onnxruntime/0010-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 SRC_URI:append:stm32mp2common = " file://onnxruntime/0011-fix-uncompatible-cmake-flag-issue.patch "
 
@@ -123,7 +124,7 @@ do_install() {
 	install -d ${D}${prefix}/local/bin/${PN}-${PVB}/tools
 	install -d ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
 
-	install -m 0644 ${B}/libonnxruntime.so				 ${D}${libdir}/libonnxruntime.so.${PVB}
+	install -m 644 ${B}/libonnxruntime.so				 ${D}${libdir}/libonnxruntime.so.${PVB}
 	install -m 644 ${B}/onnxruntime_pybind11_state.so		${D}${libdir}/onnxruntime_pybind11_state.so
 
 	# Install the symlinks.
@@ -147,6 +148,7 @@ do_install() {
 
 	# Install the Python package.
 	mkdir -p ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime
+	cp -r    ${B}/onnxruntime ${D}${PYTHON_SITEPACKAGES_DIR}
 
 	# Install header files
 	install -d ${D}${includedir}/onnxruntime
@@ -159,23 +161,19 @@ do_install() {
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_float16.h  	${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h  	${D}${includedir}/onnxruntime
 
-	if [ ${BOARD_USED} == "stm32mp2_npu" ]; then
-		# This shared lib is used by onnxruntime_shared_lib_test and onnxruntime_test_python.py
-		install -m 644 ${B}/libcustom_op_library.so			 ${D}${libdir}
+	# This shared lib is used by onnxruntime_shared_lib_test and onnxruntime_test_python.py
+	install -m 644 ${B}/libcustom_op_library.so			 ${D}${libdir}
 
-		# And this one only by onnxruntime_test_python.py
-		install -m 644 ${B}/libtest_execution_provider.so		${D}${libdir}
-		install -m 644 ${B}/libonnxruntime_providers_shared.so	${D}${libdir}/libonnxruntime_providers_shared.so
-		install -m 644 ${B}/libcustom_op_invalid_library.so		${D}${libdir}/libcustom_op_invalid_library.so
+	# And this one only by onnxruntime_test_python.py
+	install -m 644 ${B}/libtest_execution_provider.so		${D}${libdir}
+	install -m 644 ${B}/libonnxruntime_providers_shared.so	${D}${libdir}/libonnxruntime_providers_shared.so
+	install -m 644 ${B}/libcustom_op_invalid_library.so		${D}${libdir}/libcustom_op_invalid_library.so
 
-		chrpath -r '$ORIGIN' ${D}${libdir}/libtest_execution_provider.so
+	chrpath -r '$ORIGIN' ${D}${libdir}/libtest_execution_provider.so
 
-
-		# Remove the static library from the Python package installation
-		rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/capi/libonnxruntime_providers_vsinpu.a
-
-		cp -r  ${S}/include/onnxruntime/core/providers/* 	${D}${includedir}/onnxruntime/core/providers/
-	fi
+	# Remove the static library from the Python package installation
+	rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/capi/libonnxruntime_providers_vsinpu.a
+	cp -r  ${S}/include/onnxruntime/core/providers/* 	${D}${includedir}/onnxruntime/core/providers/
 
 	# Remove libonnxruntime.so* from Python module to prevent multi shlib providers issue
 	find ${D}${PYTHON_SITEPACKAGES_DIR} -name "libonnx*.so*" -exec rm {} \;
@@ -192,16 +190,14 @@ PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
 
 INSANE_SKIP:${PYTHON_PN}-${PN} += "staticdev"
 
-FILES:${PN} = "${libdir}/pkgconfig/* ${libdir}/libonnxruntime.so.* ${libdir}/onnxruntime_pybind11_state.so "
-FILES:${PN} += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${libdir}/libonnxruntime_providers_shared.so', '', d)}"
+FILES:${PN} = "${libdir}/pkgconfig/* ${libdir}/libonnxruntime.so.* ${libdir}/onnxruntime_pybind11_state.so ${libdir}/libonnxruntime_providers_shared.so"
 FILES:${PN}-dev = "${libdir}/libonnxruntime.so ${includedir}/*"
 FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_perf_test"
 FILES:${PN}-unit-tests = "${prefix}/local/bin/${PN}-${PVB}/unit-tests/* "
-FILES:${PN}-unit-tests += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${libdir}/libcustom_op_invalid_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_library.so', '', d)}"
 FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime "
+FILES:${PN}-unit-tests += "${libdir}/libcustom_op_invalid_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_library.so"
 
 # onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
-
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
 RDEPENDS:${PN}-unit-tests:append = " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' tim-vx-tools ', '', d)} "
 RDEPENDS:${PN} += " x-linux-ai-benchmark "

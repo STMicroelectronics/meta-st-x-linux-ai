@@ -38,7 +38,7 @@ do_install() {
 }
 
 do_install:append:stm32mp2common(){
-    if [ ${BOARD_USED} == "stm32mp2_npu" ]; then
+    if [ "${BOARD_USED}" = "stm32mp2_npu" ]; then
         # install applications into the demo launcher
         install -m 0755 ${S}/stai-mpu/*py-tfl-mp2.yaml      ${D}${prefix}/local/demo/gtk-application
         install -m 0755 ${S}/stai-mpu/*py-ort-mp2.yaml      ${D}${prefix}/local/demo/gtk-application

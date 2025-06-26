@@ -121,7 +121,7 @@ do_install:stm32mp2common(){
     install -m 0755 ${S}/${ARCH}/unit-tests/stai_mpu_network_test         ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests
     chrpath -r '$ORIGIN' ${D}${prefix}/local/bin/${PN}-${PVB}/unit-tests/stai_mpu_network_test
 
-    if [ ${ARCH} == "aarch64-npu" ]; then
+    if [ "${ARCH}" = "aarch64-npu" ]; then
         #Install specific OpenVX shared libs for stm32mp2common
         install -m 0644 ${S}/${ARCH}/lib/libstai_mpu_ovx.so.${MAJOR}    ${D}${libdir}/libstai_mpu_ovx.so.${PVB}
         ln -sf libstai_mpu_ovx.so.${PVB}    ${D}${libdir}/libstai_mpu_ovx.so.${MAJOR}
@@ -148,8 +148,6 @@ FILES:${PN}-dev = " ${libdir}/libstai_mpu.so \
                     ${libdir}/libstai_mpu_ort.so  \
                     ${libdir}/libstai_mpu_tflite.so \
                     ${includedir}/* "
-
-# INSANE_SKIP:${PN} += " dev-so already-stripped"
 
 FILES:${PYTHON_PN}-${PN}  = "${PYTHON_SITEPACKAGES_DIR}/stai_mpu/*"
 

@@ -12,21 +12,26 @@ SRC_URI  =  " file://ort-vsinpu-ep-example;subdir=${BPN}-${PV} "
 
 S = "${WORKDIR}/${BPN}-${PV}"
 
-COMPATIBLE_MACHINE = "stm32mp2common"
+BOARD_USED:stm32mp1common = "stm32mp1"
+BOARD_USED:stm32mp2common = "${@bb.utils.contains('MACHINE_FEATURES', 'gpu', 'stm32mp2_npu', 'stm32mp2', d)}"
+BOARD_USED:stm32mp2common := "${@bb.utils.contains('DEFAULT_BUILD_AI', 'CPU', 'stm32mp2', '${BOARD_USED}', d)}"
 
 do_configure[noexec] = "1"
 
 EXTRA_OEMAKE  = 'SYSROOT="${RECIPE_SYSROOT}"'
 
 do_install() {
-    install -d ${D}${prefix}/local/bin/ort-vsinpu-ep-example/
+    if [ "${BOARD_USED}" = "stm32mp2_npu" ]; then
 
-    # install application binaries and launcher scripts
-    install -m 0755 ${S}/ort-vsinpu-ep-example/LICENSE                      ${D}${prefix}/local/bin/ort-vsinpu-ep-example/
-    install -m 0755 ${S}/ort-vsinpu-ep-example/ort-vsinpu-ep-example.py     ${D}${prefix}/local/bin/ort-vsinpu-ep-example/
+        install -d ${D}${prefix}/local/bin/ort-vsinpu-ep-example/
+
+        # install application binaries and launcher scripts
+        install -m 0755 ${S}/ort-vsinpu-ep-example/LICENSE                      ${D}${prefix}/local/bin/ort-vsinpu-ep-example/
+        install -m 0755 ${S}/ort-vsinpu-ep-example/ort-vsinpu-ep-example.py     ${D}${prefix}/local/bin/ort-vsinpu-ep-example/
+    fi
 }
 
-FILES:${PN} += "${prefix}/local/bin/ort-vsinpu-ep-example/ "
+FILES:${PN} += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${prefix}/local/bin/ort-vsinpu-ep-example/', '', d)}"
 
 RDEPENDS:${PN} += " \
     ${PYTHON_PN}-onnxruntime  \
