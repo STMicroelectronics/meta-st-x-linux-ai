@@ -1,7 +1,7 @@
 From 32a066a454ba484a3ab1d8d8563117371bac8a32 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Wed, 5 Feb 2025 11:16:00 +0100
-Subject: [PATCH 2/7] TFLite: cmake add schema_conversion_utils.cc in tflite
+Subject: [PATCH 2/10] TFLite: cmake add schema_conversion_utils.cc in tflite
  sources
 
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -21,6 +21,5 @@ index b7bb39869b5..206ab082e0e 100644
    ${TF_SOURCE_DIR}/compiler/mlir/lite/schema/conversion_metadata_generated.h
    ${TF_SOURCE_DIR}/compiler/mlir/lite/utils/control_edges.h
    ${TF_SOURCE_DIR}/compiler/mlir/lite/utils/string_utils.cc
--- 
+--
 2.25.1
-

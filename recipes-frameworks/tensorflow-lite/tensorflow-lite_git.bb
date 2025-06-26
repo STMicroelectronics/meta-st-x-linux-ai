@@ -20,7 +20,9 @@ SRC_URI += " file://0005-TFLite-remove-filter-on-OPT-4bits-sources.patch"
 SRC_URI += " file://0006-TFLite-cmake-change-visibility-compilation-options.patch "
 SRC_URI += " file://0007-TFLite-align-protobuf-version-on-the-native-one.patch "
 SRC_URI += " file://0008-TFLite-make-tensorflow-lib-shared-library.patch "
-SRC_URI:append:stm32mp2common = " file://0009-TFLite-fix-aarch64-support-for-XNNPACK.patch "
+SRC_URI += " file://0009-TFLite-remove-warning-for-LiteRT-usage.patch "
+SRC_URI:append:stm32mp2common = " file://0010-TFLite-fix-aarch64-support-for-XNNPACK.patch "
+
 
 S = "${WORKDIR}/git"
 
@@ -167,6 +169,12 @@ do_install() {
 	install -m 0644  ${WORKDIR}/build/tflite_runtime/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime
 	install -m 0644  ${WORKDIR}/build/tflite_runtime.egg-info/* ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime.egg-info
 	chrpath -r '$ORIGIN' ${D}${PYTHON_SITEPACKAGES_DIR}/tflite_runtime/*.so
+}
+
+do_install:append:stm32mp1common() {
+	install -d ${D}${includedir}/tensorflow/compiler
+	cd ${S}/tensorflow/compiler
+	cp --parents $(find . -name "*.h*") ${D}${includedir}/tensorflow/compiler
 }
 
 PACKAGES += "${PN}-tools ${PYTHON_PN}-${PN}"

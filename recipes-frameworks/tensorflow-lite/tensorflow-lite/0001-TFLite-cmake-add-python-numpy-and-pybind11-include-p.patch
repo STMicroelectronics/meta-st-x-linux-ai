@@ -1,7 +1,7 @@
 From bb15346a61bccaea02f9c9adbc3c122984ac0df2 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Thu, 30 Mar 2023 21:13:05 +0200
-Subject: [PATCH 1/7] TFLite: cmake: add python, numpy and pybind11 include
+Subject: [PATCH 1/10] TFLite: cmake: add python, numpy and pybind11 include
  path in CMakeLists.txt
 
 Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
@@ -21,8 +21,7 @@ index bce9627fbd3..b7bb39869b5 100644
 +    ${NUMPY_TARGET_INCLUDE}
 +    ${PYBIND11_TARGET_INCLUDE}
  )
- 
- target_link_libraries(_pywrap_tensorflow_interpreter_wrapper
--- 
-2.25.1
 
+ target_link_libraries(_pywrap_tensorflow_interpreter_wrapper
+--
+2.25.1

@@ -1,0 +1,38 @@
+From ad7a30c5f778a6968f8377bff5fe14a1aaba1716 Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Mon, 10 Feb 2025 16:55:57 +0100
+Subject: [PATCH 10/10] TFLite: remove warning for LiteRT usage
+
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ tensorflow/lite/python/interpreter.py | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/tensorflow/lite/python/interpreter.py b/tensorflow/lite/python/interpreter.py
+index cd2b087923e..9a734c0053a 100644
+--- a/tensorflow/lite/python/interpreter.py
++++ b/tensorflow/lite/python/interpreter.py
+@@ -41,13 +41,6 @@ else:
+
+ # pylint: enable=g-import-not-at-top
+
+-_INTERPRETER_DELETION_WARNING = """\
+-    Warning: Please use the LiteRT interpreter from the ai_edge_litert package.
+-    See the [migration guide](https://ai.google.dev/edge/litert/migration)
+-    for details.
+-    """
+-
+-
+ class Delegate:
+   """Python wrapper class to manage TfLiteDelegate objects.
+
+@@ -448,7 +441,6 @@ class Interpreter:
+     Raises:
+       ValueError: If the interpreter was unable to create.
+     """
+-    warnings.warn(_INTERPRETER_DELETION_WARNING)
+     if not hasattr(self, '_custom_op_registerers'):
+       self._custom_op_registerers = []
+
+--
+2.25.1

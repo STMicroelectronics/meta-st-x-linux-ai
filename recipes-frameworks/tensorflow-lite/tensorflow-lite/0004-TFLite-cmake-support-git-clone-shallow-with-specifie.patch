@@ -1,7 +1,7 @@
 From 5e9c5948a5fb57b851fc90f4fd18fae025dcea65 Mon Sep 17 00:00:00 2001
 From: Vincent ABRIOU <vincent.abriou@st.com>
 Date: Wed, 23 Feb 2022 17:55:45 +0100
-Subject: [PATCH 4/7] TFLite: cmake support git clone shallow with specified
+Subject: [PATCH 4/10] TFLite: cmake support git clone shallow with specified
  SHA1ID
 
 Change-Id: If5735d0322512ffdc7f341fd72570c9017e5b9c9
@@ -72,6 +72,5 @@ index 76d9705475b..e2bf04523db 100644
    GIT_PROGRESS TRUE
    SOURCE_DIR "${CMAKE_BINARY_DIR}/gemmlowp"
  )
--- 
+--
 2.25.1
-

@@ -1,7 +1,7 @@
 From 0ec5441f5f3c61473881c36410ad3705b9d91659 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Wed, 5 Feb 2025 16:47:03 +0100
-Subject: [PATCH 1/1] TFLite: make tensorflow lib shared library
+Subject: [PATCH 8/10] TFLite: make tensorflow lib shared library
 
 Change-Id: I0f97147ba401ed6e5d860a7796440cfeaf5bccf0
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -16,12 +16,11 @@ index 64be2797d9e..cb619165374 100644
 @@ -698,7 +698,7 @@ else()
    list(FILTER _ALL_TFLITE_SRCS EXCLUDE REGEX ".*mmap_allocation\\.cc$")
  endif()
- 
+
 -add_library(tensorflow-lite
 +add_library(tensorflow-lite SHARED EXCLUDE_FROM_ALL
    ${_ALL_TFLITE_SRCS}
  )
- 
--- 
-2.25.1
 
+--
+2.25.1

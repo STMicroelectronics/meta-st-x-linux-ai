@@ -1,7 +1,7 @@
 From 3c7d51e6c967e2e1734f3aa17c86ae5b29c1f440 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Mon, 21 Oct 2024 10:42:39 +0200
-Subject: [PATCH 6/7] TFLite: cmake change visibility compilation options
+Subject: [PATCH 6/10] TFLite: cmake change visibility compilation options
 
 Change-Id: I7ade67f9c4faa4bff6f59d3425f8bef3842d346d
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -24,6 +24,5 @@ index 74c5d3c57e9..64be2797d9e 100644
  set(_ALL_TFLITE_HDRS ${_ALL_TFLITE_SRCS})
  list(FILTER _ALL_TFLITE_HDRS INCLUDE REGEX ".*\\.h$")
  target_include_directories(tensorflow-lite
--- 
+--
 2.25.1
-

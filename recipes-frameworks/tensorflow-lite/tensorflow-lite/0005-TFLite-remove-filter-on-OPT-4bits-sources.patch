@@ -1,7 +1,7 @@
 From 50b74cab11bf0c30a948def8f3f44060d46ab465 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Tue, 5 Nov 2024 13:06:30 +0100
-Subject: [PATCH 5/7] TFLite: remove filter on OPT 4bits sources
+Subject: [PATCH 5/10] TFLite: remove filter on OPT 4bits sources
 
 Change-Id: I870db1c84c2404d8bf270e7daa4420377d5d719a
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -22,6 +22,5 @@ index 44534d723ce..74c5d3c57e9 100644
  )
  set(TFLITE_PROFILER_SRCS
    ${TFLITE_SOURCE_DIR}/profiling/platform_profiler.cc
--- 
+--
 2.25.1
-

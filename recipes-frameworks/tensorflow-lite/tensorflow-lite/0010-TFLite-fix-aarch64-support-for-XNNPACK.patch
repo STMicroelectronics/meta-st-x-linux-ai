@@ -1,7 +1,7 @@
 From 10612d0fdcff8f5d9a06fe5d705ec3d7443efca6 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Mon, 21 Oct 2024 10:38:05 +0200
-Subject: [PATCH 7/7] TFLite: fix aarch64 support for XNNPACK
+Subject: [PATCH 9/10] TFLite: fix aarch64 support for XNNPACK
 
 Change-Id: I17770799f68119f94d5b01dfbceb4fd41568b572
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
@@ -16,7 +16,7 @@ index 0bf6fc80f62..3a60b5726c8 100644
 @@ -38,6 +38,18 @@ endif()
  set(XNNPACK_BUILD_TESTS OFF CACHE BOOL "Disable XNNPACK test.")
  set(XNNPACK_BUILD_BENCHMARKS OFF CACHE BOOL "Disable XNNPACK benchmarks.")
- 
+
 +#  The "-mcpu=" switch might be introduced externaly into CMake: either in <LANG>_FLAGS or
 +#  as part of CC, CXX, ASM environmental variables (to be stored in CMAKE_<LANG>_COMPILER_ARG1).
 +#  This switch is not compatible with XNNPACK build mechanism and causes the XNNPACK compilation
@@ -32,6 +32,5 @@ index 0bf6fc80f62..3a60b5726c8 100644
  # The following line adds project of PTHREADPOOL, FP16 and XNNPACK which are
  # needed to compile XNNPACK delegate of TFLite.
  # Note, we introduce an intermediate subdirectory, see ${TFLITE_SOURCE_DIR}/tools/cmake/modules/xnnpack/CMakeLists.txt
--- 
+--
 2.25.1
-
