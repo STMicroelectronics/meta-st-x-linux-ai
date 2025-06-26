@@ -1,7 +1,7 @@
 From dd1f6e965ba737fc63538c6aa1b1406aeda9cdb0 Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Fri, 22 Nov 2024 11:47:48 +0100
-Subject: [PATCH 2/2] VSINPU EP Add VSINPU EP to support python bindings
+Subject: [PATCH 08/12] VSINPU EP Add VSINPU EP to support python bindings
 
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
 ---
@@ -26,7 +26,7 @@ index 270139ceaf..7a2a2d31c6 100644
 @@ -1038,4 +1039,13 @@ if (onnxruntime_USE_QNN)
    endif()
  endif()
- 
+
 +if (onnxruntime_USE_VSINPU)
 +  add_custom_command(
 +    TARGET onnxruntime_pybind11_state POST_BUILD
@@ -78,6 +78,5 @@ index 4d6e411def..e886a42b9d 100644
  std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_Rknpu();
  std::shared_ptr<IExecutionProviderFactory> CreateExecutionProviderFactory_CoreML(uint32_t flags);
  constexpr const char* kDefaultExecutionProviderEntry = "GetProvider";
--- 
+--
 2.25.1
-

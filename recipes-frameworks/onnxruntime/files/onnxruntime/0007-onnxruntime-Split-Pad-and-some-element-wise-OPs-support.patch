@@ -1,7 +1,7 @@
 From e2be57e211e4734c3681283551f37bae5860af58 Mon Sep 17 00:00:00 2001
 From: Kee <xuke537@hotmail.com>
 Date: Thu, 21 Nov 2024 21:59:44 +0800
-Subject: [PATCH 1/2] Split\Pad and some element-wise OPs support
+Subject: [PATCH 07/12] Split\Pad and some element-wise OPs support
 
 Description
 -Add split/pad/neg/not/ceil/round/min/max op support
@@ -45,7 +45,7 @@ index 4c10ba01b1..7da1e6e674 100644
 +ELEMENTWISE_OP_BUILDER(Round, Round);
 +ELEMENTWISE_OP_BUILDER(Min, Minimum);
 +ELEMENTWISE_OP_BUILDER(Max, Maximum);
- 
+
  class PowOpBuilder : public BaseOpBuilder {
    bool IsOpSupported(const onnxruntime::GraphViewer& graph_viewer,
 diff --git a/onnxruntime/core/providers/vsinpu/builders/impl/pad_op_builder.h b/onnxruntime/core/providers/vsinpu/builders/impl/pad_op_builder.h
@@ -470,7 +470,6 @@ index dc0969429b..fcf9479a60 100644
 +    REGISTER_OP_BUILDER("Pad", PadOpBuilder)
  #undef REGISTER_OP_BUILDER
  };
- 
--- 
-2.25.1
 
+--
+2.25.1

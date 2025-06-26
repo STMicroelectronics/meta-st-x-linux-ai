@@ -1,7 +1,7 @@
 From 638de2e65936dd8d012ce19a090186542f15637a Mon Sep 17 00:00:00 2001
 From: Maxence GUILHIN <maxence.guilhin@st.com>
 Date: Fri, 27 Sep 2024 16:23:24 +0200
-Subject: [PATCH 2/2] fix uncompatible cmake flag issue
+Subject: [PATCH 11/12] fix uncompatible cmake flag issue
 
 Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
 ---
@@ -30,6 +30,5 @@ index c02ac2096d..1bbe1120b6 100644
            set(mlas_platform_srcs
              ${mlas_platform_srcs}
              ${MLAS_SRC_DIR}/aarch64/HalfGemmKernelNeon.S
--- 
+--
 2.25.1
-

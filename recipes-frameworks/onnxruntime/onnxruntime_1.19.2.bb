@@ -20,9 +20,9 @@ SRC_URI += " file://onnxruntime/0006-remove-ENV-variable-that-is-not-usefull.pat
 SRC_URI += " file://onnxruntime/0007-onnxruntime-Split-Pad-and-some-element-wise-OPs-support.patch "
 SRC_URI += " file://onnxruntime/0008-onnxruntime-VSINPU-EP-Add-VSINPU-EP-to-support-python-bindings.patch "
 SRC_URI += " file://onnxruntime/0009-onnxruntime-update-hash-of-eigen-tar-file-on-gitlab.patch"
-SRC_URI:append:stm32mp2common = " file://onnxruntime/0010-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
+SRC_URI += " file://onnxruntime/0010-onnxruntime-training-remove-minimal-examples-build.patch "
 SRC_URI:append:stm32mp2common = " file://onnxruntime/0011-fix-uncompatible-cmake-flag-issue.patch "
-
+SRC_URI:append:stm32mp2common = " file://onnxruntime/0012-onnxruntime-xnnpack-Fix-mcpu-compiler-build-failure.patch "
 
 PROTOC_VERSION = "21.12"
 SRC_URI += "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip;name=protoc;subdir=protoc-${PROTOC_VERSION}/"
@@ -83,11 +83,14 @@ EXTRA_OECMAKE += " 	\
 					-Donnxruntime_BUILD_UNIT_TESTS=ON \
 "
 
-EXTRA_OECMAKE:append:stm32mp2common = "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '-Donnxruntime_USE_VSINPU=ON', '', d)}"
+EXTRA_OECMAKE:append:stm32mp2common = "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '-Donnxruntime_USE_VSINPU=ON -Donnxruntime_ENABLE_TRAINING=ON -Donnxruntime_ENABLE_LAZY_TENSOR=OFF', '', d)}"
 
 ONNX_TARGET_ARCH:armv7ve="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7ve', '', d)}"
 ONNX_TARGET_ARCH:armv7a="${@bb.utils.contains('TUNE_FEATURES', 'cortexa7', 'armv7a', '', d)}"
 ONNX_TARGET_ARCH:aarch64="${@bb.utils.contains('TUNE_FEATURES', 'cortexa35', 'aarch64', '', d)}"
+
+SETUPTOOLS_SETUP_PATH = "${WORKDIR}/build"
+SETUPTOOLS_BUILD_ARGS += "--enable_training --enable_training_apis"
 
 do_generate_toolchain_file:append() {
 	echo "set( CMAKE_SYSTEM_PROCESSOR ${ONNX_TARGET_ARCH} )" >> ${WORKDIR}/toolchain.cmake
@@ -115,6 +118,13 @@ do_compile:prepend() {
         export HTTPS_PROXY=${https_proxy}
         export https_proxy=${https_proxy}
     fi
+}
+
+do_compile:append:stm32mp2common(){
+	if [ "${BOARD_USED}" = "stm32mp2_npu" ]; then
+		cd ${SETUPTOOLS_SETUP_PATH}
+		${STAGING_BINDIR_NATIVE}/python3-native/python3 ${S}/setup.py bdist_wheel ${SETUPTOOLS_BUILD_ARGS}
+	fi
 }
 
 do_install() {
@@ -161,6 +171,8 @@ do_install() {
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_float16.h  	${D}${includedir}/onnxruntime
 	cp  ${S}/include/onnxruntime/core/session/onnxruntime_session_options_config_keys.h  	${D}${includedir}/onnxruntime
 
+	rsync -r --exclude 'training' ${B}/onnxruntime/ ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/
+
 	# This shared lib is used by onnxruntime_shared_lib_test and onnxruntime_test_python.py
 	install -m 644 ${B}/libcustom_op_library.so			 ${D}${libdir}
 
@@ -173,7 +185,23 @@ do_install() {
 
 	# Remove the static library from the Python package installation
 	rm -f ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/capi/libonnxruntime_providers_vsinpu.a
+
 	cp -r  ${S}/include/onnxruntime/core/providers/* 	${D}${includedir}/onnxruntime/core/providers/
+
+	if [ "${BOARD_USED}" = "stm32mp2_npu" ]; then
+		# Install header files for on-device-training
+		install -d ${D}${includedir}/onnxruntime_training
+		cp  ${S}/orttraining/orttraining/training_api/include/onnxruntime_training_cxx_api.h  	${D}${includedir}/onnxruntime_training
+		cp  ${S}/orttraining/orttraining/training_api/include/onnxruntime_training_cxx_inline.h ${D}${includedir}/onnxruntime_training
+		cp  ${S}/orttraining/orttraining/training_api/include/onnxruntime_training_c_api.h  	${D}${includedir}/onnxruntime_training
+
+		# Install onnxruntime-training python3 module
+		install -d ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/training
+		install -d ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime_training.egg-info
+		cd ${WORKDIR}/build/onnxruntime/training/
+		cp -r ./* ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime/training/
+		install -m 0644  ${WORKDIR}/build/onnxruntime_training.egg-info/* ${D}${PYTHON_SITEPACKAGES_DIR}/onnxruntime_training.egg-info
+	fi
 
 	# Remove libonnxruntime.so* from Python module to prevent multi shlib providers issue
 	find ${D}${PYTHON_SITEPACKAGES_DIR} -name "libonnx*.so*" -exec rm {} \;
@@ -185,8 +213,10 @@ do_install() {
 PRIVATE_LIBS = "libonnxruntime_providers_shared.so"
 
 PACKAGES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
+PACKAGES += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${PYTHON_PN}-${PN}-training', '', d)}"
 
 PROVIDES += "${PYTHON_PN}-${PN} ${PN}-tools ${PN}-unit-tests"
+PROVIDES += "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '${PYTHON_PN}-${PN}-training', '', d)}"
 
 INSANE_SKIP:${PYTHON_PN}-${PN} += "staticdev"
 
@@ -194,12 +224,40 @@ FILES:${PN} = "${libdir}/pkgconfig/* ${libdir}/libonnxruntime.so.* ${libdir}/onn
 FILES:${PN}-dev = "${libdir}/libonnxruntime.so ${includedir}/*"
 FILES:${PN}-tools = "${prefix}/local/bin/${PN}-${PVB}/tools/onnxruntime_perf_test"
 FILES:${PN}-unit-tests = "${prefix}/local/bin/${PN}-${PVB}/unit-tests/* "
-FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime "
 FILES:${PN}-unit-tests += "${libdir}/libcustom_op_invalid_library.so ${libdir}/libtest_execution_provider.so ${libdir}/libcustom_op_library.so"
+FILES:${PYTHON_PN}-${PN} = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/backend \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/capi \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/datasets \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/transformers \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/quantization \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/tools \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/transformers \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/__init__.py \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/LICENSE \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/ThirdPartyNotices.txt \
+                            ${PYTHON_SITEPACKAGES_DIR}/onnxruntime/Privacy.md \
+                            "
+
+FILES:${PYTHON_PN}-${PN}-training = "${PYTHON_SITEPACKAGES_DIR}/onnxruntime/training \
+                                     ${PYTHON_SITEPACKAGES_DIR}/onnxruntime_training.egg-info"
 
 # onnxruntime_test_python.py unitary test requires python3-numpy and python3-onnxruntime packages
+
 RDEPENDS:${PN}-unit-tests += "${PYTHON_PN}-${PN}"
 RDEPENDS:${PN}-unit-tests:append = " ${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', ' tim-vx-tools ', '', d)} "
 RDEPENDS:${PN} += " x-linux-ai-benchmark "
 RDEPENDS:${PN}-tools += "${PN}"
 RDEPENDS:${PYTHON_PN}-${PN} += "${PYTHON_PN}-numpy ${PN}"
+RDEPENDS:${PYTHON_PN}-${PN}-training:append:stm32mp2common = "${@bb.utils.contains('BOARD_USED', 'stm32mp2_npu', '\
+                            ${PYTHON_PN} \
+                            ${PYTHON_PN}-${PN} \
+                            ${PYTHON_PN}-numpy \
+                            ${PYTHON_PN}-cerberus \
+                            ${PYTHON_PN}-setuptools \
+                            ${PYTHON_PN}-h5py \
+                            ${PYTHON_PN}-packaging \
+                            ${PYTHON_PN}-flatbuffers \
+                            ${PYTHON_PN}-sympy \
+                            ${PYTHON_PN}-protobuf \
+                            ${PYTHON_PN}-torch \
+                            ${PYTHON_PN}-onnx', '', d)}"ure v1.19.2

@@ -1,7 +1,7 @@
 From 36b54114a972e49a1f99f19c8bc68669cef90a7c Mon Sep 17 00:00:00 2001
 From: Othmane AHL ZOUAOUI <othmane.ahlzouaoui@st.com>
 Date: Wed, 31 Jul 2024 11:04:37 +0200
-Subject: [PATCH 4/8] onnxruntime: fix incompatibility with compiler GCC12.2.1
+Subject: [PATCH 4/12] onnxruntime: fix incompatibility with compiler GCC12.2.1
 
 As stated in this issue below, the onnxruntime 14.4.0 release is
 not compatible with the version 12.2.1 of the GCC cross compiler.
