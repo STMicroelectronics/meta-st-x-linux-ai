@@ -2,7 +2,7 @@
     <img width="720" src="https://raw.githubusercontent.com/STMicroelectronics/meta-st-stm32mpu-ai/master/x-linux-ai-logo.png">
 </p>
 
-X-LINUX-AI version: v6.0.1
+X-LINUX-AI version: v6.1.0
 
 X-LINUX-AI is a free of charge open-source software package dedicated to AI.
 It is a complete ecosystem that allow developers working with OpenSTLinux to create AI-based application very easily.
@@ -19,8 +19,8 @@ X-LINUX-AI OpenEmbedded meta layer to be integrated into OpenSTLinux distributio
 It contains recipes for AI frameworks, tools and application examples for STM32MPx series
 
 ## Compatibility
-The X-LINUX-AI OpenSTLinux Expansion Package v6.0.1 is compatible with the Yocto Project™ build system Scarthgap.
-It is validated over the OpenSTLinux Distribution v6.0.0 https://wiki.st.com/stm32mpu on STM32MP25x and STM32MP1x series.
+The X-LINUX-AI OpenSTLinux Expansion Package v6.1.0 is compatible with the Yocto Project™ build system Scarthgap.
+It is validated over the OpenSTLinux Distribution v6.1.0 https://wiki.st.com/stm32mpu on STM32MP2x and STM32MP1x series.
 
 ## Versioning
 Since its release v5.0.0, the major versioning of the X-LINUX-AI OpenSTLinux Expansion Package is aligned on the major versioning of the OpenSTLinux Distribution. This prevents painful backward compatibility attempts and makes dependencies straightforward.
@@ -30,12 +30,14 @@ The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
 * **z**: patch version to introduce bug fixes. A patch version is implemented in a backward compatible manner.
 
 ## Available frameworks and tools within the meta-layer
-[X-LINUX-AI v6.0.1 expansion package](https://wiki.st.com/stm32mpu/wiki/Category:X-LINUX-AI_expansion_package):
+[X-LINUX-AI v6.1.0 expansion package](https://wiki.st.com/stm32mpu/wiki/Category:X-LINUX-AI_expansion_package):
 * AI Frameworks:
-  * STAI_MPU Unified API based on OpenVX™(STM32MP25x only), TensorFlow™ Lite, and ONNX Runtime™ compatible with all STM32MPU series
-  * TIM-VX™ 1.2.6 (STM32MP25x only)
-  * TensorFlow™ Lite 2.16.2 with XNNPACK delegate activated for CPU execution and VX-delegate External delegate to address STM32MP2 NPU
-  * ONNX Runtime™ 1.19.2 with XNNPACK execution engine activated for CPU execution and VSINPU Execution provider to address STM32MP2 NPU
+  * STAI_MPU Unified API based on OpenVX™(STM32MP25x and STM32MP23x only), TensorFlow™ Lite, and ONNX Runtime™ compatible with all STM32MPU series
+  * TIM-VX™ 1.22.6 (STM32MP25x and STM32MP23x only)
+  * TensorFlow™ Lite 2.18.0 with XNNPACK delegate activated for CPU execution and VX-delegate External delegate to address STM32MP2 NPU
+  * ONNX Runtime 1.19.2 with XNNPACK execution engine activated for CPU execution and VSINPU Execution provider to address STM32MP2 NPU
+  * ONNX 1.16.2 python version for On Device Learning
+  * Pytorch 2.3.1 python version for On Device Learning
 
 * Out of the box applications:
   * Image classification :
@@ -48,6 +50,11 @@ The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
     * Python™ example using STAI_MPU Unified API based on DeepLabV3 quantized model
   * Face recognition:
     * C++ example using STAI_MPU unified API based on the BlazeFace and FaceNet quantized models
+  * People Tracking and Heatmap
+    * Python™ example using STAI_MPU Unified API based on the yolov8n quantized model.
+  * On Device Learning for Object detection
+    * Python™ example using STAI_MPU Unified API based on SSD MobileNet v2 as student and RT-DETR transformer model as teacher.
+    * Step by step Jupyterlab™ notebook available for this application.
   * Note: applications are based on Gstreamer 1.22.x, GTK 3.x, OpenCV 4.9.x, Pillow, Python 3
 
 * Utilities:
@@ -67,6 +74,9 @@ The X-LINUX-AI generic versioning v**x**.**y**.**z** is built as follows:
 
 ## Further information on how to install and how to use X-LINUX-AI Distribution package
 <https://wiki.st.com/stm32mpu/wiki/X-LINUX-AI_Distribution_package>
+
+## Further information on On Device Learning feature
+<https://wiki.st.com/stm32mpu/wiki/Category:AI_-_On_Device_Learning>
 
 ## Application samples
 <https://wiki.st.com/stm32mpu/wiki/Category:AI_-_Application_examples>

@@ -1,0 +1,10 @@
+""" STMicroelectronics STAI_MPU python module"""
+
+<<<<<<< HEAD
+__version__ = "6.1.0"
+=======
+__version__ = "6.0.1"
+>>>>>>> 9a5d0a5... st-image-ai: converge on a unique solution for all STM32MPU
+__author__ = "STMicroelectronics"
+
+from .stai_mpu.network import stai_mpu_network, stai_mpu_tensor, stai_mpu_backend_engine
