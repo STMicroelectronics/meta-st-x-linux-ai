@@ -15,6 +15,7 @@ STM32MP135="stm32mp135"
 STM32MP157="stm32mp157"
 STM32MP157FEV1="stm32mp157f-ev1st"
 STM32MP2="stm32mp2"
+STM32MP21="stm32mp215"
 
 if [[ "$FRAMEWORK" == "nbg" ]]; then
   echo "NBG format is not supported in the X-LINUX-AI version installed, please use tflite or onnx"
@@ -76,9 +77,6 @@ fi
 if [[ "$COMPATIBLE" == *"$STM32MP2"* ]]; then
   CAMERA_SRC="LIBCAMERA"
   MACHINE=$STM32MP2_CPU
-  DWIDTH=760
-  DHEIGHT=568
-  DFPS=30
   COMPUTE_ENGINE=""
   OPTIONS="--dual_camera_pipeline"
   IMAGE_CLASSIFICATION_MODEL="mobilenet/mobilenet_v1_0.5_128_quant$NN_EXT"
@@ -87,6 +85,15 @@ if [[ "$COMPATIBLE" == *"$STM32MP2"* ]]; then
   OBJ_DETEC_MODEL="coco_ssd_mobilenet/ssd_mobilenet_v1_10_300$NN_EXT"
   OBJ_DETEC_MODEL_LABEL="coco_ssd_mobilenet/labels_coco_dataset"
   OBJ_DETECT_DATA="coco_ssd_mobilenet/testdata/"
+  if [[ "$COMPATIBLE" == *"$STM32MP21"* ]]; then
+    DWIDTH=320
+    DHEIGHT=240
+    DFPS=10
+  else
+    DWIDTH=760
+    DHEIGHT=568
+    DFPS=15
+  fi
 fi
 
 echo "machine used = "$MACHINE

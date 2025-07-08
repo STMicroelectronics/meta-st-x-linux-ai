@@ -1243,7 +1243,6 @@ static void gui_create_main(CustomData *data)
 	gtk_widget_set_app_paintable(data->overlay_draw, TRUE);
 	if (data->preview_enabled) {
 		g_signal_connect(data->overlay_draw, "draw",G_CALLBACK(gui_draw_main_cb), data);
-		g_print("st and exit icons created \n");
 	}
 	if (data->preview_enabled) {
 		/* Camera preview use case */
@@ -1331,6 +1330,41 @@ static void gui_create_main(CustomData *data)
 }
 
 /**
+ * This function is called to preprocess each camera buffer before NN inference
+ */
+std::vector<uint8_t> gst_preprocess_buffer(GstMapInfo& info, int width, int height, int nnInputWidth) {
+	/*DCMIPP pixelpacker has a constraint on the output resolution that should be multiple of 16.
+    the allocated buffer may contains stride to handle the DCMIPP Hw constraints/
+    The following code allow to handle both cases by anticipating the size of the
+    allocated buffer according to the NN resolution
+	*/
+	int channels = 3;
+	int stride, offset;
+
+	//Calculate the nearest upper multiple of 16
+	if (nnInputWidth % 16 != 0) {
+		int upperMultiple = ((nnInputWidth / 16) + 1) * 16;
+		//Calculate the stride and offset
+		stride = upperMultiple * channels;
+		offset = stride - (width * channels);
+	} else {
+		//Calculate the stride and offset
+		stride = width * channels;
+		offset = 0;
+	}
+
+	int numLines = info.size / stride;
+	std::vector<uint8_t> preprocessedData;
+	//fill the processed buffer properly depending on stride and offset
+	for (int i = 0; i < numLines; ++i) {
+		int startIndex = i * stride;
+		int endIndex = startIndex + (stride - offset);
+		preprocessedData.insert(preprocessedData.end(), info.data + startIndex, info.data + endIndex);
+	}
+	return preprocessedData;
+}
+
+/**
  * This function is called when appsink Gstreamer element receives a buffer
  */
 bool first_frame = true;
@@ -1343,6 +1377,12 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 	/* Retrieve the buffer */
 	g_signal_emit_by_name (sink, "pull-sample", &sample);
 	if (sample) {
+		/* Recover information of the GST sample */
+		GstCaps* caps = gst_sample_get_caps(sample);
+		GstStructure* structure = gst_caps_get_structure(caps, 0);
+		int width, height;
+		gst_structure_get_int(structure, "width", &width);
+		gst_structure_get_int(structure, "height", &height);
 		buffer = gst_sample_get_buffer (sample);
 
 		/* Make a copy */
@@ -1359,10 +1399,17 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 			}
 		#endif
 
-		/* Execute the inference */
-		nn_inference(info.data);
+		if(camera_src_str == "LIBCAMERA"){
+			/* Preprocess the camera buffer */
+			std::vector<uint8_t> nn_input_sample;
+			nn_input_sample = gst_preprocess_buffer(info,width,height,data->nn_input_width);
+			/* Execute the inference */
+			nn_inference(nn_input_sample.data());
+		} else {
+			/* Execute the inference */
+			nn_inference(info.data);
+		}
 		nn_postprocessing();
-
 		gst_buffer_unmap(app_buffer, &info);
 		gst_buffer_unref (app_buffer);
 
@@ -1371,8 +1418,8 @@ static GstFlowReturn gst_new_sample_cb(GstElement *sink, CustomData *data)
 
 		/* Call application callback only in playing state */
 		gst_element_post_message(sink,
-					 gst_message_new_application(GST_OBJECT(sink),
-								     gst_structure_new_empty("inference-done")));
+					 			gst_message_new_application(GST_OBJECT(sink),
+								gst_structure_new_empty("inference-done")));
 
 		return GST_FLOW_OK;
 	}
@@ -1456,7 +1503,7 @@ static int gst_pipeline_camera_creation(CustomData *data)
 	GstBus *bus;
 
 	/* Create the pipeline */
-	pipeline  = gst_pipeline_new("Image classification live camera");
+	pipeline  = gst_pipeline_new("Object Detection live camera");
 	data->pipeline = pipeline;
 
 	/* Create gstreamer elements */
@@ -1551,36 +1598,46 @@ static int gst_pipeline_camera_creation(CustomData *data)
  */
 static int gst_dual_pipeline_camera_creation(CustomData *data)
 {
-    GstElement *pipeline, *libcamerasrc, *queue0, *queue1, *convert, *dispsink, *appsink1, *fpsmeasure1;
+    GstElement *pipeline, *libcamerasrc, *queue0, *queue1, *dispsink, *framerate0, *framerate1, *appsink0, *fpsmeasure1, *caps0, *caps1, *videoscale;
 	GstBus *bus;
 
 	/* Create the pipeline */
-	pipeline  = gst_pipeline_new("Image classification live camera");
+	pipeline  = gst_pipeline_new("Object Detection live camera");
 	data->pipeline = pipeline;
 
 	/* Create gstreamer elements */
     libcamerasrc = gst_element_factory_make("libcamerasrc", "libcamera");
     queue0       = gst_element_factory_make("queue", "queue0");
     queue1       = gst_element_factory_make("queue", "queue1");
-    convert      = gst_element_factory_make("videoconvert", "convert");
 	dispsink     = gst_element_factory_make_full("gtkwaylandsink", "name", "gtkwsink", "drm-device",NULL,NULL);
-	appsink1     = gst_element_factory_make("appsink", "app-sink");
+	appsink0     = gst_element_factory_make("appsink", "app-sink");
+	framerate0    = gst_element_factory_make("videorate",      "video-rate0");
+	framerate1   = gst_element_factory_make("videorate",      "video-rate1");
 	fpsmeasure1 = gst_element_factory_make("fpsdisplaysink", "fps-measure1");
+	caps0 = gst_element_factory_make("capsfilter", "caps_src0");
+	caps1 = gst_element_factory_make("capsfilter", "caps_src1");
+	videoscale = gst_element_factory_make("videoscale", "videoscale");
 
-    GstCaps *caps_src0 = gst_caps_new_simple("video/x-raw",
+    GstCaps *caps_src1 = gst_caps_new_simple("video/x-raw",
                                              "format", G_TYPE_STRING, "RGB16",
                                              "width", G_TYPE_INT, data->frame_width,
                                              "height", G_TYPE_INT, data->frame_height,
+											 "framerate", GST_TYPE_FRACTION, std::atoi(camera_fps_str.c_str()), 1,
                                              NULL);
-
-    GstCaps *caps_src1 = gst_caps_new_simple("video/x-raw",
+    gchar *capsStr = gst_caps_to_string(caps_src1);
+    std::cout << "Camera preview caps: " << capsStr << std::endl;
+    g_free(capsStr);
+    GstCaps *caps_src0 = gst_caps_new_simple("video/x-raw",
                                              "format", G_TYPE_STRING, "RGB",
                                              "width", G_TYPE_INT, data->nn_input_width,
                                              "height", G_TYPE_INT, data->nn_input_height,
+											 "framerate", GST_TYPE_FRACTION, std::atoi(camera_fps_str.c_str()), 1,
                                              NULL);
-
-	if (!pipeline || !libcamerasrc || !queue0 || !queue1 ||
-	    !convert || !dispsink || !appsink1 || !fpsmeasure1) {
+    gchar *capsStr0 = gst_caps_to_string(caps_src0);
+    std::cout << "Camera NN caps: " << capsStr0 << std::endl;
+    g_free(capsStr0);
+	if (!pipeline || !libcamerasrc || !queue0 || !queue1 || !dispsink || !framerate0
+		|| !framerate1 || !appsink0 || !fpsmeasure1 || !videoscale) {
 		g_printerr("Not all elements could be created. Exiting.\n");
 		return -1;
 	}
@@ -1596,60 +1653,83 @@ static int gst_dual_pipeline_camera_creation(CustomData *data)
 	g_signal_connect(fpsmeasure1, "fps-measurements", G_CALLBACK(gst_fps_measure_display_cb), NULL);
 
  	/* Configure the appsink */
-	g_object_set(appsink1, "emit-signals", TRUE, "sync", FALSE, "max-buffers", 1, "drop", TRUE, NULL);
-	g_signal_connect(appsink1, "new-sample", G_CALLBACK(gst_new_sample_cb), data);
+	g_object_set(appsink0, "emit-signals", TRUE, "sync", FALSE, "max-buffers", 1, "drop", TRUE, NULL);
+	g_signal_connect(appsink0, "new-sample", G_CALLBACK(gst_new_sample_cb), data);
 
 	/* Build the pipeline */
 	/* Add all elements into the pipeline */
-    gst_bin_add_many(GST_BIN(pipeline), libcamerasrc, queue0, queue1, convert, dispsink, appsink1, fpsmeasure1,  NULL);
-
-    /* Link the elements together */
-    if (gst_element_link_many(convert, fpsmeasure1, NULL) != TRUE) {
-        g_error("Failed to link elements (1)");
-        gst_object_unref(pipeline);
-        return -1;
-    }
-
-	if (gst_element_link_filtered(queue0, convert, caps_src0) != TRUE) {
-		g_error("Failed to link elements (2)");
-        gst_object_unref(pipeline);
-		return -2;
-	}
-
-	if (gst_element_link_filtered(queue1, appsink1, caps_src1) != TRUE) {
-		g_error("Failed to link elements (3)");
-        gst_object_unref(pipeline);
-		return -2;
-	}
-
-	gst_caps_unref(caps_src0);
-	gst_caps_unref(caps_src1);
+    gst_bin_add_many(GST_BIN(pipeline), libcamerasrc, queue0, queue1, dispsink, framerate0, framerate1
+	, appsink0, fpsmeasure1, caps1, caps0, videoscale,  NULL);
 
 	/* Update stream-role of the src, src_0 and src_1 pads*/
     GstPad *src_pad = gst_element_get_static_pad(libcamerasrc, "src");
     GstPad *src_request_pad0 = gst_element_request_pad_simple(libcamerasrc, "src_%u");
-    GstPad *queue0_sink_pad = gst_element_get_static_pad(queue0, "sink");
-    GstPad *queue1_sink_pad = gst_element_get_static_pad(queue1, "sink");
-
+    GstPad *videorate0_sink_pad = gst_element_get_static_pad(framerate0, "sink");
+    GstPad *videorate1_sink_pad = gst_element_get_static_pad(framerate1, "sink");
 	/* view-finder */
     g_object_set(src_pad, "stream-role", 3, NULL);
 	/* still-capture */
     g_object_set(src_request_pad0, "stream-role", 1, NULL);
 
-    if (gst_pad_link(src_pad, queue0_sink_pad) != GST_PAD_LINK_OK) {
-        g_printerr("src pad could not be linked.\n");
+	/*
+	              | src_1   --> videorate1 --> queue1 [caps_src] --> fpsdisplaysink (connected to gtkwaylandsink)
+	 libcamerasrc |
+	              | src_0 --> videorate0 --> queue0 [caps_src0] --> video_scale --> appsink
+	*/
+
+    /* Link the elements together for display pipeline */
+    if (gst_pad_link(src_pad, videorate1_sink_pad) != GST_PAD_LINK_OK) {
+        g_error("Failed to link elements src_pad & videorate1_sink_pad");
         gst_object_unref(pipeline);
         return -1;
     }
 
-	if (gst_pad_link(src_request_pad0, queue1_sink_pad) != GST_PAD_LINK_OK) {
-        g_printerr("src_0 pad could not be linked.\n");
+    if (gst_element_link(framerate1, queue1) != TRUE) {
+        g_error("Failed to link elements framerate1 & queue1");
         gst_object_unref(pipeline);
         return -1;
     }
 
-    gst_object_unref(queue0_sink_pad);
-    gst_object_unref(queue1_sink_pad);
+	if (!gst_element_link_filtered(queue1, caps1, caps_src1)) {
+		g_error("Failed to link elements queue1 & caps1");
+		gst_object_unref(pipeline);
+		return -1;
+	}
+
+	if (!gst_element_link(caps1, fpsmeasure1)) {
+		g_error("Failed to link elements caps1 & fpsmeasure1");
+		gst_object_unref(pipeline);
+		return -1;
+	}
+
+	/* Link the elements together for NN pipeline */
+
+	if (gst_pad_link(src_request_pad0, videorate0_sink_pad) != GST_PAD_LINK_OK) {
+        g_error("Failed to link elements src_request_pad0 & videorate0_sink_pad");
+        gst_object_unref(pipeline);
+        return -1;
+    }
+
+    if (gst_element_link(framerate0, queue0) != TRUE) {
+        g_error("Failed to link elements framerate0 & queue0");
+        gst_object_unref(pipeline);
+        return -1;
+    }
+
+	if (gst_element_link_filtered(queue0, caps0, caps_src0) != TRUE) {
+		g_error("Failed to link elements queue0 & caps0");
+        gst_object_unref(pipeline);
+		return -2;
+	}
+
+	if (!gst_element_link_many(caps0, videoscale, appsink0, NULL)) {
+		g_error("Failed to link elements caps0 & videoscale & appsink0");
+		gst_object_unref(pipeline);
+		return -1;
+	}
+
+	gst_caps_unref(caps_src0);
+	gst_caps_unref(caps_src1);
 
 	/* Instruct the bus to emit signals for each received message, and
 	 * connect to the interesting signals */
@@ -1951,7 +2031,6 @@ int main(int argc, char *argv[])
 	 }
 
 	/* Create the GUI containing the video stream  */
-	g_print("Start Creating main GTK window\n");
 	gui_create_main(&data);
 	if (data.preview_enabled) {
 		g_print("gst set pipeline playing state\n");
@@ -1959,7 +2038,6 @@ int main(int argc, char *argv[])
 	}
 
 	/* Create the second GUI containing the nn information  */
-	g_print("Start Creating overlay GTK window\n");
 	gui_create_overlay(&data);
 
 	/* Start a timeout timer in validation process to close application if

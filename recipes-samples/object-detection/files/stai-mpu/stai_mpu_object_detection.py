@@ -179,17 +179,20 @@ class GstWidget(Gtk.Box):
             raise Exception("Could not create Gstreamer camera source element")
 
         # creation of the libcamerasrc caps for the pipelines for camera
-        caps = "video/x-raw,width=" + str(self.app.frame_width) + ",height=" + str(self.app.frame_height) + ",format=RGB16"
+        caps = "video/x-raw,width=" + str(self.app.frame_width) + ",height=" + str(self.app.frame_height) + ",format=RGB16, framerate=" + str(args.framerate)+ "/1"
         print("Main pipe configuration: ", caps)
         caps_src = Gst.Caps.from_string(caps)
 
         # creation of the libcamerasrc caps for the pipelines for nn
-        caps = "video/x-raw,width=" + str(self.app.nn_input_width) + ",height=" + str(self.app.nn_input_height) + ",format=RGB"
+        caps = "video/x-raw,width=" + str(self.app.nn_input_width) + ",height=" + str(self.app.nn_input_height) + ",format=RGB, framerate=" + str(args.framerate)+ "/1"
         print("Aux pipe configuration:  ", caps)
         caps_src0 = Gst.Caps.from_string(caps)
 
         # creation of the queues elements
         queue  = Gst.ElementFactory.make("queue", "queue")
+        queue.set_property("leaky", 2)  # 0: no leak, 1: upstream (oldest), 2: downstream (newest)
+        queue.set_property("max-size-buffers", 1)  # Maximum number of buffers in the queue
+
         # Only one buffer in the queue0 to get 30fps on the display preview pipeline
         queue0 = Gst.ElementFactory.make("queue", "queue0")
         queue0.set_property("leaky", 2)  # 0: no leak, 1: upstream (oldest), 2: downstream (newest)
@@ -199,7 +202,7 @@ class GstWidget(Gtk.Box):
         gtkwaylandsink = Gst.ElementFactory.make("gtkwaylandsink")
         self.pack_start(gtkwaylandsink.props.widget, True, True, 0)
         gtkwaylandsink.props.widget.show()
-
+        self.videoscale = Gst.ElementFactory.make("videoscale", "videoscale")
         # creation and configuration of the fpsdisplaysink element to measure display fps
         fpsdisplaysink = Gst.ElementFactory.make("fpsdisplaysink", "fpsmeasure")
         fpsdisplaysink.set_property("signal-fps-measurements", True)
@@ -216,6 +219,9 @@ class GstWidget(Gtk.Box):
         self.appsink.set_property("drop", True)
         self.appsink.connect("new-sample", self.new_sample)
 
+        videorate = Gst.ElementFactory.make("videorate", "videorate")
+        videorate0 = Gst.ElementFactory.make("videorate", "videorate2")
+
         # check if all elements were created
         if not all([self.pipeline_preview, self.libcamerasrc, queue, queue0, fpsdisplaysink, gtkwaylandsink, self.appsink]):
             print("Not all elements could be created. Exiting.")
@@ -223,6 +229,8 @@ class GstWidget(Gtk.Box):
 
         # add all elements to the pipeline
         self.pipeline_preview.add(self.libcamerasrc)
+        self.pipeline_preview.add(videorate)
+        self.pipeline_preview.add(videorate0)
         self.pipeline_preview.add(queue)
         self.pipeline_preview.add(queue0)
         self.pipeline_preview.add(fpsdisplaysink)
@@ -230,20 +238,28 @@ class GstWidget(Gtk.Box):
 
         # linking elements together
         #
-        #              | src   --> queue  [caps_src]  --> fpsdisplaysink (connected to gtkwaylandsink)
+        #              | src   --> videorate --> queue  [caps_src] --> fpsdisplaysink (connected to gtkwaylandsink)
         # libcamerasrc |
-        #              | src_0 --> queue0 [caps_src0] --> appsink
+        #              | src_0 --> videorate0 --> queue0 [caps_src0] --> videoscale --> appsink
         #
-        queue.link_filtered(fpsdisplaysink, caps_src)
-        queue0.link_filtered(self.appsink, caps_src0)
 
-        src_pad = self.libcamerasrc.get_static_pad("src")
+        # display pipeline
+        self.libcamerasrc.link(videorate)
+        videorate.link(queue)
+        queue.link_filtered(fpsdisplaysink, caps_src)
+
+        # NN pipeline
         src_request_pad_template = self.libcamerasrc.get_pad_template("src_%u")
         src_request_pad0 = self.libcamerasrc.request_pad(src_request_pad_template, None, None)
+        src_request_pad0.link(videorate0.get_static_pad("sink"))
+        videorate0.link(queue0)
+        queue0.link_filtered(self.appsink, caps_src0)
+
         queue_sink_pad = queue.get_static_pad("sink")
         queue0_sink_pad = queue0.get_static_pad("sink")
 
         # view-finder
+        src_pad = self.libcamerasrc.get_static_pad("src")
         src_pad.set_property("stream-role", 3)
         # still-capture
         src_request_pad0.set_property("stream-role", 1)
@@ -295,7 +311,7 @@ class GstWidget(Gtk.Box):
         if message.get_structure().get_name() == 'inference-done':
             self.app.update_ui()
 
-    def gst_to_nparray(self,sample):
+    def preprocess_buffer(self,sample):
         """
         conversion of the gstreamer frame buffer into numpy array
         """
@@ -313,12 +329,37 @@ class GstWidget(Gtk.Box):
         number_of_column = caps.get_structure(0).get_value('width')
         number_of_lines = caps.get_structure(0).get_value('height')
         channels = 3
-        arr = np.ndarray(
-            (number_of_lines,
-             number_of_column,
-             channels),
-            buffer=buf.extract_dup(0, buf.get_size()),
-            dtype=np.uint8)
+        if(args.camera_src == "LIBCAMERA"):
+            buffer = np.frombuffer(buf.extract_dup(0, buf.get_size()), dtype=np.uint8)
+            #DCMIPP pixelpacker has a constraint on the output resolution that should be multiple of 16.
+            # the allocated buffer may contains stride to handle the DCMIPP Hw constraints/
+            #The following code allow to handle both cases by anticipating the size of the
+            #allocated buffer according to the NN resolution
+            if (self.app.nn_input_width % 16 != 0):
+                # Calculate the nearest upper multiple of 16
+                upper_multiple = ((self.app.nn_input_width // 16) + 1) * 16
+                # Calculate the stride and offset
+                stride = upper_multiple * channels
+                offset = stride - (number_of_column * channels)
+            else :
+                # Calculate the stride and offset
+                stride = number_of_column * channels
+                offset = 0
+            num_lines = len(buffer) // stride
+            arr = np.empty((number_of_column, number_of_lines, channels), dtype=np.uint8)
+            # Fill the processed buffer properly depending on stride and offset
+            for i in range(num_lines):
+                start_index = i * stride
+                end_index = start_index + (stride - offset)
+                line_data = buffer[start_index:end_index]
+                arr[i] = line_data.reshape((number_of_column, channels))
+        else:
+            arr = np.ndarray(
+                    (number_of_lines,
+                    number_of_column,
+                    channels),
+                    buffer=buf.extract_dup(0, buf.get_size()),
+                    dtype=np.uint8)
         return arr
 
     def new_sample(self,*data):
@@ -327,7 +368,7 @@ class GstWidget(Gtk.Box):
         and run inference
         """
         sample = self.appsink.emit("pull-sample")
-        arr = self.gst_to_nparray(sample)
+        arr = self.preprocess_buffer(sample)
         if(args.debug):
             cv2.imwrite("/home/weston/NN_cv_sample_dump.png",arr)
         if arr is not None :
@@ -720,6 +761,7 @@ class OverlayWindow(Gtk.Window):
             self.drawing_width = widget.get_allocated_width()
             self.drawing_height = widget.get_allocated_height()
 
+
             #adapt the drawing overlay depending on the image/camera stream displayed
             if self.app.enable_camera_preview == True:
                 preview_ratio = float(args.frame_width)/float(args.frame_height)
@@ -744,10 +786,10 @@ class OverlayWindow(Gtk.Window):
 
             cr.set_line_width(4)
             cr.set_font_size(self.ui_cairo_font_size)
-
             # Outputs are not in same order for ssd_mobilenet v1 and v2, outputs are already filtered by score in
             # ssd_mobilenet_v2 which is not the case for v1
             for i in range(np.array(self.app.nn_result_scores).size):
+                label = self.app.nn.get_label(i,self.app.nn_result_classes)
                 if self.app.nn.model_type == "ssd_mobilenet_v2":
                     # Scale NN outputs for the display before drawing
                     y0 = int(self.app.nn_result_locations[0][i][1] * preview_height)
@@ -1257,7 +1299,7 @@ if __name__ == '__main__':
     parser.add_argument("--validation", action='store_true', help="enable the validation mode")
     parser.add_argument("--val_run", default=50, help="set the number of draws in the validation mode")
     parser.add_argument("--num_threads", default=None, help="Select the number of threads used by tflite interpreter to run inference")
-    parser.add_argument("--conf_threshold", default=0.70, type=float, help="threshold of accuracy above which the boxes are displayed (default 0.70)")
+    parser.add_argument("--conf_threshold", default=0.65, type=float, help="threshold of accuracy above which the boxes are displayed (default 0.70)")
     parser.add_argument("--iou_threshold", default=0.45, type=float, help="threshold of intersection over union above which the boxes are displayed (default 0.45)")
     parser.add_argument("--camera_src", default="LIBCAMERA", help="use V4L2SRC for MP1x and LIBCAMERA for MP2x")
     parser.add_argument("--debug", default=False, action='store_true', help=argparse.SUPPRESS)

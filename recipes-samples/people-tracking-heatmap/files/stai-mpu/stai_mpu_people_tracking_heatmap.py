@@ -173,7 +173,7 @@ class GstPipeline():
             if(self.app.loading_nn):
                 self.app.loading_nn = False
 
-    def gst_to_nparray(self,sample):
+    def preprocess_buffer(self,sample):
         """
         conversion of the gstreamer frame buffer into numpy array
         """
@@ -185,18 +185,36 @@ class GstPipeline():
             f.write(buff)
             f.close()
         caps = sample.get_caps()
-        #get gstreamer buffer size
+        # #get gstreamer buffer size
         buffer_size = buf.get_size()
         #determine the shape of the numpy array
         number_of_column = caps.get_structure(0).get_value('width')
         number_of_lines = caps.get_structure(0).get_value('height')
         channels = 3
-        arr = np.ndarray(
-            (number_of_lines,
-             number_of_column,
-             channels),
-            buffer=buf.extract_dup(0, buf.get_size()),
-            dtype=np.uint8)
+        buffer = np.frombuffer(buf.extract_dup(0, buf.get_size()), dtype=np.uint8)
+
+        #DCMIPP pixelpacker has a constraint on the output resolution that should be multiple of 16.
+        # the allocated buffer may contains stride to handle the DCMIPP Hw constraints/
+        #The following code allow to handle both cases by anticipating the size of the
+        #allocated buffer according to the NN resolution
+        if (self.app.nn_input_width % 16 != 0):
+            # Calculate the nearest upper multiple of 16
+            upper_multiple = ((self.app.nn_input_width // 16) + 1) * 16
+            # Calculate the stride and offset
+            stride = upper_multiple * channels
+            offset = stride - (number_of_column * channels)
+        else :
+            # Calculate the stride and offset
+            stride = number_of_column * channels
+            offset = 0
+        num_lines = len(buffer) // stride
+        arr = np.empty((number_of_column, number_of_lines, channels), dtype=np.uint8)
+        # Fill the processed buffer properly depending on stride and offset
+        for i in range(num_lines):
+            start_index = i * stride
+            end_index = start_index + (stride - offset)
+            line_data = buffer[start_index:end_index]
+            arr[i] = line_data.reshape((number_of_column, channels))
         return arr
 
     def new_sample(self,*data):
@@ -206,7 +224,7 @@ class GstPipeline():
         """
         global image_arr
         sample = self.appsink.emit("pull-sample")
-        arr = self.gst_to_nparray(sample)
+        arr = self.preprocess_buffer(sample)
         if arr is not None :
             self.nn.launch_inference(arr)
             self.app.nn_result_locations = self.nn.get_results()

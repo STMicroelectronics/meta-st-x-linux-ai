@@ -1963,6 +1963,41 @@ static void gui_create_keyboard(CustomData *data)
 }
 
 /**
+ * This function is called to preprocess each camera buffer before NN inference
+ */
+std::vector<uint8_t> gst_preprocess_buffer(GstMapInfo& info, int width, int height, int nnInputWidth) {
+	/*DCMIPP pixelpacker has a constraint on the output resolution that should be multiple of 16.
+    the allocated buffer may contains stride to handle the DCMIPP Hw constraints/
+    The following code allow to handle both cases by anticipating the size of the
+    allocated buffer according to the NN resolution
+	*/
+	int channels = 3;
+	int stride, offset;
+
+	//Calculate the nearest upper multiple of 16
+	if (nnInputWidth % 16 != 0) {
+		int upperMultiple = ((nnInputWidth / 16) + 1) * 16;
+		//Calculate the stride and offset
+		stride = upperMultiple * channels;
+		offset = stride - (width * channels);
+	} else {
+		//Calculate the stride and offset
+		stride = width * channels;
+		offset = 0;
+	}
+
+	int numLines = info.size / stride;
+	std::vector<uint8_t> preprocessedData;
+	//fill the processed buffer properly depending on stride and offset
+	for (int i = 0; i < numLines; ++i) {
+		int startIndex = i * stride;
+		int endIndex = startIndex + (stride - offset);
+		preprocessedData.insert(preprocessedData.end(), info.data + startIndex, info.data + endIndex);
+	}
+	return preprocessedData;
+}
+
+/**
  * This function is called when appsink Gstreamer element receives a buffer
  */
 static GstFlowReturn  gst_new_sample_cb(GstElement *sink, CustomData *data)
@@ -1974,13 +2009,13 @@ static GstFlowReturn  gst_new_sample_cb(GstElement *sink, CustomData *data)
 		GstMapInfo info;
 		g_signal_emit_by_name (sink, "pull-sample", &sample);
 		if (sample) {
-			if (data->cpt_frame == 0)
-				update_isp_config(data);
-
-			data->cpt_frame += 1;
-
-			if (data->cpt_frame == 300)
-				data->cpt_frame = 0;
+			/* Recover information of the GST sample */
+			GstCaps* caps = gst_sample_get_caps(sample);
+			GstStructure* structure = gst_caps_get_structure(caps, 0);
+			int width, height;
+			gst_structure_get_int(structure, "width", &width);
+			gst_structure_get_int(structure, "height", &height);
+			buffer = gst_sample_get_buffer (sample);
 
 			buffer = gst_sample_get_buffer (sample);
 
@@ -2000,7 +2035,11 @@ static GstFlowReturn  gst_new_sample_cb(GstElement *sink, CustomData *data)
 
 			/* Execute the inference */
 			mtx.lock();
-			nn_inference(info.data);
+			/* Preprocess the camera buffer */
+			std::vector<uint8_t> nn_input_sample;
+			nn_input_sample = gst_preprocess_buffer(info,width,height,data->nn_input_width);
+			/* Execute the inference */
+			nn_inference(nn_input_sample.data());
 			nn_postprocessing();
 			data->detected_faces.clear();
 			if (reco_simultaneous_face){
@@ -2641,7 +2680,6 @@ int main(int argc, char *argv[])
 	 }
 
 	/* Create the GUI containing the video stream  */
-	g_print("Start Creating main GTK window\n");
 	gui_create_main(&data);
 	if (data.preview_enabled) {
 		g_print("gst set pipeline playing state\n");
@@ -2649,11 +2687,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* Create the second GUI containing the nn information  */
-	g_print("Start Creating overlay GTK window\n");
 	gui_create_overlay(&data);
 
 	/* Create the virtual keyboard  */
-	g_print("Start Creating keyboard GTK window\n");
 	gui_create_keyboard(&data);
 
 	/* Start a timeout timer in validation process to close application if
