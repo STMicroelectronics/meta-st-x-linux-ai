@@ -112,18 +112,23 @@ class NeuralNetwork:
         """
         Get the raw outputs of the NN models and apply postprocessing
         """
+        #Get backend used
+        self.stai_backend = self.stai_mpu_model.get_backend_engine()
+
         if self.model_type == "ssd_mobilenet_v2":
             anchors = self.stai_mpu_model.get_output(index=2)
             encoded_boxes = self.stai_mpu_model.get_output(index=1)
             class_prediction = self.stai_mpu_model.get_output(index=0)
             locations, classes, scores = self.postprocess_predictions(class_prediction,encoded_boxes,anchors, nms_thresh=self.iou_threshold, confidence_thresh=self.confidence_threshold)
+        elif self.model_type == "ssd_mobilenet_v1" and ("ORT_CPU" in  self.stai_backend.name):
+            locations = self.stai_mpu_model.get_output(index=0).copy()
+            classes = self.stai_mpu_model.get_output(index=1).copy()
+            scores = self.stai_mpu_model.get_output(index=2).copy()
         elif self.model_type == "ssd_mobilenet_v1":
             locations = self.stai_mpu_model.get_output(index=0)
             classes = self.stai_mpu_model.get_output(index=1)
             scores = self.stai_mpu_model.get_output(index=2)
 
-        #Get backend used
-        self.stai_backend = self.stai_mpu_model.get_backend_engine()
         return locations, classes, scores
 
     def non_max_supression(self,decoded_boxes,scores,classes, iou_threshold):
