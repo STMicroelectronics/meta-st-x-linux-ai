@@ -1,0 +1,63 @@
+From eae275b77f947cde96e6225bc2a377209972168e Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Mon, 28 Apr 2025 16:32:59 +0200
+Subject: [PATCH 4/4] uvcsink: respond to control setup event to avoid infinit
+ loop on linux host side
+
+Forces the uvcsink plugin to respond to the control setup event to
+avoid the libwebcam of the Linux host computer to go in an infinite
+warning loop:
+[libwebcam] Warning: The driver behind device video6 has a slightly
+buggy implementation of the V4L2_CTRL_FLAG_NEXT_CTRL flag. It does not
+return the next higher
+
+Upstream-Status: Pending
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ sys/uvcgadget/uvc.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/sys/uvcgadget/uvc.c b/sys/uvcgadget/uvc.c
+index 918f4c1..35c618c 100644
+--- a/sys/uvcgadget/uvc.c
++++ b/sys/uvcgadget/uvc.c
+@@ -19,9 +19,6 @@
+ 
+ #define GST_CAT_DEFAULT uvcsink_debug
+ 
+-#define UVC_STRING_CONTROL_IDX                  0
+-#define UVC_STRING_STREAMING_IDX                1
+-
+ /* --------------------------------------------------------------------------
+  * Control requests
+  */
+@@ -348,9 +345,10 @@ uvc_events_parse_control (GstUvcSink * self, uint8_t req,
+     uint8_t cs, uint8_t entity_id, uint8_t len, struct uvc_request_data *resp)
+ {
+   /*
+-   * Responding to controls is not currently implemented.
++   * Responding to controls is not currently implemented. As an interim
++   * measure respond to say that both get and set operations are permitted.
+    */
+-  resp->data[0] = 0x00;
++  resp->data[0] = 0x03;
+   resp->length = 1;
+ 
+   switch (entity_id) {
+@@ -412,10 +410,10 @@ uvc_events_process_class (GstUvcSink * self,
+   if ((ctrl->bRequestType & USB_RECIP_MASK) != USB_RECIP_INTERFACE)
+     return -EINVAL;
+ 
+-  if (interface == UVC_STRING_CONTROL_IDX) {
++  if (interface == self->fc->control.intf.bInterfaceNumber) {
+     return uvc_events_parse_control (self, ctrl->bRequest,
+         ctrl->wValue >> 8, ctrl->wIndex >> 8, ctrl->wLength, resp);
+-  } else if (interface == UVC_STRING_STREAMING_IDX) {
++  } else if (interface == self->fc->streaming.intf.bInterfaceNumber) {
+     return uvc_events_process_streaming (self, ctrl->bRequest,
+         le16toh (ctrl->wValue) >> 8, resp);
+   }
+-- 
+2.25.1
+

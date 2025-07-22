@@ -1,0 +1,11 @@
+[Unit]
+Description=People Tracking Heatmap Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/x-linux-ai/people-tracking-heatmap/launch_python_people_tracking_heatmap.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

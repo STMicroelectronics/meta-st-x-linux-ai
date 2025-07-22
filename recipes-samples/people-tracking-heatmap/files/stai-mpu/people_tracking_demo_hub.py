@@ -11,6 +11,12 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 
+import subprocess
+import os
+import signal
+import time
+import sys
+
 class MaximizedWindow(Gtk.Window):
     def __init__(self):
         super().__init__()
@@ -27,9 +33,11 @@ class MaximizedWindow(Gtk.Window):
         overlay.add(drawing_area)
 
         # Create a label for the text
-        label_text = ("ST people tracking and heatmap out-of-the box application is an headless demo.\n"
-                      "This signify that a computer is needed to launch the application.\n"
-                      "For more information please refer to the dedicated wiki article : https://wiki.st.com/stm32mpu/wiki/People_tracking_heatmap")
+        label_text = (
+            "ST people tracking and heatmap out-of-the box application is an headless demo.\n"
+            "This signify that a computer is needed to launch the application.\n"
+            "For more information please refer to the dedicated wiki article : https://wiki.st.com/stm32mpu/wiki/People_tracking_heatmap"
+        )
         self.label = Gtk.Label(label=label_text)
         self.label.set_name("custom_label")
         self.label.set_line_wrap(True)
@@ -53,8 +61,25 @@ class MaximizedWindow(Gtk.Window):
         # Connect the button-press-event signal to close the window on touch
         self.connect("button-press-event", self.on_button_press)
 
+        # Connect destroy to cleanup
+        self.connect("destroy", self.on_destroy)
+
+        # Start the subprocess
+        self.process = self.start_people_tracking()
+
         # Show all widgets
         self.show_all()
+    
+    def start_people_tracking(self):
+        cmd = [
+            "python3",
+            "/usr/local/x-linux-ai/people-tracking-heatmap/stai_mpu_people_tracking_heatmap.py",
+            "-m", "/usr/local/x-linux-ai/people-tracking-heatmap/models/yolov8n_people/yolov8n_320_quant_pt_uf_od_coco-person-st.nb",
+            "--frame_width", "1280",
+            "--frame_height", "720"
+        ]
+        proc = subprocess.Popen(cmd, preexec_fn=os.setsid)
+        return proc
 
     def on_draw(self, widget, cr):
         # Set the background color to blue (HEX: #03234B)
@@ -86,9 +111,24 @@ class MaximizedWindow(Gtk.Window):
 
     def on_button_press(self, widget, event):
         # Close the window when it is touched (clicked)
+        self.close()
+
+    def on_destroy(self, widget):
+        if hasattr(self, 'process') and self.process and self.process.poll() is None:
+            pgid = os.getpgid(self.process.pid)
+            try:
+                os.killpg(pgid, signal.SIGTERM)
+                for _ in range(10):
+                    if self.process.poll() is not None:
+                        break
+                    time.sleep(0.5)
+                else:
+                    os.killpg(pgid, signal.SIGKILL)
+            except Exception as e:
+                print(f"Exception while killing process group: {e}")
         Gtk.main_quit()
 
 # Create and run the application
 win = MaximizedWindow()
-win.connect("destroy", Gtk.main_quit)
 Gtk.main()
+sys.exit(0)

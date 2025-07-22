@@ -1,0 +1,38 @@
+From 5b7e297405a8e751f9fdbc2f1a13e19d30dc6121 Mon Sep 17 00:00:00 2001
+From: Vincent ABRIOU <vincent.abriou@st.com>
+Date: Wed, 30 Apr 2025 17:42:46 +0200
+Subject: [PATCH 1/1] media:videobuf2: dma sg pages allocation using GFP_DMA
+
+Allocate the videobuf2 scatter gather page allocation using GFP_DMA to
+avoid swiotlb.
+
+Indeed when the GFP_KERNEL is used to allocate the scatter gather pages,
+it is not guaranty that the allocated pages are in the range of the DMA
+addressable memory leading to use the swiotlb (and therefore slowing
+down the DMA data transfer with memory copy) when memory transfer is
+requested (ex: UVC use case).
+In order to speed up the memory transfer and to allow bigger memory
+buffer to be transmitted, it is important to allocate video buffer in
+the DMA addressable memory range.
+
+Signed-off-by: Vincent ABRIOU <vincent.abriou@st.com>
+---
+ drivers/media/common/videobuf2/videobuf2-dma-sg.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/common/videobuf2/videobuf2-dma-sg.c b/drivers/media/common/videobuf2/videobuf2-dma-sg.c
+index 6975a71d7..2886d267a 100644
+--- a/drivers/media/common/videobuf2/videobuf2-dma-sg.c
++++ b/drivers/media/common/videobuf2/videobuf2-dma-sg.c
+@@ -75,7 +75,7 @@ static int vb2_dma_sg_alloc_compacted(struct vb2_dma_sg_buf *buf,
+ 
+ 		pages = NULL;
+ 		while (!pages) {
+-			pages = alloc_pages(GFP_KERNEL | __GFP_ZERO |
++			pages = alloc_pages(GFP_DMA | __GFP_ZERO |
+ 					__GFP_NOWARN | gfp_flags, order);
+ 			if (pages)
+ 				break;
+-- 
+2.25.1
+

@@ -13,12 +13,9 @@ import argparse
 import os
 import time
 import socket
-import tflite_runtime.interpreter as tflr
 import numpy as np
 import subprocess
-import cv2
-import sys
-import re
+import serial
 import copy
 
 from gi.repository import Gst, GLib
@@ -57,31 +54,32 @@ class GstPipeline():
             raise Exception("Could not create Gstreamer camera source element")
 
         # creation of the libcamerasrc caps for the 2 pipelines
-        caps = f"video/x-raw,width={args.frame_width},height={args.frame_height},format=YUY2"
+        caps = f"video/x-raw,width={args.frame_width},height={args.frame_height},format=YUY2,interlace-mode=progressive,framerate=29/1"
         print("Main pipe configuration: ", caps)
         caps_src = Gst.Caps.from_string(caps)
 
-        caps = "video/x-raw,width=" + str(self.app.nn_input_width) + ",height=" + str(self.app.nn_input_height) + ",format=BGR"
-        print("Aux pipe configuration:  ", caps)
-        caps_src0 = Gst.Caps.from_string(caps)
+        caps1 = "video/x-raw,width=" + str(self.app.nn_input_width) + ",height=" + str(self.app.nn_input_height) + ",format=BGR"
+        print("Aux pipe configuration:  ", caps1)
+        caps_src0 = Gst.Caps.from_string(caps1)
 
         # creation of the queues elements
-        self.queue  = Gst.ElementFactory.make("queue", "queue")
+        self.queuejpeg  = Gst.ElementFactory.make("queue", "queuev4l2jpegenc")
+        # Only one buffer in the queue0 to get 30fps on the display preview pipeline
+        self.queueuvc = Gst.ElementFactory.make("queue", "queueuvcsink")
+
         # Only one buffer in the queue0 to get 30fps on the display preview pipeline
         self.queue0 = Gst.ElementFactory.make("queue", "queue0")
         self.queue0.set_property("leaky", 2)  # 0: no leak, 1: upstream (oldest), 2: downstream (newest)
         self.queue0.set_property("max-size-buffers", 1)  # Maximum number of buffers in the queue
 
         # creation of display pipeline elements
-        self.v4l2slh264enc = Gst.ElementFactory.make("v4l2slh264enc", "v4l2slh264enc")
-        self.v4l2slh264enc.set_property("quantizer", 25)
+        self.v4l2jpegenc = Gst.ElementFactory.make("v4l2jpegenc", "v4l2jpegenc")
+        self.v4l2jpegenc.set_property("output-io-mode", 5)
 
-        self.rtph264pay = Gst.ElementFactory.make("rtph264pay", "rtph264pay")
-        self.rtph264pay.set_property("mtu", 640)
-        self.rtph264pay.set_property("config-interval", 1)
-        self.udpsink = Gst.ElementFactory.make("udpsink", "udpsink")
-        self.udpsink.set_property("host", args.host_ip)
-        self.udpsink.set_property("port", 4999)
+        device_name = self.get_video_device_for_uvc()
+        self.uvcsink = Gst.ElementFactory.make("uvcsink", "uvcsink")
+        v4l2sink = self.uvcsink.get_child_by_name("v4l2sink")
+        v4l2sink.set_property("device", device_name)
 
         # creation and configuration of the appsink element for nn pipeline
         self.videoconvert = Gst.ElementFactory.make("videoconvert", "videoconvert")
@@ -97,10 +95,10 @@ class GstPipeline():
         self.pipeline.add(self.libcamerasrc)
 
         ## Display
-        self.pipeline.add(self.udpsink)
-        self.pipeline.add(self.rtph264pay)
-        self.pipeline.add(self.v4l2slh264enc)
-        self.pipeline.add(self.queue)
+        self.pipeline.add(self.uvcsink)
+        self.pipeline.add(self.v4l2jpegenc)
+        self.pipeline.add(self.queuejpeg)
+        self.pipeline.add(self.queueuvc)
 
         ## NN
         self.pipeline.add(self.queue0)
@@ -109,15 +107,15 @@ class GstPipeline():
 
         # linking elements together
         ##
-        ##              | src   --> queue  [caps_src]  --> v4l2slh264enc quantizer=25 -> rtph264pay mtu=640 config-interval=1 -> udpsink host=169.254.1.4 port=4999
+        ##              | src   --> queuejpeg  [caps_src]  --> v4l2jpegenc output-io-mode=5 --> queueuvc --> uvcsink v4l2sink::device=/dev/video7
         ## libcamerasrc |
         ##              | src_0 --> queue0 [caps_src0] --> videoconvert --> appsink
         ##
 
         # Display pipe
-        self.queue.link_filtered(self.v4l2slh264enc, caps_src)
-        self.v4l2slh264enc.link(self.rtph264pay)
-        self.rtph264pay.link(self.udpsink)
+        self.queuejpeg.link_filtered(self.v4l2jpegenc, caps_src)
+        self.v4l2jpegenc.link(self.queueuvc)
+        self.queueuvc.link(self.uvcsink)
 
         # NN pipe
         self.queue0.link_filtered(self.videoconvert, caps_src0)
@@ -127,10 +125,8 @@ class GstPipeline():
         self.src_pad = self.libcamerasrc.get_static_pad("src")
         self.src_request_pad_template = self.libcamerasrc.get_pad_template("src_%u")
         self.src_request_pad0 = self.libcamerasrc.request_pad(self.src_request_pad_template, None, None)
-        queue_sink_pad = self.queue.get_static_pad("sink")
+        queue_sink_pad = self.queuejpeg.get_static_pad("sink")
         queue0_sink_pad = self.queue0.get_static_pad("sink")
-        self.src_pad.link(queue_sink_pad)
-        self.src_request_pad0.link(queue0_sink_pad)
 
         # view-finder
         self.src_request_pad0.set_property("stream-role", 3)
@@ -138,8 +134,8 @@ class GstPipeline():
         # video-recording
         self.src_pad.set_property("stream-role", 2)
 
-        # set pipeline playing mode
-        self.pipeline.set_state(Gst.State.PLAYING)
+        self.src_pad.link(queue_sink_pad)
+        self.src_request_pad0.link(queue0_sink_pad)
 
         os.system('v4l2-ctl -d /dev/v4l-subdev3 -c gamma_correction=1')
         os.system('v4l2-ctl -d /dev/v4l-subdev4 -c gamma_correction=1')
@@ -152,6 +148,25 @@ class GstPipeline():
         self.bus.connect('message::info', self.msg_info_cb)
         self.bus.connect('message::application', self.msg_application_cb)
         self.bus.connect('message::state-changed', self.msg_state_changed_cb)
+
+        # set pipeline playing mode
+        self.pipeline.set_state(Gst.State.PLAYING)
+
+    def get_video_device_for_uvc(self):
+        cmd = "v4l2-ctl --list-devices"
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        # Parse the output
+        lines = result.stdout.splitlines()
+        device_name = None
+        for i, line in enumerate(lines):
+            if "(gadget." in line:
+                # The next line should contain the device path
+                if i + 1 < len(lines):
+                    device_name = lines[i + 1].strip()
+                    break
+
+        return device_name
 
     def msg_eos_cb(self, bus, message):
         print('eos message -> {}'.format(message))
@@ -173,7 +188,7 @@ class GstPipeline():
             if(self.app.loading_nn):
                 self.app.loading_nn = False
 
-    def preprocess_buffer(self,sample):
+    def gst_to_nparray(self,sample):
         """
         conversion of the gstreamer frame buffer into numpy array
         """
@@ -185,36 +200,18 @@ class GstPipeline():
             f.write(buff)
             f.close()
         caps = sample.get_caps()
-        # #get gstreamer buffer size
+        #get gstreamer buffer size
         buffer_size = buf.get_size()
         #determine the shape of the numpy array
         number_of_column = caps.get_structure(0).get_value('width')
         number_of_lines = caps.get_structure(0).get_value('height')
         channels = 3
-        buffer = np.frombuffer(buf.extract_dup(0, buf.get_size()), dtype=np.uint8)
-
-        #DCMIPP pixelpacker has a constraint on the output resolution that should be multiple of 16.
-        # the allocated buffer may contains stride to handle the DCMIPP Hw constraints/
-        #The following code allow to handle both cases by anticipating the size of the
-        #allocated buffer according to the NN resolution
-        if (self.app.nn_input_width % 16 != 0):
-            # Calculate the nearest upper multiple of 16
-            upper_multiple = ((self.app.nn_input_width // 16) + 1) * 16
-            # Calculate the stride and offset
-            stride = upper_multiple * channels
-            offset = stride - (number_of_column * channels)
-        else :
-            # Calculate the stride and offset
-            stride = number_of_column * channels
-            offset = 0
-        num_lines = len(buffer) // stride
-        arr = np.empty((number_of_column, number_of_lines, channels), dtype=np.uint8)
-        # Fill the processed buffer properly depending on stride and offset
-        for i in range(num_lines):
-            start_index = i * stride
-            end_index = start_index + (stride - offset)
-            line_data = buffer[start_index:end_index]
-            arr[i] = line_data.reshape((number_of_column, channels))
+        arr = np.ndarray(
+            (number_of_lines,
+             number_of_column,
+             channels),
+            buffer=buf.extract_dup(0, buf.get_size()),
+            dtype=np.uint8)
         return arr
 
     def new_sample(self,*data):
@@ -224,7 +221,7 @@ class GstPipeline():
         """
         global image_arr
         sample = self.appsink.emit("pull-sample")
-        arr = self.preprocess_buffer(sample)
+        arr = self.gst_to_nparray(sample)
         if arr is not None :
             self.nn.launch_inference(arr)
             self.app.nn_result_locations = self.nn.get_results()
@@ -286,7 +283,7 @@ class GstPipeline():
                             x1 = self.inference_result_save[list_index][3]
                             y1 = self.inference_result_save[list_index][4]
 
-                # Send to socket0
+                # Send to serial
                 message_info += "#" + str(trackerid)
                 message_info += "#" + str(format(x0, ".3f")) + "#" + str(format(y0, ".3f"))
                 message_info += "#" + str(format(x1, ".3f")) + "#" + str(format(y1, ".3f"))
@@ -302,9 +299,9 @@ class GstPipeline():
             message += str(counter_detection) + message_info + "/E"
 
             try:
-                s.send(message.encode('utf-8'))
-            except socket.error as e:
-                print("socket unable to transmit message")
+                ser.write(message.encode('utf-8'))
+            except serial.SerialException as e:
+                print("unable to transmit message through serial")
                 struc = Gst.Structure.new_empty("inference-done")
                 msg = Gst.Message.new_application(None, struc)
                 self.bus.post(msg)
@@ -357,7 +354,6 @@ if __name__ == '__main__':
 
     # Parser initialization
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host_ip", default="127.0.0.1", help="the IP address of the PC to send frame and infos")
     parser.add_argument("--frame_width", default=1280, help="width of the camera frame (default is 1280)")
     parser.add_argument("--frame_height", default=720, help="height of the camera frame (default is 720)")
     parser.add_argument("-m", "--model_file", default="", help=".nb model to be executed")
@@ -370,15 +366,13 @@ if __name__ == '__main__':
     parser.add_argument("--debug", default=False, action='store_true', help=argparse.SUPPRESS)
     args = parser.parse_args()
 
-    # Set socket address and port
-    HOST, PORT = args.host_ip, 1237
+    # Set serial com port and baudrate
+    PORT, BAUDRATE = "/dev/ttyGS0", 9600
 
     while True:
-
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((HOST, PORT))
-            print("Connected")
+            ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+            print(f"Connected to {PORT} at {BAUDRATE} baud.")
 
             try:
                 application = Application(args)
@@ -390,12 +384,9 @@ if __name__ == '__main__':
                 print("Main Exception: ", exc )
                 loop.quit()
 
-        except socket.error as e:
-            print("connection with server lost : error -> ", str(e))
+        except serial.SerialException as e:
+            print(f"connection to com port {PORT} is failing -> ", str(e))
             time.sleep(5)
-
-        finally:
-            s.close()
 
     # Start the main loop
     loop.run()
