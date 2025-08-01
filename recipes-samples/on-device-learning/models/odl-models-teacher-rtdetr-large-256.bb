@@ -23,7 +23,7 @@ COMPATIBLE_MACHINE = "stm32mp25common"
 
 do_configure[network] = "1"
 
-do_configure:prepend() {
+do_configure() {
     if [ -n "${http_proxy}" ]; then
         export HTTP_PROXY=${http_proxy}
         export http_proxy=${http_proxy}
@@ -38,15 +38,14 @@ do_configure:prepend() {
 
     unset PYTHON
     unset FC
-}
-
-do_configure() {
     pip3 install onnx ultralytics --prefix=${STAGING_DIR_NATIVE}${prefix}
 
     python3 <<EOF
 import os
-
 from ultralytics import RTDETR
+import ssl
+
+ssl._create_default_https_context = ssl._create_stdlib_context
 
 # Load a model
 model = RTDETR('rtdetr-l.pt')
