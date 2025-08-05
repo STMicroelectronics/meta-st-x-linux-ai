@@ -1,0 +1,67 @@
+From 8d7fed7d673bb91ff0d323fc1ac10a6d178684e1 Mon Sep 17 00:00:00 2001
+From: Maxence GUILHIN <maxence.guilhin@st.com>
+Date: Tue, 5 Aug 2025 15:46:41 +0200
+Subject: [PATCH 1/1] try to fix xnnpack python
+
+Change-Id: I31697b36db04d1a6888687fce08337e95cd2ed02
+Signed-off-by: Maxence GUILHIN <maxence.guilhin@st.com>
+---
+ .../interpreter_wrapper.cc                    | 30 +++++++++++--------
+ 1 file changed, 18 insertions(+), 12 deletions(-)
+
+diff --git a/tensorflow/lite/python/interpreter_wrapper/interpreter_wrapper.cc b/tensorflow/lite/python/interpreter_wrapper/interpreter_wrapper.cc
+index 37ddd6bb416..47a3345395a 100644
+--- a/tensorflow/lite/python/interpreter_wrapper/interpreter_wrapper.cc
++++ b/tensorflow/lite/python/interpreter_wrapper/interpreter_wrapper.cc
+@@ -33,7 +33,9 @@ limitations under the License.
+ #include "tensorflow/lite/core/interpreter.h"
+ #include "tensorflow/lite/core/kernels/register.h"
+ #include "tensorflow/lite/core/model.h"
+-#include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
++#ifdef TFLITE_ENABLE_XNNPACK
++  #include "tensorflow/lite/delegates/xnnpack/xnnpack_delegate.h"
++#endif
+ #include "tensorflow/lite/kernels/internal/compatibility.h"
+ #include "tensorflow/lite/kernels/register_ref.h"
+ #include "tensorflow/lite/mutable_op_resolver.h"
+@@ -95,22 +97,26 @@ std::unique_ptr<Interpreter> CreateInterpreter(
+ 
+   ::tflite::python::ImportNumpy();
+ 
+-  TfLiteDelegate* xnnpack_delegate = nullptr;
+-  if (default_delegate_latest_features) {
+-    auto opts = TfLiteXNNPackDelegateOptionsDefault();
+-    opts.flags |= TFLITE_XNNPACK_DELEGATE_FLAG_ENABLE_LATEST_OPERATORS;
+-    opts.flags |= TFLITE_XNNPACK_DELEGATE_FLAG_ENABLE_SUBGRAPH_RESHAPING;
+-    opts.num_threads = num_threads;
+-    xnnpack_delegate = TfLiteXNNPackDelegateCreate(&opts);
+-  }
++  #ifdef TFLITE_ENABLE_XNNPACK
++    TfLiteDelegate* xnnpack_delegate = nullptr;
++    if (default_delegate_latest_features) {
++      auto opts = TfLiteXNNPackDelegateOptionsDefault();
++      opts.flags |= TFLITE_XNNPACK_DELEGATE_FLAG_ENABLE_LATEST_OPERATORS;
++      opts.flags |= TFLITE_XNNPACK_DELEGATE_FLAG_ENABLE_SUBGRAPH_RESHAPING;
++      opts.num_threads = num_threads;
++      xnnpack_delegate = TfLiteXNNPackDelegateCreate(&opts);
++    }
++  #endif
+   std::unique_ptr<Interpreter> interpreter;
+   InterpreterOptions options;
+   options.SetPreserveAllTensors(preserve_all_tensors);
+   options.SetDisableDelegateClustering(disable_delegate_clustering);
+   InterpreterBuilder builder(*model, resolver, &options);
+-  if (default_delegate_latest_features) {
+-    builder.AddDelegate(xnnpack_delegate);
+-  }
++  #ifdef TFLITE_ENABLE_XNNPACK
++    if (default_delegate_latest_features) {
++      builder.AddDelegate(xnnpack_delegate);
++    }
++  #endif
+   builder.SetNumThreads(num_threads);
+   if (builder(&interpreter) != kTfLiteOk) {
+     return nullptr;
+-- 
+2.25.1
+

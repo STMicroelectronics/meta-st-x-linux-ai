@@ -22,6 +22,7 @@ SRC_URI += " file://0007-TFLite-align-protobuf-version-on-the-native-one.patch "
 SRC_URI += " file://0008-TFLite-make-tensorflow-lib-shared-library.patch "
 SRC_URI += " file://0009-TFLite-remove-warning-for-LiteRT-usage.patch "
 SRC_URI:append:stm32mp2common = " file://0010-TFLite-fix-aarch64-support-for-XNNPACK.patch "
+SRC_URI += " file://0011-try-to-fix-xnnpack-python.patch "
 
 
 S = "${WORKDIR}/git"
