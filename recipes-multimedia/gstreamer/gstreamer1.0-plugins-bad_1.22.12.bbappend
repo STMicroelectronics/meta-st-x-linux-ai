@@ -11,4 +11,4 @@ PR = "r2"
 
 PACKAGECONFIG[uvcsink] = "-Duvcgadget=enabled,-Duvcgadget=disabled,libgudev"
 
-PACKAGECONFIG += " uvcsink "
+PACKAGECONFIG:append = " uvcsink "
